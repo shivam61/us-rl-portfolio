@@ -16,6 +16,7 @@ class ExecutionSimulator:
         self.allow_partial_fills = config.execution.allow_partial_fills
         
         self.nav = self.initial_capital
+        self.cash = self.initial_capital  # explicit cash, not derived from nav
         self.holdings = pd.Series(dtype=float)
         self.history = []
         self.trades_history = []
@@ -41,21 +42,21 @@ class ExecutionSimulator:
         missing_open = exec_prices.isna() | (exec_prices <= 0)
         exec_prices[missing_open] = prices_close[missing_open]
         
+        # MtM nav at execution prices before computing weights
+        current_equity = 0.0
+        for t, shares in self.holdings.items():
+            price = exec_prices.get(t, prices_close.get(t, np.nan))
+            if not np.isnan(price) and price > 0:
+                current_equity += shares * price
+        self.nav = current_equity + self.cash
+
         # Calculate current weights based on current prices
         current_weights = pd.Series(0.0, index=target_weights.index.union(self.holdings.index))
-        current_value = 0.0
-        
-        if not self.holdings.empty:
+        if self.nav > 0:
             for t, shares in self.holdings.items():
                 price = exec_prices.get(t, prices_close.get(t, np.nan))
                 if not np.isnan(price) and price > 0:
-                    current_value += shares * price
-                    
-            if current_value > 0:
-                for t, shares in self.holdings.items():
-                    price = exec_prices.get(t, prices_close.get(t, np.nan))
-                    if not np.isnan(price) and price > 0:
-                        current_weights[t] = (shares * price) / self.nav
+                    current_weights[t] = (shares * price) / self.nav
                         
         # Identify required trades (in terms of weight)
         target_weights = target_weights.reindex(current_weights.index).fillna(0.0)
@@ -125,19 +126,22 @@ class ExecutionSimulator:
             if final_shares > 1e-6:
                 new_holdings_dict[t] = final_shares
                 
-            # Log Trade
+            # Log Trade and update cash
             if abs(shares_to_trade) > 0:
                 executed_trades[t] = shares_to_trade
                 trade_value_usd = abs(shares_to_trade * price)
-                
+
                 tc_usd = trade_value_usd * self.tc
                 sl_usd = trade_value_usd * self.slippage
-                
+
+                # buy: cash out = shares*price + costs; sell: cash in = shares*price - costs
+                self.cash -= shares_to_trade * price + tc_usd + sl_usd
+
                 total_trade_cost_usd += (tc_usd + sl_usd)
                 tc_drag_usd += tc_usd
                 slippage_drag_usd += sl_usd
                 total_turnover_weight += trade_value_usd / self.nav
-                
+
                 self.trades_history.append({
                     "date": execution_date,
                     "ticker": t,
@@ -145,10 +149,15 @@ class ExecutionSimulator:
                     "price": price,
                     "cost_usd": tc_usd + sl_usd
                 })
-        
-        # Update NAV
-        self.nav -= total_trade_cost_usd
+
+        # Recompute nav from new holdings + explicit cash
         self.holdings = pd.Series(new_holdings_dict, dtype=float)
+        new_equity = 0.0
+        for t, shares in self.holdings.items():
+            price = exec_prices.get(t, prices_close.get(t, np.nan))
+            if not np.isnan(price) and price > 0:
+                new_equity += shares * price
+        self.nav = new_equity + self.cash
         
         self.history.append({
             "date": execution_date,
@@ -172,28 +181,23 @@ class ExecutionSimulator:
         for t, shares in self.holdings.items():
             if t in prices and not np.isnan(prices[t]):
                 port_value += shares * prices[t]
-                
-        # Assume cash yields 0 for simplicity
-        invested_weight = sum([shares * prices.get(t, 0) for t, shares in self.holdings.items() if t in prices]) / self.nav if self.nav > 0 else 0
-        cash = self.nav * (1.0 - min(1.0, invested_weight))
-        
-        self.nav = port_value + cash
-        
+
+        self.nav = port_value + self.cash
+
         self.history.append({
-            "date": date, 
-            "nav": self.nav, 
-            "turnover": 0.0, 
+            "date": date,
+            "nav": self.nav,
+            "turnover": 0.0,
             "cost": 0.0,
             "tc_drag": 0.0,
             "slippage_drag": 0.0,
-            "cash_exposure": max(0.0, 1.0 - invested_weight)
+            "cash_exposure": (self.cash / self.nav) if self.nav > 0 else 1.0
         })
         
     def _calculate_cash_exposure(self, prices: pd.Series) -> float:
-        if self.holdings.empty or self.nav <= 0:
+        if self.nav <= 0:
             return 1.0
-        invested = sum([shares * prices.get(t, 0) for t, shares in self.holdings.items() if t in prices])
-        return max(0.0, 1.0 - (invested / self.nav))
+        return max(0.0, self.cash / self.nav)
 
     def get_history(self) -> pd.DataFrame:
         df = pd.DataFrame(self.history)

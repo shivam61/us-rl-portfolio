@@ -18,25 +18,37 @@ class RiskEngine:
     def apply_risk_controls(self, 
                             weights: pd.Series, 
                             macro_features: pd.Series,
-                            sector_mapping: Dict[str, str]) -> pd.Series:
+                            sector_mapping: Dict[str, str]) -> tuple[pd.Series, list[dict]]:
         """
         Heuristic risk engine applied post-optimization.
+        Returns (final_weights, interventions_list)
         """
         w = weights.copy()
-        cash = 1.0 - w.sum()
+        interventions = []
+        
+        orig_gross = w.sum()
         
         # 1. Market crash protection
         vix_pct = macro_features.get("vix_percentile_1y", 0.0)
         spy_dd = macro_features.get("spy_drawdown", 0.0)
         
         if vix_pct > self.vix_threshold or spy_dd < self.crash_drawdown:
-            logger.info("Risk Engine: High risk regime detected. Raising cash.")
+            trigger = "VIX_HIGH" if vix_pct > self.vix_threshold else "SPY_DD_CRASH"
+            logger.info(f"Risk Engine: {trigger} detected. Raising cash.")
+            
             # Reduce all equity positions by 50%
             w = w * 0.5
-            cash = 1.0 - w.sum()
+            interventions.append({
+                "trigger": trigger,
+                "old_gross": orig_gross,
+                "new_gross": w.sum(),
+                "details": f"VIX Pct: {vix_pct:.2f}, SPY DD: {spy_dd:.2f}"
+            })
             
-        # 2. Hard caps (just in case optimizer failed or drifted)
-        w = w.clip(lower=0.0, upper=self.max_stock_weight)
+        # 2. Hard caps
+        for t in w.index:
+            if w[t] > self.max_stock_weight:
+                w[t] = self.max_stock_weight
         
         # Sector caps
         sectors = set(sector_mapping.values())
@@ -47,13 +59,18 @@ class RiskEngine:
                 
             sector_weight = w[sector_tickers].sum()
             if sector_weight > self.max_sector_weight:
-                logger.info(f"Risk Engine: Trimming sector {sector} from {sector_weight:.2f} to {self.max_sector_weight:.2f}")
                 scale = self.max_sector_weight / sector_weight
                 w[sector_tickers] *= scale
+                interventions.append({
+                    "trigger": f"SECTOR_CAP_{sector}",
+                    "old_gross": w.sum() / scale, # approximate
+                    "new_gross": w.sum(),
+                    "details": f"Sector {sector} weight {sector_weight:.2f} > {self.max_sector_weight}"
+                })
                 
-        # Final normalization to ensure we don't exceed 1.0
+        # Final normalization
         total_w = w.sum()
         if total_w > 1.0:
             w = w / total_w
             
-        return w
+        return w, interventions
