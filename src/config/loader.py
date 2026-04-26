@@ -51,6 +51,7 @@ class UniverseConfig(BaseModel):
     sector_etfs: List[str]
     tickers: Dict[str, str]
     is_static: bool = True
+    pit_mask_path: Optional[str] = None
 
 def load_config(base_path: str, universe_path: str) -> tuple[BaseConfig, UniverseConfig]:
     with open(base_path, "r") as f:

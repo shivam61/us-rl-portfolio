@@ -7,6 +7,7 @@ from src.data.ingestion import DataIngestion
 from src.features.stock_features import StockFeatureGenerator
 from src.features.sector_features import SectorFeatureGenerator
 from src.features.macro_features import MacroFeatureGenerator
+from src.features.fundamental_features import FundamentalFeatureGenerator
 from src.labels.targets import TargetGenerator
 
 logging.basicConfig(level=logging.INFO)
@@ -34,9 +35,21 @@ def main():
     logger.info("Loading raw data from cache...")
     data_dict = ingestion.fetch_universe_data(tickers=all_tickers, start_date=base_config.backtest.start_date)
     
+    # Load fundamental data from cache
+    stock_tickers = list(universe_config.tickers.keys())
+    fundamentals_df = ingestion.fetch_universe_fundamentals(tickers=stock_tickers, start_date=base_config.backtest.start_date)
+    
     logger.info("Generating stock features...")
     stock_fg = StockFeatureGenerator(data_dict, benchmark_ticker=universe_config.benchmark)
     stock_features = stock_fg.generate()
+    
+    logger.info("Generating fundamental features...")
+    fund_fg = FundamentalFeatureGenerator(data_dict, fundamentals_df=fundamentals_df)
+    fund_features = fund_fg.generate()
+    
+    if not fund_features.empty:
+        # Merge fundamental features into stock features
+        stock_features = stock_features.join(fund_features, how="left")
     
     logger.info("Generating sector features...")
     sector_fg = SectorFeatureGenerator(data_dict, sector_etfs=universe_config.sector_etfs)

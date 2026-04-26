@@ -4,6 +4,7 @@ from typing import List, Dict, Optional
 import logging
 from pathlib import Path
 from src.data.providers.yfinance_provider import YFinanceProvider
+from src.data.providers.fundamental_provider import FundamentalProvider
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,18 @@ class DataIngestion:
         self.raw_dir.mkdir(parents=True, exist_ok=True)
         self.force_download = force_download
         self.provider = YFinanceProvider()
+        self.fundamental_provider = FundamentalProvider()
+
+    def fetch_universe_fundamentals(self, tickers: List[str], start_date: str, end_date: Optional[str] = None) -> pd.DataFrame:
+        file_path = self.raw_dir / "fundamentals.parquet"
+        if file_path.exists() and not self.force_download:
+            logger.debug("Loading fundamentals from cache.")
+            return pd.read_parquet(file_path)
+            
+        df = self.fundamental_provider.fetch_fundamentals(tickers, start_date, end_date)
+        if not df.empty:
+            df.to_parquet(file_path)
+        return df
 
     def fetch_universe_data(self, tickers: List[str], start_date: str, end_date: Optional[str] = None) -> Dict[str, pd.DataFrame]:
         data_dict = {}

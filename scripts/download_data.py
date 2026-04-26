@@ -32,6 +32,15 @@ def main():
         start_date=base_config.backtest.start_date,
         end_date=base_config.backtest.end_date
     )
+    
+    logger.info("Downloading fundamental data...")
+    stock_tickers = list(universe_config.tickers.keys())
+    _ = ingestion.fetch_universe_fundamentals(
+        tickers=stock_tickers,
+        start_date=base_config.backtest.start_date,
+        end_date=base_config.backtest.end_date
+    )
+    
     logger.info("Data download complete.")
 
 if __name__ == "__main__":

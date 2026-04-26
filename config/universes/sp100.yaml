@@ -1,5 +1,7 @@
 name: "sp100_sample"
 description: "Sample S&P 100 universe + Sector ETFs"
+is_static: false
+pit_mask_path: "data/artifacts/universe_mask.parquet"
 
 benchmark: "SPY"
 vix_proxy: "^VIX"

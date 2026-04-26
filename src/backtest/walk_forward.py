@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from src.models.stock_ranker import StockRanker
 from src.optimizer.portfolio_optimizer import PortfolioOptimizer
@@ -19,12 +19,14 @@ class WalkForwardEngine:
                  stock_features: pd.DataFrame, 
                  macro_features: pd.DataFrame, 
                  targets: pd.DataFrame,
-                 prices_dict: Dict[str, pd.DataFrame]):
+                 prices_dict: Dict[str, pd.DataFrame],
+                 pit_mask: Optional[pd.DataFrame] = None):
         self.config = config
         self.universe_config = universe_config
         self.stock_features = stock_features
         self.macro_features = macro_features
         self.targets = targets
+        self.pit_mask = pit_mask
         self.prices_open = prices_dict["open"].ffill()
         self.prices_close = prices_dict["close"].ffill()
         self.prices_adj_close = prices_dict["adj_close"].ffill()
@@ -117,8 +119,27 @@ class WalkForwardEngine:
             return df_or_series.iloc[idx]
         return pd.Series(dtype=float) if isinstance(df_or_series, pd.DataFrame) else 0.0
         
+    def _get_active_tickers(self, date: pd.Timestamp) -> List[str]:
+        base_tickers = list(self.universe_config.tickers.keys())
+        if self.pit_mask is None:
+            return base_tickers
+            
+        try:
+            # find the closest date in pit_mask
+            idx = self.pit_mask.index.get_indexer([date], method='ffill')[0]
+            if idx >= 0:
+                mask_date = self.pit_mask.index[idx]
+                active_series = self.pit_mask.loc[mask_date]
+                active_tickers = active_series[active_series].index.tolist()
+                return [t for t in base_tickers if t in active_tickers]
+            return base_tickers
+        except Exception as e:
+            logger.warning(f"Failed to get active tickers from pit_mask for {date}: {e}")
+            return base_tickers
+
     def _generate_target_weights(self, signal_date: pd.Timestamp, current_weights: pd.Series) -> pd.Series:
         train_start = signal_date - pd.DateOffset(years=self.config.backtest.training_window_years)
+        active_tickers = self._get_active_tickers(signal_date)
         
         # Strict leakage guard
         cutoff_date = signal_date - pd.DateOffset(days=25) 
@@ -128,6 +149,10 @@ class WalkForwardEngine:
                    (self.stock_features.index.get_level_values('date') <= cutoff_date)
             
             X_train = self.stock_features[mask]
+            
+            # Optionally, we could filter X_train to only include active_tickers if we wanted
+            # to prevent training on stocks not currently in the universe, but for now we train on all available data
+            
             y_train = self.targets.loc[X_train.index, "target_fwd_ret"]
             
             ranker = StockRanker()
@@ -140,26 +165,36 @@ class WalkForwardEngine:
             latest_feature_date = self.stock_features.index.levels[0][idx]
             
             X_infer = self.stock_features.xs(latest_feature_date, level="date")
-            tradable_tickers = list(self.universe_config.tickers.keys())
-            X_infer = X_infer.reindex(tradable_tickers).dropna(how='all')
+            X_infer = X_infer.reindex(active_tickers).dropna(how='all')
             alpha_scores = ranker.predict(X_infer)
             
         except Exception as e:
             logger.warning(f"Model training failed at {signal_date}: {e}. Using equal weight.")
-            tickers = list(self.universe_config.tickers.keys())
-            alpha_scores = pd.Series(1.0, index=tickers)
+            alpha_scores = pd.Series(1.0, index=active_tickers)
             
         # Covariance estimation using adj_close
         cov_start = signal_date - pd.DateOffset(years=1)
         cov_mask = (self.prices_adj_close.index >= cov_start) & (self.prices_adj_close.index <= signal_date)
         recent_returns = self.prices_adj_close[cov_mask].pct_change().dropna(how='all')
+        
+        # Filter returns for active tickers to improve optimization stability
+        available_returns = recent_returns.columns.intersection(active_tickers)
+        recent_returns = recent_returns[available_returns]
+        
         cov_matrix = estimate_covariance(recent_returns)
+        
+        # Filter alpha_scores for what we have returns for
+        valid_alphas = alpha_scores.index.intersection(available_returns)
+        alpha_scores = alpha_scores[valid_alphas]
+        
+        # We need to filter sector_mapping for optimizer and risk_engine
+        active_sector_mapping = {t: s for t, s in self.universe_config.tickers.items() if t in active_tickers}
         
         raw_weights = self.optimizer.optimize(
             alpha_scores=alpha_scores,
             cov_matrix=cov_matrix,
             current_weights=current_weights,
-            sector_mapping=self.universe_config.tickers
+            sector_mapping=active_sector_mapping
         )
         
         macro_state = self._get_latest_available(self.macro_features, signal_date)
@@ -167,7 +202,7 @@ class WalkForwardEngine:
         final_weights = self.risk_engine.apply_risk_controls(
             weights=raw_weights,
             macro_features=macro_state,
-            sector_mapping=self.universe_config.tickers
+            sector_mapping=active_sector_mapping
         )
         
         return final_weights

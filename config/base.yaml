@@ -17,7 +17,7 @@ execution:
   allow_partial_fills: true
 
 portfolio:
-  initial_capital: 100000.0
+  initial_capital: 50000.0
   transaction_cost_bps: 10.0
   slippage_bps: 5.0
   max_stock_weight: 0.05

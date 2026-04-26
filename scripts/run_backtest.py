@@ -28,8 +28,15 @@ def main():
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     
     # Static universe warning
+    pit_mask = None
     if universe_config.is_static:
         logger.warning("!!! STATIC UNIVERSE DETECTED: This backtest contains survivorship bias. !!!")
+    else:
+        if universe_config.pit_mask_path:
+            logger.info(f"Loading PIT universe mask from {universe_config.pit_mask_path}")
+            pit_mask = pd.read_parquet(universe_config.pit_mask_path)
+        else:
+            logger.warning("is_static is False but no pit_mask_path provided in universe config. Falling back to static universe.")
         
     logger.info("Loading features and data...")
     cache_dir = Path(base_config.data.cache_dir)
@@ -51,7 +58,8 @@ def main():
         stock_features=stock_features,
         macro_features=macro_features,
         targets=targets,
-        prices_dict=prices_dict
+        prices_dict=prices_dict,
+        pit_mask=pit_mask
     )
     
     history, trades = engine.run()
