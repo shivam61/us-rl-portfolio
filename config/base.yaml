@@ -4,7 +4,7 @@ data:
   force_download: false
 
 backtest:
-  start_date: "2013-01-01"
+  start_date: "2006-01-01"
   end_date: null
   benchmark: "SPY"
   rebalance_frequency: "4W"
