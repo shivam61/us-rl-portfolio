@@ -1,0 +1,80 @@
+name: "sp100_sample"
+description: "Sample S&P 100 universe + Sector ETFs"
+
+benchmark: "SPY"
+vix_proxy: "^VIX"
+macro_etfs:
+  - "SPY"
+  - "QQQ"
+  - "IWM"
+
+sector_etfs:
+  - "XLK"  # Technology
+  - "XLF"  # Financials
+  - "XLV"  # Health Care
+  - "XLY"  # Consumer Discretionary
+  - "XLP"  # Consumer Staples
+  - "XLE"  # Energy
+  - "XLI"  # Industrials
+  - "XLU"  # Utilities
+  - "XLB"  # Materials
+  - "XLRE" # Real Estate
+  - "XLC"  # Communication Services
+
+# Small sample mapping for testing. Will be mapped back to sectors.
+tickers:
+  # Technology
+  AAPL: "XLK"
+  MSFT: "XLK"
+  NVDA: "XLK"
+  CSCO: "XLK"
+  # Financials
+  JPM: "XLF"
+  BAC: "XLF"
+  WFC: "XLF"
+  GS: "XLF"
+  # Health Care
+  JNJ: "XLV"
+  UNH: "XLV"
+  PFE: "XLV"
+  ABBV: "XLV"
+  # Consumer Discretionary
+  AMZN: "XLY"
+  TSLA: "XLY"
+  HD: "XLY"
+  MCD: "XLY"
+  # Consumer Staples
+  PG: "XLP"
+  KO: "XLP"
+  PEP: "XLP"
+  WMT: "XLP"
+  # Energy
+  XOM: "XLE"
+  CVX: "XLE"
+  COP: "XLE"
+  SLB: "XLE"
+  # Industrials
+  BA: "XLI"
+  HON: "XLI"
+  UNP: "XLI"
+  UPS: "XLI"
+  # Utilities
+  NEE: "XLU"
+  DUK: "XLU"
+  SO: "XLU"
+  AEP: "XLU"
+  # Materials
+  LIN: "XLB"
+  APD: "XLB"
+  SHW: "XLB"
+  ECL: "XLB"
+  # Real Estate
+  PLD: "XLRE"
+  AMT: "XLRE"
+  CCI: "XLRE"
+  EQIX: "XLRE"
+  # Communication Services
+  GOOGL: "XLC"
+  META: "XLC"
+  NFLX: "XLC"
+  DIS: "XLC"

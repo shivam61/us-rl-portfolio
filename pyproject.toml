@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "us-rl-portfolio"
+version = "0.1.0"
+description = "US equity portfolio system with RL overlay, optimizer, and walk-forward backtesting"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pandas",
+    "numpy",
+    "scipy",
+    "scikit-learn",
+    "lightgbm",
+    "cvxpy",
+    "stable-baselines3",
+    "gymnasium",
+    "pydantic",
+    "yfinance",
+    "pandas-market-calendars",
+    "pyarrow",
+    "matplotlib",
+    "shap",
+    "pyyaml",
+    "joblib"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "flake8",
+    "mypy"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

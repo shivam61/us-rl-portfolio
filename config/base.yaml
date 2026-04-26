@@ -1,0 +1,31 @@
+project: "us-rl-portfolio"
+data:
+  cache_dir: "data"
+  force_download: false
+
+backtest:
+  start_date: "2013-01-01"
+  end_date: null
+  benchmark: "SPY"
+  rebalance_frequency: "4W"
+  warmup_years: 2
+  training_window_years: 3
+
+execution:
+  max_participation_rate: 0.05
+  min_adv_dollar: 10000000.0
+  allow_partial_fills: true
+
+portfolio:
+  initial_capital: 100000.0
+  transaction_cost_bps: 10.0
+  slippage_bps: 5.0
+  max_stock_weight: 0.05
+  max_sector_weight: 0.25
+  max_turnover: 0.30
+  cash_min: 0.00
+  cash_max: 0.30
+
+rl:
+  enabled: false
+  model_type: "ppo"
