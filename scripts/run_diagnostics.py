@@ -373,6 +373,19 @@ def main():
 
     logger.info(f"Diagnostics complete. Results in {diag_dir}")
 
+    # ── Auto-commit artifacts to git ──────────────────────────────────────────
+    import subprocess
+    try:
+        run_ts = diag_dir.name  # e.g. 20260427_123456
+        subprocess.run(["git", "add", "artifacts/"], check=True)
+        subprocess.run(["git", "commit", "-m",
+                        f"results: diagnostics run {run_ts} — {universe_config.name}"],
+                       check=True)
+        subprocess.run(["git", "push", "origin", "main"], check=True)
+        logger.info("Artifacts committed and pushed to remote.")
+    except subprocess.CalledProcessError as e:
+        logger.warning(f"Git commit/push failed (nothing new to commit or no remote): {e}")
+
 
 if __name__ == "__main__":
     main()
