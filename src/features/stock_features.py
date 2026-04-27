@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from src.features.base import BaseFeatureGenerator
 import logging
 
@@ -8,9 +8,16 @@ logger = logging.getLogger(__name__)
 
 
 class StockFeatureGenerator(BaseFeatureGenerator):
-    def __init__(self, data_dict: Dict[str, pd.DataFrame], benchmark_ticker: str = "SPY", **kwargs: Any):
+    def __init__(
+        self,
+        data_dict: Dict[str, pd.DataFrame],
+        benchmark_ticker: str = "SPY",
+        sector_mapping: Optional[Dict[str, str]] = None,
+        **kwargs: Any,
+    ):
         super().__init__(data_dict, **kwargs)
         self.benchmark_ticker = benchmark_ticker
+        self.sector_mapping = sector_mapping or {}
 
     def generate(self) -> pd.DataFrame:
         stock_tickers = [t for t in self.data_dict if t != self.benchmark_ticker]
@@ -26,6 +33,12 @@ class StockFeatureGenerator(BaseFeatureGenerator):
             t: self.data_dict[t]["volume"]
             for t in stock_tickers
             if "volume" in self.data_dict[t].columns
+        }).reindex(close_matrix.index)
+
+        open_matrix = pd.DataFrame({
+            t: self.data_dict[t]["open"]
+            for t in stock_tickers
+            if "open" in self.data_dict[t].columns
         }).reindex(close_matrix.index)
 
         # Align columns (only tickers present in both)
@@ -81,24 +94,66 @@ class StockFeatureGenerator(BaseFeatureGenerator):
             beta_63d      = pd.DataFrame(1.0, index=close_matrix.index, columns=tickers)
             rs_vs_spy     = pd.DataFrame(0.0, index=close_matrix.index, columns=tickers)
 
+        # ── Reversal features ────────────────────────────────────────────────
+        ret_1w = close_matrix.pct_change(5)
+        ret_2w = close_matrix.pct_change(10)
+        ret_zscore_21d = returns.rolling(21).mean() / returns.rolling(21).std().replace(0, np.nan)
+        overextension_20dma = close_matrix / close_matrix.rolling(20).mean().replace(0, np.nan) - 1
+
+        # 14-day RSI approximation via Wilder smoothing of up/down moves
+        delta = close_matrix.diff()
+        up = delta.clip(lower=0)
+        down = (-delta).clip(lower=0)
+        avg_up = up.ewm(com=13, min_periods=14, adjust=False).mean()
+        avg_dn = down.ewm(com=13, min_periods=14, adjust=False).mean()
+        rs = avg_up / avg_dn.replace(0, np.nan)
+        rsi_proxy = 100 - 100 / (1 + rs)
+
+        # Overnight gap: today's open vs yesterday's close
+        open_aligned = open_matrix[close_matrix.columns.intersection(open_matrix.columns)]
+        gap_overnight = open_aligned / close_matrix[open_aligned.columns].shift(1) - 1
+
+        # ── Quality momentum features ────────────────────────────────────────
+        ret_3m_ex_1w  = ret_3m - ret_1w
+        ret_6m_ex_1m  = ret_6m - ret_1m
+        ret_3m_adj    = ret_3m / vol_63d.replace(0, np.nan)
+        ret_6m_adj    = ret_6m / vol_63d.replace(0, np.nan)
+        mom_stability_3m  = (returns > 0).rolling(63).mean()
+        trend_consistency = (ret_3m.gt(0) == ret_6m.gt(0)).astype(float)
+
         # ── Shift all features by 1 day (leakage guard) ─────────────────────
         feature_frames = {
-            "ret_1m":                   ret_1m,
-            "ret_3m":                   ret_3m,
-            "ret_6m":                   ret_6m,
-            "ret_12m":                  ret_12m,
-            "ret_12m_ex_1m":            ret_12m_ex_1m,
-            "above_50dma":              above_50dma,
-            "above_200dma":             above_200dma,
-            "ma_50_200_ratio":          ma_50_200_ratio,
-            "price_to_52w_high":        price_to_52w_high,
-            "volatility_21d":           vol_21d,
-            "volatility_63d":           vol_63d,
-            "downside_vol_63d":         downside_vol_63d,
-            "max_drawdown_63d":         drawdown_63d,
-            "avg_dollar_volume_63d":    avg_dv_63d,
-            "beta_to_spy_63d":          beta_63d,
-            "relative_strength_vs_spy_63d": rs_vs_spy,
+            # baseline features
+            "ret_1m":                        ret_1m,
+            "ret_3m":                        ret_3m,
+            "ret_6m":                        ret_6m,
+            "ret_12m":                       ret_12m,
+            "ret_12m_ex_1m":                 ret_12m_ex_1m,
+            "above_50dma":                   above_50dma,
+            "above_200dma":                  above_200dma,
+            "ma_50_200_ratio":               ma_50_200_ratio,
+            "price_to_52w_high":             price_to_52w_high,
+            "volatility_21d":                vol_21d,
+            "volatility_63d":                vol_63d,
+            "downside_vol_63d":              downside_vol_63d,
+            "max_drawdown_63d":              drawdown_63d,
+            "avg_dollar_volume_63d":         avg_dv_63d,
+            "beta_to_spy_63d":               beta_63d,
+            "relative_strength_vs_spy_63d":  rs_vs_spy,
+            # reversal features
+            "ret_1w":                        ret_1w,
+            "ret_2w":                        ret_2w,
+            "ret_zscore_21d":                ret_zscore_21d,
+            "overextension_20dma":           overextension_20dma,
+            "rsi_proxy":                     rsi_proxy,
+            "gap_overnight":                 gap_overnight.reindex(columns=close_matrix.columns),
+            # quality momentum features
+            "ret_3m_ex_1w":                  ret_3m_ex_1w,
+            "ret_6m_ex_1m":                  ret_6m_ex_1m,
+            "ret_3m_adj":                    ret_3m_adj,
+            "ret_6m_adj":                    ret_6m_adj,
+            "mom_stability_3m":              mom_stability_3m,
+            "trend_consistency":             trend_consistency,
         }
 
         shifted = {name: df.shift(1) for name, df in feature_frames.items()}
@@ -119,6 +174,16 @@ class StockFeatureGenerator(BaseFeatureGenerator):
             panel.groupby(level="date")["avg_dollar_volume_63d"]
             .rank(pct=True)
         )
+
+        # ── Sector-relative momentum (needs sector_mapping) ──────────────────
+        if self.sector_mapping:
+            tickers_idx = panel.index.get_level_values("ticker")
+            panel["_sector"] = tickers_idx.map(self.sector_mapping)
+            sector_med = panel.groupby(["date", "_sector"])["ret_3m"].transform("median")
+            panel["sector_rel_momentum_3m"] = panel["ret_3m"] - sector_med
+            panel.drop(columns=["_sector"], inplace=True)
+        else:
+            panel["sector_rel_momentum_3m"] = float("nan")
 
         logger.info(f"StockFeatureGenerator: {panel.shape[1]} features, "
                     f"{panel.index.get_level_values('ticker').nunique()} tickers, "

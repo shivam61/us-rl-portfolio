@@ -39,8 +39,10 @@ def main():
     stock_tickers = list(universe_config.tickers.keys())
     fundamentals_df = ingestion.fetch_universe_fundamentals(tickers=stock_tickers, start_date=base_config.backtest.start_date)
     
+    sector_mapping = dict(universe_config.tickers)  # {ticker: sector_etf}
+
     logger.info("Generating stock features...")
-    stock_fg = StockFeatureGenerator(data_dict, benchmark_ticker=universe_config.benchmark)
+    stock_fg = StockFeatureGenerator(data_dict, benchmark_ticker=universe_config.benchmark, sector_mapping=sector_mapping)
     stock_features = stock_fg.generate()
     
     logger.info("Generating fundamental features...")
@@ -60,8 +62,7 @@ def main():
     macro_features = macro_fg.generate()
     
     logger.info("Generating labels...")
-    # Target 4-week forward return
-    tg = TargetGenerator(data_dict, forward_horizon=21)
+    tg = TargetGenerator(data_dict, forward_horizon=21, sector_mapping=sector_mapping)
     targets = tg.generate()
     
     logger.info("Saving artifacts...")

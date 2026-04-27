@@ -36,6 +36,10 @@ class RLConfig(BaseModel):
     enabled: bool = False
     model_type: str = "ppo"
 
+class ResearchConfig(BaseModel):
+    research_universe: str = "config/universes/sp100.yaml"
+    diagnostic_universe: str = "config/universes/sp500.yaml"
+
 class BaseConfig(BaseModel):
     project: str = "us-rl-portfolio"
     data: DataConfig
@@ -43,6 +47,7 @@ class BaseConfig(BaseModel):
     execution: ExecutionConfig = ExecutionConfig()
     portfolio: PortfolioConfig
     rl: RLConfig
+    research: ResearchConfig = ResearchConfig()
 
 class UniverseConfig(BaseModel):
     name: str

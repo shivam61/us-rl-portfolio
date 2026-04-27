@@ -31,3 +31,7 @@ portfolio:
 rl:
   enabled: false
   model_type: "ppo"
+
+research:
+  research_universe: "config/universes/sp100.yaml"
+  diagnostic_universe: "config/universes/sp500.yaml"

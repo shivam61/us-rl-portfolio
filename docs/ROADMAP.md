@@ -1,0 +1,75 @@
+# US RL Portfolio — Master Roadmap
+
+> **For AI agents:** This file is the navigation index only. Each phase has a dedicated doc in `docs/phases/`. Read this file first, then open only the phase doc you need.
+
+**System:** LightGBM alpha signal → MVO optimizer → (Phase D) RL sector overlay → heuristic risk engine → walk-forward backtest (2006–2026, S&P 500).
+
+---
+
+## Current State — 2026-04-27
+
+| | |
+|---|---|
+| Active phase | **A** — IC eval running (`scripts/run_alpha_research.py`) |
+| Last known IC | 0.033 mean Rank IC (baseline, 17 features) |
+| Blocking gate | IC ≥ 0.04, IC Sharpe ≥ 0.30 before Phase B |
+| sp500 baselines | Locked — see table below, do not redefine |
+
+### Stable Baselines (sp500, 2008–2026)
+
+| Experiment | CAGR | Sharpe | MaxDD |
+|---|---|---|---|
+| Equal Weight Universe | 12.9% | 0.62 | -55% |
+| Alpha Top-50 EW | 13.5% | 0.64 | -55% |
+| Alpha + Optimizer (no risk) | 11.2% | 0.55 | -55% |
+| Full System (opt + risk) | 8.7% | 0.59 | -34% |
+| Optimizer to=0.5 sensitivity | 11.9% | 0.68 | -40% |
+
+---
+
+## Phase Overview
+
+| Phase | Goal | Status | Detail |
+|---|---|---|---|
+| **A** | Lift IC: new feature families + IC eval | 🔄 In progress | [phases/phase_a.md](phases/phase_a.md) |
+| **B** | Experiment matrix: label × top-N × retrain × features | ⏳ Pending Phase A gate | [phases/phase_b.md](phases/phase_b.md) |
+| **C** | LightGBM hyperparameter search | ⏳ Pending Phase B gate | [phases/phase_c.md](phases/phase_c.md) |
+| **D** | RL sector rotation overlay | ⏳ Pending Phase C gate | [phases/phase_d.md](phases/phase_d.md) |
+
+### Phase Gates
+
+| Gate | Metric | Target |
+|---|---|---|
+| A → B | Mean Rank IC | ≥ 0.040 |
+| A → B | IC Sharpe | ≥ 0.30 |
+| B → C | Best experiment config identified | top-N, label, retrain freq |
+| C → D | IC Sharpe on 2019–2026 holdout | ≥ 0.50 |
+| D done | RL Sharpe vs heuristic on holdout | RL ≥ 0.70 |
+
+---
+
+## Key Files
+
+| File | What's in it |
+|---|---|
+| `config/base.yaml` | All hyperparams |
+| `config/universes/sp500.yaml` | 503-ticker universe + PIT mask path |
+| `config/universes/sp100.yaml` | 44-ticker research universe (use for dev) |
+| `src/features/stock_features.py` | 30 vectorized features |
+| `src/labels/targets.py` | 3 target labels |
+| `src/backtest/walk_forward.py` | Main backtest loop |
+| `src/rl/environment.py` | RL env skeleton (Phase D) |
+| `docs/phases/phase_a.md` | Phase A detail: features, IC results, decisions |
+| `docs/phases/phase_d.md` | Phase D detail: RL design, state/action/reward |
+| `docs/session_handoff.md` | Experiment history, bug fixes, useful commands |
+
+---
+
+## Governance
+
+- **Research on sp100, validate on sp500** — sp100 (44 tickers) is 10× faster
+- **Leakage rule:** all features `.shift(1)`; targets use forward horizon only
+- **PIT rule:** universe change → rebuild `universe_mask_*.parquet` first
+- **Baseline rule:** never redefine sp500 baselines without a full diagnostics run
+- **Never commit** `data/`, `.venv/`, `__pycache__/`
+- **Python:** always use `.venv/bin/python`
