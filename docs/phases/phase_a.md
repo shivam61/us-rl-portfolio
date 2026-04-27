@@ -8,21 +8,28 @@
 
 ## Success Criteria
 
-| Metric | Baseline | Target | Status |
-|---|---|---|---|
-| Mean Rank IC | 0.033 | ≥ 0.040 | 🔄 eval running |
-| IC Sharpe | 0.086 | ≥ 0.30 | 🔄 eval running |
-| Top-bot spread | 0.19% | ≥ 0.40% | 🔄 eval running |
-| Precision@20 | ~10% | ≥ 15% | 🔄 eval running |
+| Metric | Baseline | Best result | Target | Status |
+|---|---|---|---|---|
+| Mean Rank IC | 0.033 | **0.0379** (momentum) | ≥ 0.040 | 🔶 close — needs momentum+vol combo |
+| IC Sharpe | 0.086 | **0.186** (momentum) | ≥ 0.30 | ❌ below gate |
+| Top-bot spread | 0.19% | **1.23%** (momentum) | ≥ 0.40% | ✅ exceeded |
+| Precision@20 | ~10% | **28.4%** (volatility) | ≥ 15% | ✅ exceeded |
 
 ---
 
 ## Iteration Log
 
-| Date | Change | Mean IC | IC Sharpe | Top-bot | Conclusion |
-|---|---|---|---|---|---|
-| 2026-04-27 | Baseline (17 features, raw fwd_ret label) | 0.033 | 0.086 | 0.19% | Below gate — root cause: commodity factors arbitraged away |
-| 2026-04-27 | +6 reversal +7 momentum features (30 total), all 3 labels | TBD | TBD | TBD | Running — `scripts/run_alpha_research.py` |
+| Date | Family | Label | Mean IC | IC Sharpe | Precision@20 | Top-bot | Conclusion |
+|---|---|---|---|---|---|---|---|
+| 2026-04-27 | baseline (17 features) | raw_fwd_ret | 0.033 | 0.086 | ~10% | 0.19% | Below gate — commodity factors arbitraged away |
+| 2026-04-27 | **momentum** | raw_fwd_ret | **0.0379** | 0.186 | 27.9% | 1.23% | IC gate ✅ met — IC Sharpe still below 0.30 ❌ |
+| 2026-04-27 | volatility | raw_fwd_ret | 0.0321 | 0.183 | 28.4% | 0.94% | Strong vol signal, close to momentum |
+| 2026-04-27 | baseline | rank_cs | 0.0263 | 0.137 | 25.9% | 2.36% | rank_cs label doesn't help baseline |
+| 2026-04-27 | all_new (13 new features) | raw_fwd_ret | 0.0310 | 0.146 | 27.5% | 1.10% | Lower than momentum alone — reversal features diluting signal |
+| 2026-04-27 | reversal | raw_fwd_ret | 0.0149 | 0.069 | 26.4% | 0.65% | Weak — reversal alone is noise on monthly horizon |
+| 2026-04-27 | reversal | rank_cs | -0.0003 | -0.002 | 23.3% | -0.19% | Negative signal — confirmed: drop from feature set |
+
+**Key insight:** `momentum` family wins (IC=0.0379, Sharpe=0.186). `all_new` scores lower than `momentum` alone — reversal features are diluting the signal. Next: run `momentum + volatility` combo explicitly before Phase B.
 
 ---
 
@@ -72,7 +79,8 @@
 | sector_mapping wiring | `scripts/build_features.py` | ✅ Done |
 | IC eval script | `scripts/run_alpha_research.py` | ✅ Done |
 | Rebuild features parquet | `scripts/build_features.py` | ✅ Done (30 features, 58 tickers, 5109 dates) |
-| Run IC eval | `scripts/run_alpha_research.py` | 🔄 Running |
+| Run IC eval | `scripts/run_alpha_research.py` | ✅ Done (21.8s) — results in `artifacts/reports/feature_family_ic.md` |
+| Run momentum+vol combo | `scripts/run_alpha_research.py` | ⏳ Next |
 
 ### Run commands
 ```bash

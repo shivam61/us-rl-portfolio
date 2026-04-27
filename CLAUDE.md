@@ -3,7 +3,7 @@
 Quantitative US equity portfolio: LightGBM alpha signal → MVO optimizer → heuristic risk engine → walk-forward backtest (2006–2026, NYSE, S&P 500 universe). RL overlay is parked.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-27T18:36:56
+## Current State — 2026-04-27T18:52:28
 **Active job:** diagnostics complete — see data/artifacts/reports/universe_expansion_results.md
 <!-- CURRENT_STATE_END -->
 

@@ -10,9 +10,10 @@
 
 | | |
 |---|---|
-| Active phase | **A** — IC eval running (`scripts/run_alpha_research.py`) |
-| Last known IC | 0.033 mean Rank IC (baseline, 17 features) |
-| Blocking gate | IC ≥ 0.04, IC Sharpe ≥ 0.30 before Phase B |
+| Active phase | **A** — IC eval complete, momentum+vol combo next |
+| Best IC so far | 0.0379 mean Rank IC (momentum family) — gate needs 0.040 |
+| Best IC Sharpe | 0.186 (momentum) — gate needs 0.30 |
+| Blocking gate | IC Sharpe ≥ 0.30 before Phase B — try momentum+vol combo |
 | sp500 baselines | Locked — see table below, do not redefine |
 
 ### Stable Baselines (sp500, 2008–2026)
