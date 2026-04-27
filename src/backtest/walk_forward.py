@@ -244,51 +244,48 @@ class WalkForwardEngine:
             if not X_infer.empty:
                 alpha_scores = ranker.predict(X_infer)
                 
-                # Alpha Quality Metrics
-                # 1. Rank IC
-                actual_fwd_rets = self.targets.xs(latest_feature_date, level="date")["target_fwd_ret"]
-                common = alpha_scores.index.intersection(actual_fwd_rets.dropna().index)
-                if len(common) > 10:
-                    rank_ic = alpha_scores.loc[common].rank().corr(actual_fwd_rets.loc[common].rank())
+                # Alpha Quality Metrics — isolated try so failures never affect weights
+                try:
+                    actual_fwd_rets = self.targets.xs(latest_feature_date, level="date")["target_fwd_ret"]
+                    common = alpha_scores.index.intersection(actual_fwd_rets.dropna().index)
+                    if len(common) > 10:
+                        rank_ic = alpha_scores.loc[common].rank().corr(actual_fwd_rets.loc[common].rank())
 
-                    # Top vs Bottom Decile
-                    q = 10
-                    labels = pd.qcut(alpha_scores.loc[common], q, labels=False, duplicates='drop')
-                    top_decile = actual_fwd_rets.loc[common][labels == labels.max()].mean()
-                    bot_decile = actual_fwd_rets.loc[common][labels == labels.min()].mean()
+                        # Top vs Bottom Decile
+                        labels = pd.qcut(alpha_scores.loc[common], 10, labels=False, duplicates='drop')
+                        top_decile = actual_fwd_rets.loc[common][labels == labels.max()].mean()
+                        bot_decile = actual_fwd_rets.loc[common][labels == labels.min()].mean()
 
-                    # Precision@N
-                    def _precision_at(n):
-                        if len(common) < n:
-                            return float("nan")
-                        pred_top = set(alpha_scores.loc[common].nlargest(n).index)
-                        act_top  = set(actual_fwd_rets.loc[common].nlargest(n).index)
-                        return len(pred_top & act_top) / n
+                        # Precision@N
+                        def _precision_at(n):
+                            if len(common) < n:
+                                return float("nan")
+                            pred_top = set(alpha_scores.loc[common].nlargest(n).index)
+                            act_top  = set(actual_fwd_rets.loc[common].nlargest(n).index)
+                            return len(pred_top & act_top) / n
 
-                    # Per-sector IC
-                    active_sector_mapping = {t: s for t, s in self.universe_config.tickers.items()
-                                             if t in common}
-                    sector_groups: dict = {}
-                    for t in common:
-                        sec = active_sector_mapping.get(t, "Unknown")
-                        sector_groups.setdefault(sec, []).append(t)
-                    sector_ic = {}
-                    for sec, tickers in sector_groups.items():
-                        if len(tickers) >= 5:
-                            a = alpha_scores.loc[tickers].rank()
-                            b = actual_fwd_rets.loc[tickers].rank()
-                            sector_ic[sec] = float(a.corr(b))
+                        # Per-sector IC
+                        sec_map = {t: s for t, s in self.universe_config.tickers.items() if t in common}
+                        sector_groups: dict = {}
+                        for t in common:
+                            sector_groups.setdefault(sec_map.get(t, "Unknown"), []).append(t)
+                        sector_ic = {
+                            sec: float(alpha_scores.loc[ts].rank().corr(actual_fwd_rets.loc[ts].rank()))
+                            for sec, ts in sector_groups.items() if len(ts) >= 5
+                        }
 
-                    step_diag["alpha_quality"] = {
-                        "date":          str(signal_date.date()),
-                        "rank_ic":       float(rank_ic),
-                        "top_decile_ret": float(top_decile),
-                        "bot_decile_ret": float(bot_decile),
-                        "spread":        float(top_decile - bot_decile),
-                        "precision_20":  _precision_at(20),
-                        "precision_50":  _precision_at(50),
-                        "sector_ic":     sector_ic,
-                    }
+                        step_diag["alpha_quality"] = {
+                            "date":           str(signal_date.date()),
+                            "rank_ic":        float(rank_ic),
+                            "top_decile_ret": float(top_decile),
+                            "bot_decile_ret": float(bot_decile),
+                            "spread":         float(top_decile - bot_decile),
+                            "precision_20":   _precision_at(20),
+                            "precision_50":   _precision_at(50),
+                            "sector_ic":      sector_ic,
+                        }
+                except Exception as diag_e:
+                    logger.debug(f"Alpha quality metrics failed at {signal_date}: {diag_e}")
             
         except Exception as e:
             logger.warning(f"Model training failed at {signal_date}: {e}. Using equal weight.")
