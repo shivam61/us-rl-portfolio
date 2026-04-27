@@ -176,7 +176,32 @@ class WalkForwardEngine:
             logger.warning(f"Failed to get active tickers from pit_mask for {date}: {e}")
             return base_tickers
 
-    def _generate_target_weights(self, 
+    def _select_sector_capped_top_n(
+        self,
+        alpha_scores: pd.Series,
+        top_n: int,
+        sector_mapping: dict,
+        max_sector_weight: float
+    ) -> list:
+        """Greedy top-N selection with per-sector cap enforced during selection."""
+        per_stock_weight = 1.0 / top_n
+        max_per_sector = max(1, int(max_sector_weight / per_stock_weight))
+
+        ranked = alpha_scores.dropna().sort_values(ascending=False)
+        selected: list = []
+        sector_counts: dict = {}
+
+        for ticker in ranked.index:
+            if len(selected) >= top_n:
+                break
+            sector = sector_mapping.get(ticker, "_other")
+            if sector_counts.get(sector, 0) < max_per_sector:
+                selected.append(ticker)
+                sector_counts[sector] = sector_counts.get(sector, 0) + 1
+
+        return selected
+
+    def _generate_target_weights(self,
                                  signal_date: pd.Timestamp, 
                                  current_weights: pd.Series,
                                  use_optimizer: bool = True,
@@ -189,17 +214,16 @@ class WalkForwardEngine:
             return pd.Series(dtype=float), step_diag
 
         train_start = signal_date - pd.DateOffset(years=self.config.backtest.training_window_years)
-        cutoff_date = signal_date - pd.DateOffset(days=25) 
-        
+        cutoff_date = signal_date - pd.DateOffset(days=25)
+
         alpha_scores = pd.Series(0.0, index=active_tickers)
-        
+
         try:
-            mask = (self.stock_features.index.get_level_values('date') >= train_start) & \
-                   (self.stock_features.index.get_level_values('date') <= cutoff_date)
-            
-            X_train = self.stock_features[mask]
-            X_train = X_train[X_train.index.get_level_values('ticker').isin(active_tickers)]
-            y_train = self.targets.loc[X_train.index, "target_fwd_ret"]
+            # Fast date-range slice on sorted (date, ticker) MultiIndex
+            X_train = self.stock_features.loc[pd.IndexSlice[train_start:cutoff_date, :], :]
+            X_train = X_train.loc[X_train.index.get_level_values('ticker').isin(active_tickers)]
+            # Use reindex to avoid KeyError on (date, ticker) pairs absent from targets
+            y_train = self.targets.reindex(X_train.index)["target_fwd_ret"]
             
             ranker = StockRanker()
             ranker.fit(X_train, y_train)
@@ -242,9 +266,14 @@ class WalkForwardEngine:
             
         # Decision Logic
         if top_n_equal_weight:
-            top_stocks = alpha_scores.nlargest(top_n_equal_weight).index
+            active_sector_mapping = {t: s for t, s in self.universe_config.tickers.items() if t in active_tickers}
+            selected = self._select_sector_capped_top_n(
+                alpha_scores, top_n_equal_weight,
+                active_sector_mapping, self.config.portfolio.max_sector_weight
+            )
             raw_weights = pd.Series(0.0, index=alpha_scores.index)
-            raw_weights[top_stocks] = 1.0 / len(top_stocks)
+            if selected:
+                raw_weights[selected] = 1.0 / len(selected)
         elif use_optimizer:
             cov_start = signal_date - pd.DateOffset(years=1)
             cov_mask = (self.prices_adj_close.index >= cov_start) & (self.prices_adj_close.index <= signal_date)

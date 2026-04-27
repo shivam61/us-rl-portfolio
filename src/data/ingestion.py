@@ -3,6 +3,7 @@ import pandas as pd
 from typing import List, Dict, Optional
 import logging
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from src.data.providers.yfinance_provider import YFinanceProvider
 from src.data.providers.fundamental_provider import FundamentalProvider
 
@@ -28,19 +29,43 @@ class DataIngestion:
             df.to_parquet(file_path)
         return df
 
-    def fetch_universe_data(self, tickers: List[str], start_date: str, end_date: Optional[str] = None) -> Dict[str, pd.DataFrame]:
+    def fetch_universe_data(self, tickers: List[str], start_date: str,
+                           end_date: Optional[str] = None,
+                           n_workers: int = 8) -> Dict[str, pd.DataFrame]:
         data_dict = {}
+        to_download = []
+
         for ticker in tickers:
             file_path = self.raw_dir / f"{ticker}.parquet"
             if file_path.exists() and not self.force_download:
                 logger.debug(f"Loading {ticker} from cache.")
-                df = pd.read_parquet(file_path)
-                data_dict[ticker] = df
+                data_dict[ticker] = pd.read_parquet(file_path)
             else:
-                df = self.provider.download_ticker(ticker, start_date, end_date)
-                if not df.empty:
-                    df.to_parquet(file_path)
-                    data_dict[ticker] = df
+                to_download.append(ticker)
+
+        if to_download:
+            logger.info(f"Downloading {len(to_download)} tickers with {n_workers} workers...")
+
+            def _fetch_one(ticker: str):
+                try:
+                    df = self.provider.download_ticker(ticker, start_date, end_date)
+                    if not df.empty:
+                        df.to_parquet(self.raw_dir / f"{ticker}.parquet")
+                    return ticker, df
+                except Exception as e:
+                    logger.error(f"Failed to download {ticker}: {e}")
+                    return ticker, pd.DataFrame()
+
+            with ThreadPoolExecutor(max_workers=n_workers) as executor:
+                futures = {executor.submit(_fetch_one, t): t for t in to_download}
+                for future in as_completed(futures):
+                    try:
+                        ticker, df = future.result()
+                        if not df.empty:
+                            data_dict[ticker] = df
+                    except Exception as e:
+                        logger.error(f"Unexpected error for {futures[future]}: {e}")
+
         return data_dict
 
     def build_matrices(self, data_dict: Dict[str, pd.DataFrame], column: str = "adj_close") -> pd.DataFrame:

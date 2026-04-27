@@ -30,11 +30,15 @@ class FundamentalFeatureGenerator(BaseFeatureGenerator):
             
             # Create a dataframe for the prices
             price_df = pd.DataFrame({'date': close.index, 'adj_close': close.values})
+            price_df['date'] = pd.to_datetime(price_df['date']).astype('datetime64[us]')
             price_df = price_df.sort_values('date')
-            
+
+            ticker_fund = ticker_fund.copy()
+            ticker_fund['filing_date'] = pd.to_datetime(ticker_fund['filing_date']).astype('datetime64[us]')
+
             # merge_asof requires sorted keys
             merged = pd.merge_asof(
-                price_df, 
+                price_df,
                 ticker_fund,
                 left_on='date',
                 right_on='filing_date',

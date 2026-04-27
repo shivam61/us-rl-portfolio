@@ -25,6 +25,7 @@ portfolio:
   max_turnover: 0.30
   cash_min: 0.00
   cash_max: 0.30
+  top_n_stocks: 50
 
 rl:
   enabled: false

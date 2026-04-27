@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /home/shivamguptanit/github/us-rl-portfolio && bash scripts/save_context.sh 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}

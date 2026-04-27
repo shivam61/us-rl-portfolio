@@ -29,6 +29,7 @@ class PortfolioConfig(BaseModel):
     max_turnover: float = 0.30
     cash_min: float = 0.00
     cash_max: float = 0.30
+    top_n_stocks: int = 50
 
 class RLConfig(BaseModel):
     enabled: bool = False
