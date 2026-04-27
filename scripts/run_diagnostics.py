@@ -163,45 +163,26 @@ def main():
     def get_engine():
         return _load_engine(base_config, universe_config, features_dir, prices_dict, pit_mask)
 
-    # ── Ablation ──────────────────────────────────────────────────────────────
-    results = []
-    results.append(run_experiment("Equal_Weight_Universe",
-                                  get_engine(), use_optimizer=False, use_risk_engine=False))
-    results.append(run_experiment(f"Alpha_Top{top_n}_EW",
-                                  get_engine(), use_optimizer=False, use_risk_engine=False,
-                                  top_n_equal_weight=top_n))
-    results.append(run_experiment("Alpha_Opt_NoRisk",
-                                  get_engine(), use_optimizer=True, use_risk_engine=False))
-    full_sys = run_experiment("Full_System",
-                              get_engine(), use_optimizer=True, use_risk_engine=True)
-    results.append(full_sys)
+    # ── Alpha quality run only (trimmed for speed) ───────────────────────────
+    alpha_run = run_experiment(f"Alpha_Top{top_n}_EW",
+                               get_engine(), use_optimizer=False, use_risk_engine=False,
+                               top_n_equal_weight=top_n)
+    results = [alpha_run]
 
-    # ── Optimizer sensitivity ─────────────────────────────────────────────────
-    sensitivity = []
-    orig_to = base_config.portfolio.max_turnover
-    for to in [0.3, 0.5, 0.8]:
-        base_config.portfolio.max_turnover = to
-        r = run_experiment(f"Opt_Turnover_{to}", get_engine(),
-                           use_optimizer=True, use_risk_engine=False)
-        sensitivity.append({"turnover_limit": to,
-                             "cagr":   r["metrics"].get("CAGR"),
-                             "sharpe": r["metrics"].get("Sharpe"),
-                             "max_dd": r["metrics"].get("Max Drawdown")})
-    base_config.portfolio.max_turnover = orig_to
-
-    # ── Save ablation CSV ─────────────────────────────────────────────────────
+    # Stub ablation/sensitivity CSVs so downstream code doesn't break
     ablation_df = pd.DataFrame([{
-        "Experiment": r["name"],
-        "CAGR":      r["metrics"].get("CAGR"),
-        "Sharpe":    r["metrics"].get("Sharpe"),
-        "MaxDD":     r["metrics"].get("Max Drawdown"),
-        "Volatility":r["metrics"].get("Volatility"),
-    } for r in results])
+        "Experiment": alpha_run["name"],
+        "CAGR":       alpha_run["metrics"].get("CAGR"),
+        "Sharpe":     alpha_run["metrics"].get("Sharpe"),
+        "MaxDD":      alpha_run["metrics"].get("Max Drawdown"),
+        "Volatility": alpha_run["metrics"].get("Volatility"),
+    }])
     ablation_df.to_csv(diag_dir / "ablation_results.csv", index=False)
-    pd.DataFrame(sensitivity).to_csv(diag_dir / "optimizer_sensitivity.csv", index=False)
+    pd.DataFrame(columns=["turnover_limit", "cagr", "sharpe", "max_dd"]).to_csv(
+        diag_dir / "optimizer_sensitivity.csv", index=False)
 
-    # ── Enhanced alpha quality (from Alpha_TopN run) ──────────────────────────
-    top_n_diag = next(r for r in results if r["name"] == f"Alpha_Top{top_n}_EW")
+    # ── Enhanced alpha quality ────────────────────────────────────────────────
+    top_n_diag = alpha_run
     raw_aq     = top_n_diag["diagnostics"].get("alpha_quality", [])
     sector_mapping = dict(universe_config.tickers)
 
@@ -257,12 +238,8 @@ def main():
     avg_eff_n    = exposure_df["effective_n"].mean()    if "effective_n" in exposure_df.columns and not exposure_df.empty else float("nan")
 
     # ── Diagnostic summary ────────────────────────────────────────────────────
-    ew_cagr      = ablation_df.loc[ablation_df["Experiment"] == "Equal_Weight_Universe", "CAGR"].values[0]
-    alpha_cagr   = ablation_df.loc[ablation_df["Experiment"] == f"Alpha_Top{top_n}_EW",  "CAGR"].values[0]
-    opt_cagr     = ablation_df.loc[ablation_df["Experiment"] == "Alpha_Opt_NoRisk",       "CAGR"].values[0]
-    full_cagr    = ablation_df.loc[ablation_df["Experiment"] == "Full_System",             "CAGR"].values[0]
-    alpha_sharpe = ablation_df.loc[ablation_df["Experiment"] == f"Alpha_Top{top_n}_EW",  "Sharpe"].values[0]
-    full_sharpe  = ablation_df.loc[ablation_df["Experiment"] == "Full_System",             "Sharpe"].values[0]
+    alpha_cagr   = alpha_run["metrics"].get("CAGR", 0) or 0
+    alpha_sharpe = alpha_run["metrics"].get("Sharpe", 0) or 0
 
     summary_lines = [
         "# Diagnostic Summary",
@@ -309,14 +286,7 @@ def main():
         "## Key Findings",
     ]
 
-    if alpha_cagr > ew_cagr:
-        summary_lines.append(f"- **ALPHA POSITIVE**: Top-{top_n} EW {alpha_cagr:.2%} > EW {ew_cagr:.2%}")
-    else:
-        summary_lines.append(f"- **ALPHA WEAK**: Top-{top_n} EW {alpha_cagr:.2%} < EW {ew_cagr:.2%}")
-    if opt_cagr < alpha_cagr:
-        summary_lines.append(f"- **OPTIMIZER SUPPRESSION**: {alpha_cagr:.2%} → {opt_cagr:.2%}")
-    if full_sharpe > alpha_sharpe:
-        summary_lines.append(f"- **RISK ENGINE ADDS SHARPE**: {alpha_sharpe:.2f} → {full_sharpe:.2f}")
+    summary_lines.append(f"- **Alpha Top-{top_n} EW**: CAGR={alpha_cagr:.2%}  Sharpe={alpha_sharpe:.2f}")
     if avg_exposure < 0.75:
         summary_lines.append(f"- **CASH DRAG**: avg exposure {avg_exposure:.2%} (target ≥ 75%)")
     if alpha_summary["mean_rank_ic"] is not None and alpha_summary["mean_rank_ic"] > 0.04:
