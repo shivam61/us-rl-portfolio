@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from typing import Dict, Any, Optional
 
@@ -10,6 +11,11 @@ except ImportError:
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import Ridge
 
+
+def _lgbm_n_jobs() -> int:
+    return int(os.environ.get("LGBM_N_JOBS", "2"))
+
+
 class StockRanker:
     """
     Ranks stocks within a cross-section using regression as a proxy for ranking
@@ -17,10 +23,11 @@ class StockRanker:
     """
     def __init__(self, use_lgbm_ranker: bool = False, **kwargs):
         self.use_lgbm_ranker = use_lgbm_ranker and LGBM_AVAILABLE
+        n_jobs = _lgbm_n_jobs()
         if self.use_lgbm_ranker:
-            self.model = lgb.LGBMRanker(n_estimators=50, max_depth=5, random_state=42, n_jobs=-1, **kwargs)
+            self.model = lgb.LGBMRanker(n_estimators=50, max_depth=5, random_state=42, n_jobs=n_jobs, **kwargs)
         elif LGBM_AVAILABLE:
-            self.model = lgb.LGBMRegressor(n_estimators=50, max_depth=5, random_state=42, n_jobs=-1, **kwargs)
+            self.model = lgb.LGBMRegressor(n_estimators=50, max_depth=5, random_state=42, n_jobs=n_jobs, **kwargs)
         else:
             self.model = HistGradientBoostingRegressor(max_iter=50, max_depth=5, random_state=42)
             

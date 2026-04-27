@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 from typing import Dict, Any, Optional
@@ -11,11 +12,13 @@ except ImportError:
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import Ridge
 
+
 class SectorScorer:
     def __init__(self, use_lgbm: bool = True, **kwargs):
         self.use_lgbm = use_lgbm and LGBM_AVAILABLE
+        n_jobs = int(os.environ.get("LGBM_N_JOBS", "2"))
         if self.use_lgbm:
-            self.model = lgb.LGBMRegressor(n_estimators=100, max_depth=5, random_state=42, **kwargs)
+            self.model = lgb.LGBMRegressor(n_estimators=100, max_depth=5, random_state=42, n_jobs=n_jobs, **kwargs)
         else:
             self.model = HistGradientBoostingRegressor(max_iter=100, max_depth=5, random_state=42)
             
