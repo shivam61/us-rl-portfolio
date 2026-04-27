@@ -1,3 +1,4 @@
+import time
 import pandas as pd
 import numpy as np
 import logging
@@ -49,6 +50,9 @@ class WalkForwardEngine:
             max_stock_weight=config.portfolio.max_stock_weight,
             max_sector_weight=config.portfolio.max_sector_weight
         )
+
+        self._cached_ranker: Optional[StockRanker] = None
+        self._retrain_counter: int = 0
         
     def generate_rebalance_dates(self) -> List[pd.Timestamp]:
         start = pd.Timestamp(self.config.backtest.start_date)
@@ -84,7 +88,8 @@ class WalkForwardEngine:
             "risk_interventions": [],
             "alpha_quality": [],
             "optimizer_stats": [],
-            "exposure": []
+            "exposure": [],
+            "train_stats": [],
         }
         
         logger.info(f"Starting walk-forward backtest from {first_execution_date.date()}")
@@ -115,7 +120,8 @@ class WalkForwardEngine:
                         diagnostics["alpha_quality"].append(step_diag["alpha_quality"])
                     if "optimizer_stats" in step_diag:
                         diagnostics["optimizer_stats"].append(step_diag["optimizer_stats"])
-                    
+                    if "train_stats" in step_diag:
+                        diagnostics["train_stats"].append(step_diag["train_stats"])
                     if "risk_interventions" in step_diag:
                         for inter in step_diag["risk_interventions"]:
                             inter["date"] = str(signal_date.date())
@@ -230,8 +236,19 @@ class WalkForwardEngine:
             # Use reindex to avoid KeyError on (date, ticker) pairs absent from targets
             y_train = self.targets.reindex(X_train.index)["target_fwd_ret"]
             
-            ranker = StockRanker()
-            ranker.fit(X_train, y_train)
+            retrain_freq = getattr(self.config.backtest, 'retrain_frequency', 1)
+            should_retrain = (self._cached_ranker is None) or (self._retrain_counter % retrain_freq == 0)
+            self._retrain_counter += 1
+
+            t0 = time.perf_counter()
+            if should_retrain:
+                ranker = StockRanker()
+                ranker.fit(X_train, y_train)
+                self._cached_ranker = ranker
+            else:
+                ranker = self._cached_ranker
+            train_secs = time.perf_counter() - t0 if should_retrain else 0.0
+            step_diag["train_stats"] = {"trained": should_retrain, "train_seconds": train_secs}
             
             idx = self.stock_features.index.levels[0].get_indexer([signal_date], method='ffill')[0]
             if idx < 0:

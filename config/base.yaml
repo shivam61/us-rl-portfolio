@@ -10,6 +10,7 @@ backtest:
   rebalance_frequency: "4W"
   warmup_years: 2
   training_window_years: 3
+  retrain_frequency: 3
 
 execution:
   max_participation_rate: 0.05

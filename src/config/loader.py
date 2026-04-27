@@ -14,6 +14,7 @@ class BacktestConfig(BaseModel):
     rebalance_frequency: str = "4W"
     warmup_years: int = 2
     training_window_years: int = 3
+    retrain_frequency: int = 3
 
 class ExecutionConfig(BaseModel):
     max_participation_rate: float = 0.05

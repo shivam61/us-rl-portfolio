@@ -226,16 +226,51 @@ def main():
     with open(reports_dir / "alpha_quality_large_universe.json", "w") as f:
         json.dump(alpha_summary, f, indent=4)
 
+    # ── Training benchmark stats ─────────────────────────────────────────────
+    train_diags  = alpha_run["diagnostics"].get("train_stats", [])
+    if not isinstance(train_diags, list):
+        train_diags = []
+    train_calls  = sum(1 for t in train_diags if t.get("trained", False))
+    train_secs   = [t["train_seconds"] for t in train_diags if t.get("trained", False) and t.get("train_seconds", 0) > 0]
+    total_train  = float(np.sum(train_secs))  if train_secs else 0.0
+    avg_train    = float(np.mean(train_secs)) if train_secs else 0.0
+
+    # Turnover from history
+    hist = alpha_run["history"]
+    avg_turnover = float(hist[hist["turnover"] > 0]["turnover"].mean()) if not hist.empty and "turnover" in hist.columns else float("nan")
+
     # ── Risk intervention / exposure ─────────────────────────────────────────
-    risk_log    = pd.DataFrame(full_sys["diagnostics"].get("risk_interventions", []))
-    exposure_df = pd.DataFrame(full_sys["diagnostics"].get("exposure", []))
+    risk_log    = pd.DataFrame(alpha_run["diagnostics"].get("risk_interventions", []))
+    exposure_df = pd.DataFrame(alpha_run["diagnostics"].get("exposure", []))
     risk_log.to_csv(diag_dir / "risk_intervention_log.csv", index=False)
 
     avg_exposure = exposure_df["gross_exposure"].mean() if not exposure_df.empty else 0
     avg_holdings = exposure_df["num_holdings"].mean()   if not exposure_df.empty else 0
     pct_risk     = (len(risk_log) / len(exposure_df))   if not exposure_df.empty else 0
-    avg_hhi      = exposure_df["hhi"].mean()            if "hhi"       in exposure_df.columns and not exposure_df.empty else float("nan")
+    avg_hhi      = exposure_df["hhi"].mean()            if "hhi"         in exposure_df.columns and not exposure_df.empty else float("nan")
     avg_eff_n    = exposure_df["effective_n"].mean()    if "effective_n" in exposure_df.columns and not exposure_df.empty else float("nan")
+
+    # ── Benchmark summary JSON ────────────────────────────────────────────────
+    ic_std = float(np.std(rics)) if rics else None
+    benchmark = {
+        "universe":            universe_config.name,
+        "n_tickers":           len(universe_config.tickers),
+        "retrain_frequency":   getattr(base_config.backtest, 'retrain_frequency', 1),
+        "n_estimators":        50,
+        "train_calls":         train_calls,
+        "avg_train_seconds":   round(avg_train, 3),
+        "total_train_seconds": round(total_train, 1),
+        "ic_mean":             round(float(np.mean(rics)), 6)  if rics else None,
+        "ic_std":              round(ic_std, 6)                if ic_std else None,
+        "cagr":                alpha_run["metrics"].get("CAGR"),
+        "sharpe":              alpha_run["metrics"].get("Sharpe"),
+        "max_drawdown":        alpha_run["metrics"].get("Max Drawdown"),
+        "avg_turnover":        round(avg_turnover, 4) if not np.isnan(avg_turnover) else None,
+    }
+    with open(diag_dir / "benchmark.json", "w") as f:
+        json.dump(benchmark, f, indent=4)
+    with open(reports_dir / "benchmark.json", "w") as f:
+        json.dump(benchmark, f, indent=4)
 
     # ── Diagnostic summary ────────────────────────────────────────────────────
     alpha_cagr   = alpha_run["metrics"].get("CAGR", 0) or 0
@@ -275,7 +310,19 @@ def main():
         "- Sector IC (mean across rebalances):",
         *sec_ic_lines,
         "",
-        "## Exposure & Holdings (Full System)",
+        "## Training Benchmark",
+        f"- Retrain every N rebalances: {getattr(base_config.backtest, 'retrain_frequency', 1)}",
+        f"- Train calls:         {benchmark['train_calls']}",
+        f"- Avg train time:      {benchmark['avg_train_seconds']:.2f}s",
+        f"- Total train time:    {benchmark['total_train_seconds']:.0f}s ({benchmark['total_train_seconds']/60:.1f} min)",
+        f"- IC mean:             {_fmt(benchmark['ic_mean'], '.4f')}",
+        f"- IC std:              {_fmt(benchmark['ic_std'], '.4f')}",
+        f"- CAGR:                {_fmt(benchmark['cagr'], '.2%')}",
+        f"- Sharpe:              {_fmt(benchmark['sharpe'], '.2f')}",
+        f"- Max Drawdown:        {_fmt(benchmark['max_drawdown'], '.2%')}",
+        f"- Avg Turnover:        {_fmt(benchmark['avg_turnover'], '.2%')}",
+        "",
+        "## Exposure & Holdings",
         f"- Avg Gross Exposure:  {avg_exposure:.2%}",
         f"- Avg Cash:            {1-avg_exposure:.2%}",
         f"- Avg Holdings:        {avg_holdings:.1f}",

@@ -18,11 +18,11 @@ class StockRanker:
     def __init__(self, use_lgbm_ranker: bool = False, **kwargs):
         self.use_lgbm_ranker = use_lgbm_ranker and LGBM_AVAILABLE
         if self.use_lgbm_ranker:
-            self.model = lgb.LGBMRanker(n_estimators=100, max_depth=5, random_state=42, n_jobs=-1, **kwargs)
+            self.model = lgb.LGBMRanker(n_estimators=50, max_depth=5, random_state=42, n_jobs=-1, **kwargs)
         elif LGBM_AVAILABLE:
-            self.model = lgb.LGBMRegressor(n_estimators=100, max_depth=5, random_state=42, n_jobs=-1, **kwargs)
+            self.model = lgb.LGBMRegressor(n_estimators=50, max_depth=5, random_state=42, n_jobs=-1, **kwargs)
         else:
-            self.model = HistGradientBoostingRegressor(max_iter=100, max_depth=5, random_state=42)
+            self.model = HistGradientBoostingRegressor(max_iter=50, max_depth=5, random_state=42)
             
     def fit(self, X: pd.DataFrame, y: pd.Series, group: Optional[pd.Series] = None):
         mask = ~X.isna().any(axis=1) & ~y.isna()
