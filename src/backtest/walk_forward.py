@@ -138,11 +138,16 @@ class WalkForwardEngine:
                     reb_idx += 1
                     
                     # Exposure tracking
+                    w = target_weights[target_weights > 0.001]
+                    hhi   = float((w ** 2).sum()) if not w.empty else 1.0
+                    eff_n = float(1.0 / hhi)      if hhi > 0    else float(len(w))
                     diagnostics["exposure"].append({
-                        "date": str(date.date()),
+                        "date":           str(date.date()),
                         "gross_exposure": float(target_weights.sum()),
-                        "cash_pct": float(1.0 - target_weights.sum()),
-                        "num_holdings": int((target_weights > 0.001).sum())
+                        "cash_pct":       float(1.0 - target_weights.sum()),
+                        "num_holdings":   int((target_weights > 0.001).sum()),
+                        "hhi":            hhi,
+                        "effective_n":    eff_n,
                     })
                     continue
                 
@@ -245,19 +250,44 @@ class WalkForwardEngine:
                 common = alpha_scores.index.intersection(actual_fwd_rets.dropna().index)
                 if len(common) > 10:
                     rank_ic = alpha_scores.loc[common].rank().corr(actual_fwd_rets.loc[common].rank())
-                    
-                    # 2. Top vs Bottom Decile
+
+                    # Top vs Bottom Decile
                     q = 10
                     labels = pd.qcut(alpha_scores.loc[common], q, labels=False, duplicates='drop')
                     top_decile = actual_fwd_rets.loc[common][labels == labels.max()].mean()
                     bot_decile = actual_fwd_rets.loc[common][labels == labels.min()].mean()
-                    
+
+                    # Precision@N
+                    def _precision_at(n):
+                        if len(common) < n:
+                            return float("nan")
+                        pred_top = set(alpha_scores.loc[common].nlargest(n).index)
+                        act_top  = set(actual_fwd_rets.loc[common].nlargest(n).index)
+                        return len(pred_top & act_top) / n
+
+                    # Per-sector IC
+                    active_sector_mapping = {t: s for t, s in self.universe_config.tickers.items()
+                                             if t in common}
+                    sector_groups: dict = {}
+                    for t in common:
+                        sec = active_sector_mapping.get(t, "Unknown")
+                        sector_groups.setdefault(sec, []).append(t)
+                    sector_ic = {}
+                    for sec, tickers in sector_groups.items():
+                        if len(tickers) >= 5:
+                            a = alpha_scores.loc[tickers].rank()
+                            b = actual_fwd_rets.loc[tickers].rank()
+                            sector_ic[sec] = float(a.corr(b))
+
                     step_diag["alpha_quality"] = {
-                        "date": str(signal_date.date()),
-                        "rank_ic": float(rank_ic),
+                        "date":          str(signal_date.date()),
+                        "rank_ic":       float(rank_ic),
                         "top_decile_ret": float(top_decile),
                         "bot_decile_ret": float(bot_decile),
-                        "spread": float(top_decile - bot_decile)
+                        "spread":        float(top_decile - bot_decile),
+                        "precision_20":  _precision_at(20),
+                        "precision_50":  _precision_at(50),
+                        "sector_ic":     sector_ic,
                     }
             
         except Exception as e:

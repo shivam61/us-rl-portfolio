@@ -3,16 +3,10 @@
 Quantitative US equity portfolio: LightGBM alpha signal → MVO optimizer → heuristic risk engine → walk-forward backtest (2006–2026, NYSE, S&P 500 universe). RL overlay is parked.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-27T00:00:00
-**Active job:** diagnostics run (PID 2634, log `/tmp/diag_run.log`)
-- Experiment 8/8 (sp100 comparison) in progress
-- Run cmd: `python scripts/run_diagnostics.py --config config/base.yaml --universe config/universes/sp500.yaml --compare-universe config/universes/sp100.yaml`
-
-**Last completed milestone:** sp500 universe expansion
-- 503 tickers, PIT mask built, features rebuilt (517 tickers, 21 features, 5109 dates)
-- Three bugs fixed this session: simulator MtM tautology, targets KeyError on post-IPO stocks, fundamental_features datetime precision mismatch
-
-**Next step (when diagnostics complete):** Read `data/artifacts/reports/universe_expansion_results.md` and decide on alpha improvement track (feature engineering vs model tuning vs RL overlay).
+## Current State — 2026-04-27T12:39:04
+**Active job:** diagnostics PID=66584 | 1912 rebalances | Signal Date 2026-04-05
+**Log:** `/tmp/diag_run.log`
+Check progress: `grep -c "Rebalancing:" /tmp/diag_run.log && grep "Signal Date" /tmp/diag_run.log | tail -1`
 <!-- CURRENT_STATE_END -->
 
 ## Stable Baselines (sp500 universe, 2008–2026, DO NOT redefine)
@@ -41,7 +35,7 @@ Quantitative US equity portfolio: LightGBM alpha signal → MVO optimizer → he
 | `scripts/build_features.py` | Rebuild `data/features/*.parquet` |
 | `scripts/build_pit_universe.py` | Rebuild `data/artifacts/universe_mask_sp500.parquet` |
 | `scripts/run_diagnostics.py` | Full ablation + alpha quality + comparison report |
-| `data/artifacts/reports/` | Output reports (comparison MD + alpha quality JSON) |
+| `artifacts/reports/` | Output reports (comparison MD + alpha quality JSON) — git-tracked |
 | `docs/session_handoff.md` | Deep context: experiment history, design decisions, commands |
 
 ## Governance Rules

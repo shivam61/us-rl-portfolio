@@ -30,7 +30,7 @@ elif [ -n "$BACKTEST_PID" ]; then
     JOB_DETAIL="backtest PID=$BACKTEST_PID"
 else
     # Check if report was written recently (within last hour)
-    if [ -f "$REPO_ROOT/data/artifacts/reports/universe_expansion_results.md" ]; then
+    if [ -f "$REPO_ROOT/artifacts/reports/universe_expansion_results.md" ]; then
         JOB_STATUS="completed"
         JOB_DETAIL="diagnostics complete — see data/artifacts/reports/universe_expansion_results.md"
     else
@@ -51,7 +51,7 @@ Check progress: \`grep -c \"Rebalancing:\" $LOG_FILE && grep \"Signal Date\" $LO
 fi
 
 # Append last ablation result if available
-ABLATION="$REPO_ROOT/data/artifacts/diagnostics"
+ABLATION="$REPO_ROOT/artifacts/diagnostics"
 LATEST_ABLATION=$(ls -td "$ABLATION"/2* 2>/dev/null | head -1)
 if [ -n "$LATEST_ABLATION" ] && [ -f "$LATEST_ABLATION/ablation_results.csv" ]; then
     FULL_SYS=$(grep "Full_System" "$LATEST_ABLATION/ablation_results.csv" 2>/dev/null | head -1)

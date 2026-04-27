@@ -139,9 +139,9 @@ def main():
     cache_dir    = Path(base_config.data.cache_dir)
     features_dir = cache_dir / "features"
 
-    diag_dir = Path("data/artifacts/diagnostics") / datetime.now().strftime("%Y%m%d_%H%M%S")
+    diag_dir = Path("artifacts/diagnostics") / datetime.now().strftime("%Y%m%d_%H%M%S")
     diag_dir.mkdir(parents=True, exist_ok=True)
-    reports_dir = Path("data/artifacts/reports")
+    reports_dir = Path("artifacts/reports")
     reports_dir.mkdir(parents=True, exist_ok=True)
 
     # Load data once
@@ -205,22 +205,24 @@ def main():
     raw_aq     = top_n_diag["diagnostics"].get("alpha_quality", [])
     sector_mapping = dict(universe_config.tickers)
 
-    # Enrich each rebalance entry with Precision@N and sector IC
-    enriched_aq = []
-    for entry in raw_aq:
-        e = dict(entry)
-        # Precision metrics require alpha_scores and actual_rets stored in entry
-        # (we don't store them in diagnostics dict; fall back to NaN for now)
-        e["precision_20"] = float("nan")
-        e["precision_50"] = float("nan")
-        e["sector_ic"]    = {}
-        enriched_aq.append(e)
+    # Metrics are now computed in walk_forward._generate_target_weights — pass through as-is
+    enriched_aq = [dict(entry) for entry in raw_aq]
 
     # ── Summary stats ─────────────────────────────────────────────────────────
-    rics    = [e["rank_ic"] for e in enriched_aq if "rank_ic" in e]
-    spreads = [e["spread"]  for e in enriched_aq if "spread"  in e]
-    top_d   = [e["top_decile_ret"] for e in enriched_aq if "top_decile_ret" in e]
-    bot_d   = [e["bot_decile_ret"] for e in enriched_aq if "bot_decile_ret" in e]
+    rics    = [e["rank_ic"]         for e in enriched_aq if "rank_ic"         in e]
+    spreads = [e["spread"]          for e in enriched_aq if "spread"          in e]
+    top_d   = [e["top_decile_ret"]  for e in enriched_aq if "top_decile_ret"  in e]
+    bot_d   = [e["bot_decile_ret"]  for e in enriched_aq if "bot_decile_ret"  in e]
+    p20     = [v for e in enriched_aq for v in [e.get("precision_20")] if v is not None and not np.isnan(v)]
+    p50     = [v for e in enriched_aq for v in [e.get("precision_50")] if v is not None and not np.isnan(v)]
+
+    # Sector IC — average across all rebalances
+    all_sec_ics: dict = {}
+    for e in enriched_aq:
+        for sec, ic in e.get("sector_ic", {}).items():
+            if not np.isnan(ic):
+                all_sec_ics.setdefault(sec, []).append(ic)
+    mean_sector_ic = {s: float(np.mean(v)) for s, v in all_sec_ics.items()}
 
     alpha_summary = {
         "universe":         universe_config.name,
@@ -232,8 +234,9 @@ def main():
         "mean_spread":      float(np.mean(spreads)) if spreads else None,
         "mean_top_decile":  float(np.mean(top_d))   if top_d   else None,
         "mean_bot_decile":  float(np.mean(bot_d))   if bot_d   else None,
-        "precision_at_20":  None,
-        "precision_at_50":  None,
+        "precision_at_20":  float(np.mean(p20))     if p20     else None,
+        "precision_at_50":  float(np.mean(p50))     if p50     else None,
+        "sector_ic":        mean_sector_ic,
         "per_rebalance":    enriched_aq,
     }
 
@@ -250,9 +253,8 @@ def main():
     avg_exposure = exposure_df["gross_exposure"].mean() if not exposure_df.empty else 0
     avg_holdings = exposure_df["num_holdings"].mean()   if not exposure_df.empty else 0
     pct_risk     = (len(risk_log) / len(exposure_df))   if not exposure_df.empty else 0
-
-    # Concentration from last Full System rebalance weights (proxy)
-    conc = {"hhi": "n/a", "eff_n": "n/a"}
+    avg_hhi      = exposure_df["hhi"].mean()            if "hhi"       in exposure_df.columns and not exposure_df.empty else float("nan")
+    avg_eff_n    = exposure_df["effective_n"].mean()    if "effective_n" in exposure_df.columns and not exposure_df.empty else float("nan")
 
     # ── Diagnostic summary ────────────────────────────────────────────────────
     ew_cagr      = ablation_df.loc[ablation_df["Experiment"] == "Equal_Weight_Universe", "CAGR"].values[0]
@@ -281,6 +283,7 @@ def main():
     def _fmt(v, fmt):
         return format(v, fmt) if v is not None else "n/a"
 
+    sec_ic_lines = [f"  - {s}: {v:.4f}" for s, v in sorted(alpha_summary.get("sector_ic", {}).items(), key=lambda x: -x[1])]
     summary_lines += [
         "",
         "## Alpha Quality",
@@ -290,11 +293,17 @@ def main():
         f"- Mean Spread:     {_fmt(alpha_summary['mean_spread'], '.4f')}",
         f"- Mean Top Decile: {_fmt(alpha_summary['mean_top_decile'], '.4f')}",
         f"- Mean Bot Decile: {_fmt(alpha_summary['mean_bot_decile'], '.4f')}",
+        f"- Precision@20:    {_fmt(alpha_summary['precision_at_20'], '.4f')}",
+        f"- Precision@50:    {_fmt(alpha_summary['precision_at_50'], '.4f')}",
+        "- Sector IC (mean across rebalances):",
+        *sec_ic_lines,
         "",
         "## Exposure & Holdings (Full System)",
         f"- Avg Gross Exposure:  {avg_exposure:.2%}",
         f"- Avg Cash:            {1-avg_exposure:.2%}",
         f"- Avg Holdings:        {avg_holdings:.1f}",
+        f"- Avg HHI:             {avg_hhi:.4f}" if not np.isnan(avg_hhi) else "- Avg HHI:             n/a",
+        f"- Avg Effective N:     {avg_eff_n:.1f}" if not np.isnan(avg_eff_n) else "- Avg Effective N:     n/a",
         f"- % Rebalances w/ Risk Trigger: {pct_risk:.2%}",
         "",
         "## Key Findings",

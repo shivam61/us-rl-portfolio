@@ -1,0 +1,2315 @@
+{
+    "universe": "sp500_dynamic",
+    "n_tickers": 503,
+    "n_rebalances": 230,
+    "mean_rank_ic": 0.011316959571851727,
+    "median_rank_ic": 0.01602678021185466,
+    "pct_positive_ic": 0.5347826086956522,
+    "mean_spread": 0.0018990272529660686,
+    "mean_top_decile": 0.018191030625944828,
+    "mean_bot_decile": 0.01629200337297876,
+    "precision_at_20": null,
+    "precision_at_50": null,
+    "per_rebalance": [
+        {
+            "date": "2008-01-06",
+            "rank_ic": 0.16018004983522227,
+            "top_decile_ret": -0.023337358475717763,
+            "bot_decile_ret": -0.09048995207547576,
+            "spread": 0.067152593599758,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2008-02-03",
+            "rank_ic": 0.1553773264966264,
+            "top_decile_ret": -0.009096306108202465,
+            "bot_decile_ret": -0.05218448574446194,
+            "spread": 0.04308817963625947,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2008-03-02",
+            "rank_ic": 0.13892075526072234,
+            "top_decile_ret": 0.0347345929521104,
+            "bot_decile_ret": -0.0017709336175667435,
+            "spread": 0.03650552656967714,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2008-03-30",
+            "rank_ic": -0.02639715298462583,
+            "top_decile_ret": 0.0882107938109805,
+            "bot_decile_ret": 0.08854272638991101,
+            "spread": -0.00033193257893050776,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2008-04-27",
+            "rank_ic": 0.04656078337711966,
+            "top_decile_ret": 0.020092173644552513,
+            "bot_decile_ret": -0.02323303660396031,
+            "spread": 0.043325210248512824,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2008-05-25",
+            "rank_ic": -0.32509254836398377,
+            "top_decile_ret": -0.11364356010089363,
+            "bot_decile_ret": 0.02294180093268572,
+            "spread": -0.13658536103357935,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2008-06-22",
+            "rank_ic": 0.052966388450259416,
+            "top_decile_ret": -0.012050283553625696,
+            "bot_decile_ret": -0.06835989516333704,
+            "spread": 0.056309611609711346,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2008-07-20",
+            "rank_ic": 0.13876734125602905,
+            "top_decile_ret": 0.05791303453871747,
+            "bot_decile_ret": 0.028480231611601646,
+            "spread": 0.029432802927115823,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2008-08-17",
+            "rank_ic": 0.026400930283032017,
+            "top_decile_ret": -0.1367900360018507,
+            "bot_decile_ret": -0.11706582200858365,
+            "spread": -0.019724213993267042,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2008-09-14",
+            "rank_ic": -0.23731303179579047,
+            "top_decile_ret": -0.356604233061022,
+            "bot_decile_ret": -0.22656571418778743,
+            "spread": -0.1300385188732346,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2008-10-12",
+            "rank_ic": -0.03554286192538657,
+            "top_decile_ret": 0.05734478568497178,
+            "bot_decile_ret": 0.08309312933733556,
+            "spread": -0.02574834365236378,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2008-11-09",
+            "rank_ic": 0.07807866638355263,
+            "top_decile_ret": -0.055803650029564444,
+            "bot_decile_ret": -0.05478594025173375,
+            "spread": -0.0010177097778306943,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2008-12-07",
+            "rank_ic": 0.004267459705877372,
+            "top_decile_ret": 0.06861484867273762,
+            "bot_decile_ret": 3.373474803800322e-05,
+            "spread": 0.06858111392469962,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2009-01-04",
+            "rank_ic": -0.0038099831203279476,
+            "top_decile_ret": -0.10249272627888463,
+            "bot_decile_ret": -0.17012004465383987,
+            "spread": 0.06762731837495524,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2009-02-01",
+            "rank_ic": -0.02609621871116634,
+            "top_decile_ret": -0.1713076885852673,
+            "bot_decile_ret": -0.1754215015064009,
+            "spread": 0.004113812921133608,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2009-03-01",
+            "rank_ic": -0.04059467130562167,
+            "top_decile_ret": 0.10494757493920132,
+            "bot_decile_ret": 0.16888790955251043,
+            "spread": -0.06394033461330911,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2009-03-29",
+            "rank_ic": 0.27110811855509426,
+            "top_decile_ret": 0.24523922453951247,
+            "bot_decile_ret": -0.003346350558267303,
+            "spread": 0.24858557509777976,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2009-04-26",
+            "rank_ic": 0.23722873370760691,
+            "top_decile_ret": 0.1738813880453923,
+            "bot_decile_ret": 0.06559150938019155,
+            "spread": 0.10828987866520075,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2009-05-24",
+            "rank_ic": -0.16771860204266728,
+            "top_decile_ret": -0.060074312636388974,
+            "bot_decile_ret": -0.002336081988524515,
+            "spread": -0.05773823064786446,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2009-06-21",
+            "rank_ic": 0.02347319224912041,
+            "top_decile_ret": -0.02496044204403521,
+            "bot_decile_ret": -0.008926452366401065,
+            "spread": -0.016033989677634142,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2009-07-19",
+            "rank_ic": 0.1461114118767151,
+            "top_decile_ret": 0.21491175150564976,
+            "bot_decile_ret": 0.1070902020517078,
+            "spread": 0.10782154945394196,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2009-08-16",
+            "rank_ic": 0.04319006471402387,
+            "top_decile_ret": 0.11304391855866676,
+            "bot_decile_ret": 0.12165450155538995,
+            "spread": -0.008610582996723196,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2009-09-13",
+            "rank_ic": 0.04770266315481417,
+            "top_decile_ret": 0.0654693992290613,
+            "bot_decile_ret": 0.05113478872289551,
+            "spread": 0.014334610506165787,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2009-10-11",
+            "rank_ic": 0.028267507140746575,
+            "top_decile_ret": 0.004918933025945238,
+            "bot_decile_ret": 6.794083347050339e-06,
+            "spread": 0.004912138942598187,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2009-11-08",
+            "rank_ic": -0.018105457760630175,
+            "top_decile_ret": 0.057419523523860594,
+            "bot_decile_ret": 0.09474000078001811,
+            "spread": -0.03732047725615752,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2009-12-06",
+            "rank_ic": -0.12097098303994856,
+            "top_decile_ret": 0.04892037638574153,
+            "bot_decile_ret": 0.07222169528778503,
+            "spread": -0.023301318902043504,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2010-01-31",
+            "rank_ic": 0.15157673775106148,
+            "top_decile_ret": 0.07377865861068404,
+            "bot_decile_ret": 0.0938421494832715,
+            "spread": -0.020063490872587464,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2010-02-28",
+            "rank_ic": 0.0933033199283819,
+            "top_decile_ret": 0.10371873939579754,
+            "bot_decile_ret": 0.07319852169239316,
+            "spread": 0.03052021770340438,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2010-03-28",
+            "rank_ic": 0.048892830632489184,
+            "top_decile_ret": 0.02615074976888955,
+            "bot_decile_ret": 0.006463268185036116,
+            "spread": 0.019687481583853434,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2010-04-25",
+            "rank_ic": 0.08504902454700283,
+            "top_decile_ret": -0.14393627650510962,
+            "bot_decile_ret": -0.14941406730455853,
+            "spread": 0.005477790799448906,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2010-05-23",
+            "rank_ic": -0.0024683517899606456,
+            "top_decile_ret": 0.0012227976271566823,
+            "bot_decile_ret": 0.026448358558268888,
+            "spread": -0.025225560931112206,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2010-06-20",
+            "rank_ic": -0.06034675362842487,
+            "top_decile_ret": -0.027857355509730803,
+            "bot_decile_ret": -0.034924853508728905,
+            "spread": 0.007067497998998102,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2010-07-18",
+            "rank_ic": 0.08444336510634853,
+            "top_decile_ret": 0.00648489696866313,
+            "bot_decile_ret": -0.003363214362970882,
+            "spread": 0.009848111331634012,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2010-08-15",
+            "rank_ic": -0.13247748353273292,
+            "top_decile_ret": 0.05163817954289558,
+            "bot_decile_ret": 0.0779262376740546,
+            "spread": -0.026288058131159017,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2010-09-12",
+            "rank_ic": 0.015360058044621804,
+            "top_decile_ret": 0.08066881679097967,
+            "bot_decile_ret": 0.08320822052792946,
+            "spread": -0.0025394037369497885,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2010-10-10",
+            "rank_ic": -0.03771471423540416,
+            "top_decile_ret": 0.09000403817355539,
+            "bot_decile_ret": 0.1091336768808344,
+            "spread": -0.019129638707279017,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2010-11-07",
+            "rank_ic": 0.07365647735678411,
+            "top_decile_ret": 0.03040635450555332,
+            "bot_decile_ret": 0.008774092971841278,
+            "spread": 0.021632261533712043,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2010-12-05",
+            "rank_ic": 0.16987335473830453,
+            "top_decile_ret": 0.06435609571579701,
+            "bot_decile_ret": 0.031837713999213764,
+            "spread": 0.03251838171658324,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2011-01-02",
+            "rank_ic": 0.2658867490610094,
+            "top_decile_ret": 0.07973935253524447,
+            "bot_decile_ret": 0.01750263390649673,
+            "spread": 0.062236718628747745,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2011-01-30",
+            "rank_ic": -0.016585581601061473,
+            "top_decile_ret": 0.009097154017362816,
+            "bot_decile_ret": 0.03192264431050879,
+            "spread": -0.022825490293145977,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2011-02-27",
+            "rank_ic": 0.050096440687426746,
+            "top_decile_ret": 0.009388439220329524,
+            "bot_decile_ret": -0.02490587681713382,
+            "spread": 0.03429431603746334,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2011-03-27",
+            "rank_ic": 0.01852962814665318,
+            "top_decile_ret": 0.01667844813273908,
+            "bot_decile_ret": 0.04037430759892659,
+            "spread": -0.02369585946618751,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2011-05-22",
+            "rank_ic": 0.09999254139525635,
+            "top_decile_ret": -0.05494929573847711,
+            "bot_decile_ret": -0.061863901526630315,
+            "spread": 0.006914605788153207,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2011-06-19",
+            "rank_ic": -0.08025420535423203,
+            "top_decile_ret": 0.0448675042151523,
+            "bot_decile_ret": 0.07129420770688433,
+            "spread": -0.026426703491732026,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2011-07-17",
+            "rank_ic": -0.30314366166528367,
+            "top_decile_ret": -0.13121113525655106,
+            "bot_decile_ret": -0.09474465091699043,
+            "spread": -0.03646648433956064,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2011-08-14",
+            "rank_ic": 0.1723986960312346,
+            "top_decile_ret": -0.017633357410832228,
+            "bot_decile_ret": -0.026354370945609305,
+            "spread": 0.008721013534777076,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2011-09-11",
+            "rank_ic": 0.20354609929078013,
+            "top_decile_ret": 0.041005298540782185,
+            "bot_decile_ret": -0.03549641135803789,
+            "spread": 0.07650170989882007,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2011-10-09",
+            "rank_ic": 0.03164612138195805,
+            "top_decile_ret": 0.14876686859675603,
+            "bot_decile_ret": 0.10298193188508317,
+            "spread": 0.04578493671167286,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2011-11-06",
+            "rank_ic": 0.12587932566116566,
+            "top_decile_ret": -0.021956519465093676,
+            "bot_decile_ret": -0.038838321329089334,
+            "spread": 0.016881801863995658,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2011-12-04",
+            "rank_ic": -0.02345638974378993,
+            "top_decile_ret": -0.0037353640019472697,
+            "bot_decile_ret": -0.014558455070342707,
+            "spread": 0.010823091068395437,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2012-01-01",
+            "rank_ic": 0.2879445205616821,
+            "top_decile_ret": 0.1869697256566686,
+            "bot_decile_ret": 0.12306961853561894,
+            "spread": 0.06390010712104967,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2012-01-29",
+            "rank_ic": 0.012793664406695845,
+            "top_decile_ret": 0.04375826670457377,
+            "bot_decile_ret": 0.05761052344680137,
+            "spread": -0.013852256742227599,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2012-02-26",
+            "rank_ic": -0.18487343255595923,
+            "top_decile_ret": 0.002866618512457092,
+            "bot_decile_ret": 0.05425756798495725,
+            "spread": -0.051390949472500155,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2012-03-25",
+            "rank_ic": -0.07424660685530252,
+            "top_decile_ret": -0.05342795026013332,
+            "bot_decile_ret": -0.03217445403463081,
+            "spread": -0.02125349622550251,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2012-04-22",
+            "rank_ic": -0.13829825347066727,
+            "top_decile_ret": -0.07978655261596386,
+            "bot_decile_ret": -0.06965098436936157,
+            "spread": -0.010135568246602292,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2012-05-20",
+            "rank_ic": -0.0821204657411554,
+            "top_decile_ret": 0.03476131061508111,
+            "bot_decile_ret": 0.0417688197044902,
+            "spread": -0.007007509089409093,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2012-06-17",
+            "rank_ic": -0.2239371271659881,
+            "top_decile_ret": -0.010467115706468157,
+            "bot_decile_ret": 0.009719147300972404,
+            "spread": -0.02018626300744056,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2012-07-15",
+            "rank_ic": 0.20908210433634164,
+            "top_decile_ret": 0.06577238139241408,
+            "bot_decile_ret": 0.03229222947500796,
+            "spread": 0.033480151917406116,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2012-08-12",
+            "rank_ic": 0.1786835693480133,
+            "top_decile_ret": 0.03234736385301883,
+            "bot_decile_ret": 0.009783625635933164,
+            "spread": 0.02256373821708567,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2012-09-09",
+            "rank_ic": -0.14244440580992873,
+            "top_decile_ret": -0.011406911290348432,
+            "bot_decile_ret": -0.0038628184307690494,
+            "spread": -0.007544092859579382,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2012-10-07",
+            "rank_ic": 0.05417560310572431,
+            "top_decile_ret": -0.010784673406251385,
+            "bot_decile_ret": -0.013101968457728833,
+            "spread": 0.0023172950514774478,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2012-11-04",
+            "rank_ic": 0.03330553050478364,
+            "top_decile_ret": 0.03859215344061926,
+            "bot_decile_ret": 0.01977911938822876,
+            "spread": 0.0188130340523905,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2012-12-02",
+            "rank_ic": 0.16330763601884013,
+            "top_decile_ret": 0.06849185307599832,
+            "bot_decile_ret": 0.07373589817445807,
+            "spread": -0.005244045098459743,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2012-12-30",
+            "rank_ic": 0.04133153810721753,
+            "top_decile_ret": 0.07517334700802045,
+            "bot_decile_ret": 0.12771851260004632,
+            "spread": -0.05254516559202588,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2013-01-27",
+            "rank_ic": -0.23306122294047205,
+            "top_decile_ret": 0.0008808587141005311,
+            "bot_decile_ret": 0.006473055457672431,
+            "spread": -0.0055921967435719,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2013-02-24",
+            "rank_ic": 0.07492626018049747,
+            "top_decile_ret": 0.036950558261349936,
+            "bot_decile_ret": 0.02209456154558623,
+            "spread": 0.014855996715763705,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2013-03-24",
+            "rank_ic": -0.04870719022298852,
+            "top_decile_ret": 0.023331495813304164,
+            "bot_decile_ret": 0.05530025711003372,
+            "spread": -0.031968761296729556,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2013-04-21",
+            "rank_ic": 0.1792674259110738,
+            "top_decile_ret": 0.13183167082831032,
+            "bot_decile_ret": 0.1174627325070147,
+            "spread": 0.014368938321295627,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2013-05-19",
+            "rank_ic": 0.18063173974911245,
+            "top_decile_ret": 0.03062333545549757,
+            "bot_decile_ret": -0.015615425963208895,
+            "spread": 0.04623876141870646,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2013-06-16",
+            "rank_ic": -0.01042970379641218,
+            "top_decile_ret": 0.047801741599333245,
+            "bot_decile_ret": 0.02285595699896371,
+            "spread": 0.024945784600369534,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2013-07-14",
+            "rank_ic": 0.025370793360743108,
+            "top_decile_ret": 0.023070373241884296,
+            "bot_decile_ret": 0.010152245724568614,
+            "spread": 0.012918127517315681,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2013-08-11",
+            "rank_ic": 0.02625395741791236,
+            "top_decile_ret": 0.03015230347768197,
+            "bot_decile_ret": 0.03917864795524046,
+            "spread": -0.009026344477558491,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2013-09-08",
+            "rank_ic": -0.08302725392759035,
+            "top_decile_ret": 0.05882447639597339,
+            "bot_decile_ret": 0.04997822466225257,
+            "spread": 0.00884625173372082,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2013-10-06",
+            "rank_ic": -0.07262469486331609,
+            "top_decile_ret": 0.04464734094164335,
+            "bot_decile_ret": 0.08074836991033035,
+            "spread": -0.036101028968687006,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2013-11-03",
+            "rank_ic": 0.02785266457680251,
+            "top_decile_ret": 0.02729544726620354,
+            "bot_decile_ret": 0.031816629835049744,
+            "spread": -0.004521182568846205,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2013-12-01",
+            "rank_ic": -0.080190502672056,
+            "top_decile_ret": 0.04371072171161561,
+            "bot_decile_ret": 0.04835556723092807,
+            "spread": -0.004644845519312463,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2013-12-29",
+            "rank_ic": 0.04109945322890498,
+            "top_decile_ret": 0.012235136911837674,
+            "bot_decile_ret": -0.0073873153429268885,
+            "spread": 0.019622452254764562,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2014-01-26",
+            "rank_ic": 0.026321553649328686,
+            "top_decile_ret": 0.07988992258762401,
+            "bot_decile_ret": 0.04743401757921163,
+            "spread": 0.032455905008412375,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2014-02-23",
+            "rank_ic": 0.046509791196647395,
+            "top_decile_ret": -0.00012793710711702454,
+            "bot_decile_ret": -0.007437599782328461,
+            "spread": 0.007309662675211437,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2014-03-23",
+            "rank_ic": 0.21996251536610278,
+            "top_decile_ret": -0.007083805666733896,
+            "bot_decile_ret": -0.026978724345751996,
+            "spread": 0.0198949186790181,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2014-05-18",
+            "rank_ic": -0.18879967709533652,
+            "top_decile_ret": 0.048642957885584426,
+            "bot_decile_ret": 0.11696788951769577,
+            "spread": -0.06832493163211134,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2014-06-15",
+            "rank_ic": -0.07652666385253976,
+            "top_decile_ret": 0.020881609692623933,
+            "bot_decile_ret": 0.023626852586265117,
+            "spread": -0.002745242893641184,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2014-07-13",
+            "rank_ic": 0.26797710825992055,
+            "top_decile_ret": 0.04139966258665289,
+            "bot_decile_ret": -0.01814509864356153,
+            "spread": 0.05954476123021442,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2014-08-10",
+            "rank_ic": 0.02844100552833832,
+            "top_decile_ret": 0.048047951409981283,
+            "bot_decile_ret": 0.052318842708977076,
+            "spread": -0.004270891298995792,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2014-09-07",
+            "rank_ic": 0.027301782215222895,
+            "top_decile_ret": -0.012756485870523214,
+            "bot_decile_ret": -0.026465587121322676,
+            "spread": 0.013709101250799462,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2014-10-05",
+            "rank_ic": 0.012463811595289885,
+            "top_decile_ret": 0.01907556550923415,
+            "bot_decile_ret": 0.03600534638424579,
+            "spread": -0.016929780875011638,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2014-11-02",
+            "rank_ic": -0.10566298462531035,
+            "top_decile_ret": -0.020757228761742165,
+            "bot_decile_ret": 0.03319212888693184,
+            "spread": -0.05394935764867401,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2014-11-30",
+            "rank_ic": -0.12388356499755182,
+            "top_decile_ret": -0.0070651170464994415,
+            "bot_decile_ret": 0.007958530170196727,
+            "spread": -0.015023647216696169,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2014-12-28",
+            "rank_ic": -0.05338956007204427,
+            "top_decile_ret": -0.027409928745205706,
+            "bot_decile_ret": -0.02092970539654243,
+            "spread": -0.006480223348663276,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2015-01-25",
+            "rank_ic": 0.23011110135360138,
+            "top_decile_ret": 0.07352198626915123,
+            "bot_decile_ret": 0.03586143661463884,
+            "spread": 0.03766054965451238,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2015-02-22",
+            "rank_ic": -0.11132658964537015,
+            "top_decile_ret": -0.03005962215969969,
+            "bot_decile_ret": 0.01288390094870255,
+            "spread": -0.04294352310840224,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2015-03-22",
+            "rank_ic": 0.23941117025487707,
+            "top_decile_ret": 0.052129730245340074,
+            "bot_decile_ret": -0.007352233621043238,
+            "spread": 0.05948196386638331,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2015-04-19",
+            "rank_ic": -0.07235658161753888,
+            "top_decile_ret": 0.015337260066901219,
+            "bot_decile_ret": 0.03713963729492766,
+            "spread": -0.021802377228026443,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2015-05-17",
+            "rank_ic": -0.16654461057634512,
+            "top_decile_ret": -0.008183531053184784,
+            "bot_decile_ret": -0.012251852247622994,
+            "spread": 0.00406832119443821,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2015-06-14",
+            "rank_ic": -0.18309395180479288,
+            "top_decile_ret": -0.04133677529322072,
+            "bot_decile_ret": 0.0061962726619851,
+            "spread": -0.04753304795520582,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2015-07-12",
+            "rank_ic": -0.1214513405214194,
+            "top_decile_ret": -0.017747586198601,
+            "bot_decile_ret": 8.769999567633754e-05,
+            "spread": -0.017835286194277336,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2015-08-09",
+            "rank_ic": 0.04185846712115765,
+            "top_decile_ret": -0.03301787287843968,
+            "bot_decile_ret": -0.03040012266113594,
+            "spread": -0.0026177502173037395,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2015-09-06",
+            "rank_ic": 0.030495236958206908,
+            "top_decile_ret": 0.029119686319802728,
+            "bot_decile_ret": 0.047526156928650976,
+            "spread": -0.018406470608848247,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2015-10-04",
+            "rank_ic": -0.020970768020335286,
+            "top_decile_ret": 0.08872701389724287,
+            "bot_decile_ret": 0.08030685251361558,
+            "spread": 0.008420161383627292,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2015-11-01",
+            "rank_ic": 0.01062403854854764,
+            "top_decile_ret": -0.005961478277332297,
+            "bot_decile_ret": 0.03090913477920027,
+            "spread": -0.03687061305653257,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2015-11-29",
+            "rank_ic": -0.017081778858938433,
+            "top_decile_ret": -0.033563107841849675,
+            "bot_decile_ret": -0.02144994436006713,
+            "spread": -0.012113163481782544,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2016-01-24",
+            "rank_ic": -0.014907342814319558,
+            "top_decile_ret": 0.05144373401667933,
+            "bot_decile_ret": 0.052850479685006654,
+            "spread": -0.001406745668327325,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2016-02-21",
+            "rank_ic": 0.2093574094432832,
+            "top_decile_ret": 0.18584088422870776,
+            "bot_decile_ret": 0.10058831509461598,
+            "spread": 0.08525256913409178,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2016-03-20",
+            "rank_ic": 0.10557054278096906,
+            "top_decile_ret": 0.01241165528213285,
+            "bot_decile_ret": 0.019337095691954253,
+            "spread": -0.006925440409821402,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2016-04-17",
+            "rank_ic": -0.03146955020076531,
+            "top_decile_ret": -0.012082292907276979,
+            "bot_decile_ret": -0.02614377283896673,
+            "spread": 0.01406147993168975,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2016-05-15",
+            "rank_ic": 0.08790740845838817,
+            "top_decile_ret": 0.053318473834985905,
+            "bot_decile_ret": 0.013717078680917812,
+            "spread": 0.03960139515406809,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2016-06-12",
+            "rank_ic": 0.056105757690065504,
+            "top_decile_ret": 0.047170844169953874,
+            "bot_decile_ret": 0.026711251532709843,
+            "spread": 0.02045959263724403,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2016-07-10",
+            "rank_ic": 0.42195276445570534,
+            "top_decile_ret": 0.09844241260192386,
+            "bot_decile_ret": 0.013554204068395347,
+            "spread": 0.08488820853352852,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2016-08-07",
+            "rank_ic": 0.16489594629129511,
+            "top_decile_ret": 0.010513787224927722,
+            "bot_decile_ret": 0.0049952952473122795,
+            "spread": 0.005518491977615443,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2016-09-04",
+            "rank_ic": 0.03483637776914108,
+            "top_decile_ret": 0.01985633236166541,
+            "bot_decile_ret": -0.017146208601446427,
+            "spread": 0.03700254096311184,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2016-10-02",
+            "rank_ic": -0.10994902318437096,
+            "top_decile_ret": -0.021120645186170336,
+            "bot_decile_ret": -0.007039154598126416,
+            "spread": -0.014081490588043921,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2016-10-30",
+            "rank_ic": 0.017322766153530053,
+            "top_decile_ret": 0.0618829543835229,
+            "bot_decile_ret": 0.0579577097560366,
+            "spread": 0.0039252446274863,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2016-11-27",
+            "rank_ic": -0.02983003406332239,
+            "top_decile_ret": 0.02979630227270987,
+            "bot_decile_ret": 0.02165670852160265,
+            "spread": 0.008139593751107219,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2016-12-25",
+            "rank_ic": 0.21027779879376987,
+            "top_decile_ret": 0.0490939521116992,
+            "bot_decile_ret": 0.01268990493084252,
+            "spread": 0.036404047180856686,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2017-01-22",
+            "rank_ic": -0.00018426331645346184,
+            "top_decile_ret": 0.06479634570995726,
+            "bot_decile_ret": 0.05772671904481954,
+            "spread": 0.007069626665137725,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2017-02-19",
+            "rank_ic": -0.21449954020439704,
+            "top_decile_ret": -0.036142349845872786,
+            "bot_decile_ret": -0.0028698113038600997,
+            "spread": -0.03327253854201269,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2017-03-19",
+            "rank_ic": -0.045824338513914514,
+            "top_decile_ret": -0.008933133441754552,
+            "bot_decile_ret": 0.00997288030999798,
+            "spread": -0.018906013751752535,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2017-05-14",
+            "rank_ic": -0.1044467916798127,
+            "top_decile_ret": 0.026687985430254215,
+            "bot_decile_ret": 0.03409614786862603,
+            "spread": -0.007408162438371817,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2017-06-11",
+            "rank_ic": -0.2441676535724465,
+            "top_decile_ret": -0.027202708949536084,
+            "bot_decile_ret": 0.018417528876254148,
+            "spread": -0.045620237825790236,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2017-07-09",
+            "rank_ic": 0.11134626052142874,
+            "top_decile_ret": 0.032522290342334566,
+            "bot_decile_ret": 0.015590006718759594,
+            "spread": 0.016932283623574972,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2017-08-06",
+            "rank_ic": -0.03917625213553947,
+            "top_decile_ret": -0.016105155749575727,
+            "bot_decile_ret": 0.012959395637345161,
+            "spread": -0.02906455138692089,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2017-09-03",
+            "rank_ic": -0.022333026096339883,
+            "top_decile_ret": 0.06312235714137221,
+            "bot_decile_ret": 0.04533602681683622,
+            "spread": 0.01778633032453599,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2017-10-01",
+            "rank_ic": -0.24919256627510508,
+            "top_decile_ret": -0.00464639320982344,
+            "bot_decile_ret": 0.06084846120901685,
+            "spread": -0.06549485441884029,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2017-10-29",
+            "rank_ic": -0.03132488167244871,
+            "top_decile_ret": 0.01904907173536782,
+            "bot_decile_ret": 0.04249423164739942,
+            "spread": -0.0234451599120316,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2017-11-26",
+            "rank_ic": 0.1339953315731068,
+            "top_decile_ret": 0.06541918086203947,
+            "bot_decile_ret": 0.019932096738607633,
+            "spread": 0.045487084123431845,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2017-12-24",
+            "rank_ic": 0.033336599520932916,
+            "top_decile_ret": 0.07732339646523399,
+            "bot_decile_ret": 0.0639335930714156,
+            "spread": 0.013389803393818386,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2018-01-21",
+            "rank_ic": -0.0017628190957633615,
+            "top_decile_ret": -0.0529166418963198,
+            "bot_decile_ret": -0.0421407371955231,
+            "spread": -0.010775904700796694,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2018-02-18",
+            "rank_ic": -0.16941910155556872,
+            "top_decile_ret": -0.004197556272546216,
+            "bot_decile_ret": 0.04812965164781316,
+            "spread": -0.05232720792035937,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2018-03-18",
+            "rank_ic": -0.01912995308294263,
+            "top_decile_ret": -0.02161098942322736,
+            "bot_decile_ret": -0.020714059384244532,
+            "spread": -0.000896930038982828,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2018-04-15",
+            "rank_ic": -0.01325610040280968,
+            "top_decile_ret": 0.04171848391004189,
+            "bot_decile_ret": 0.03186493505634422,
+            "spread": 0.009853548853697672,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2018-05-13",
+            "rank_ic": 0.01778214581051301,
+            "top_decile_ret": 0.045680251212087075,
+            "bot_decile_ret": 0.020570158472486333,
+            "spread": 0.025110092739600742,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2018-06-10",
+            "rank_ic": 0.0906970163116039,
+            "top_decile_ret": 0.03463385863243615,
+            "bot_decile_ret": 0.0017268217559320439,
+            "spread": 0.032907036876504106,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2018-07-08",
+            "rank_ic": 0.010447875452657608,
+            "top_decile_ret": 0.01852796213034653,
+            "bot_decile_ret": 0.024034827420113355,
+            "spread": -0.005506865289766825,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2018-08-05",
+            "rank_ic": -0.1309574683539397,
+            "top_decile_ret": 0.009362570026510472,
+            "bot_decile_ret": 0.018658127131802406,
+            "spread": -0.009295557105291934,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2018-09-02",
+            "rank_ic": -0.13601670618934206,
+            "top_decile_ret": -0.042055817782039116,
+            "bot_decile_ret": 0.004673232763870686,
+            "spread": -0.046729050545909805,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2018-09-30",
+            "rank_ic": 0.11523134804514754,
+            "top_decile_ret": -0.08610130880072035,
+            "bot_decile_ret": -0.14231605735064012,
+            "spread": 0.05621474854991977,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2018-10-28",
+            "rank_ic": 0.10410830999066294,
+            "top_decile_ret": 0.03548360782701374,
+            "bot_decile_ret": 0.019712914339559143,
+            "spread": 0.0157706934874546,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2018-11-25",
+            "rank_ic": -0.14295509792907238,
+            "top_decile_ret": -0.07483284909826236,
+            "bot_decile_ret": -0.07187692433690249,
+            "spread": -0.0029559247613598766,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2018-12-23",
+            "rank_ic": -0.04113119684158632,
+            "top_decile_ret": 0.12122205482691362,
+            "bot_decile_ret": 0.16201815030114483,
+            "spread": -0.040796095474231214,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2019-01-20",
+            "rank_ic": 0.1422674237573951,
+            "top_decile_ret": 0.11747779413011261,
+            "bot_decile_ret": 0.05143569446093277,
+            "spread": 0.06604209966917984,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2019-02-17",
+            "rank_ic": -0.11013905575205973,
+            "top_decile_ret": 0.021992840396865193,
+            "bot_decile_ret": 0.031809687104809234,
+            "spread": -0.00981684670794404,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2019-03-17",
+            "rank_ic": 0.12247504227642778,
+            "top_decile_ret": 0.04179086329278773,
+            "bot_decile_ret": 0.028443527495994995,
+            "spread": 0.013347335796792734,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2019-04-14",
+            "rank_ic": -0.0848020946360334,
+            "top_decile_ret": -0.05084058847247745,
+            "bot_decile_ret": -0.03273050072414181,
+            "spread": -0.01811008774833564,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2019-05-12",
+            "rank_ic": -0.21142446033468348,
+            "top_decile_ret": -0.03563439984135475,
+            "bot_decile_ret": 0.002640326952348154,
+            "spread": -0.038274726793702904,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2019-06-09",
+            "rank_ic": 0.16785170081848264,
+            "top_decile_ret": 0.051784184926369825,
+            "bot_decile_ret": 0.02724024035379431,
+            "spread": 0.024543944572575516,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2019-07-07",
+            "rank_ic": 0.059204801804705116,
+            "top_decile_ret": -0.04822381622093909,
+            "bot_decile_ret": -0.06778824661570051,
+            "spread": 0.019564430394761426,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2019-08-04",
+            "rank_ic": -0.3139854375129556,
+            "top_decile_ret": -0.08119359333111252,
+            "bot_decile_ret": 0.018181566954193016,
+            "spread": -0.09937516028530553,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2019-09-01",
+            "rank_ic": 0.2921998615898468,
+            "top_decile_ret": 0.03275041176214372,
+            "bot_decile_ret": -0.016100313279118095,
+            "spread": 0.04885072504126182,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2019-09-29",
+            "rank_ic": 0.08655602666077025,
+            "top_decile_ret": 0.018078366956444797,
+            "bot_decile_ret": 0.03913745693657149,
+            "spread": -0.02105908998012669,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2019-10-27",
+            "rank_ic": 0.2679215626582132,
+            "top_decile_ret": 0.09043373821074158,
+            "bot_decile_ret": 0.019451153948729257,
+            "spread": 0.07098258426201232,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2019-11-24",
+            "rank_ic": -0.02849315049687898,
+            "top_decile_ret": 0.062009620290212286,
+            "bot_decile_ret": 0.05292443628464308,
+            "spread": 0.009085184005569208,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2019-12-22",
+            "rank_ic": 0.10000602000145482,
+            "top_decile_ret": 0.050164693615407666,
+            "bot_decile_ret": 0.025378370460175402,
+            "spread": 0.024786323155232264,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2020-01-19",
+            "rank_ic": -0.058073284652961125,
+            "top_decile_ret": 0.04536222247238708,
+            "bot_decile_ret": 0.03499691499312988,
+            "spread": 0.0103653074792572,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2020-02-16",
+            "rank_ic": 0.07655139228094386,
+            "top_decile_ret": -0.31851215041643366,
+            "bot_decile_ret": -0.3342369610217467,
+            "spread": 0.015724810605313055,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2020-03-15",
+            "rank_ic": -0.009333199524021162,
+            "top_decile_ret": 0.08440887137120621,
+            "bot_decile_ret": 0.06749027869325289,
+            "spread": 0.01691859267795333,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2020-05-10",
+            "rank_ic": 0.04212627843003843,
+            "top_decile_ret": 0.1297974850223874,
+            "bot_decile_ret": 0.21105595052193155,
+            "spread": -0.08125846549954416,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2020-06-07",
+            "rank_ic": -0.47163914006587093,
+            "top_decile_ret": -0.11296612462933658,
+            "bot_decile_ret": 0.03778202602042825,
+            "spread": -0.15074815064976482,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2020-08-02",
+            "rank_ic": -0.010323544689318174,
+            "top_decile_ret": 0.07624425427074344,
+            "bot_decile_ret": 0.07892060830391305,
+            "spread": -0.0026763540331696117,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2020-08-30",
+            "rank_ic": -0.04896612681872376,
+            "top_decile_ret": -0.017401572106419485,
+            "bot_decile_ret": -0.04186586634660401,
+            "spread": 0.024464294240184526,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2020-09-27",
+            "rank_ic": 0.15468797685515956,
+            "top_decile_ret": 0.028641104433039515,
+            "bot_decile_ret": 0.024726238980938287,
+            "spread": 0.003914865452101228,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2020-10-25",
+            "rank_ic": 0.06257507397533178,
+            "top_decile_ret": 0.1512469706323631,
+            "bot_decile_ret": 0.07570482812341772,
+            "spread": 0.07554214250894536,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2020-11-22",
+            "rank_ic": 0.12097483129746961,
+            "top_decile_ret": 0.06855458638035984,
+            "bot_decile_ret": 0.05244547025432647,
+            "spread": 0.01610911612603337,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2020-12-20",
+            "rank_ic": 0.07897664526379657,
+            "top_decile_ret": 0.05403311925151443,
+            "bot_decile_ret": 0.06290317613162176,
+            "spread": -0.008870056880107328,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2021-01-17",
+            "rank_ic": 0.016693502379087514,
+            "top_decile_ret": 0.08086311534055288,
+            "bot_decile_ret": 0.06294975783401302,
+            "spread": 0.017913357506539856,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2021-02-14",
+            "rank_ic": 0.12140800917429037,
+            "top_decile_ret": 0.07517593662027343,
+            "bot_decile_ret": 0.0201839699862384,
+            "spread": 0.05499196663403503,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2021-03-14",
+            "rank_ic": -0.027973586345728448,
+            "top_decile_ret": -0.00275325513266623,
+            "bot_decile_ret": 0.0381700018189858,
+            "spread": -0.040923256951652026,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2021-04-11",
+            "rank_ic": 0.10373080033507928,
+            "top_decile_ret": -0.0014721843379062126,
+            "bot_decile_ret": -0.0029766621637681762,
+            "spread": 0.0015044778258619636,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2021-05-09",
+            "rank_ic": 0.06504509418322818,
+            "top_decile_ret": 0.01961928140802456,
+            "bot_decile_ret": 0.01141991942551896,
+            "spread": 0.008199361982505602,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2021-06-06",
+            "rank_ic": -0.1148635873004057,
+            "top_decile_ret": 0.020020968394308745,
+            "bot_decile_ret": 0.03303949569028065,
+            "spread": -0.013018527295971902,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2021-07-04",
+            "rank_ic": -0.29869037998842524,
+            "top_decile_ret": -0.02598124532134754,
+            "bot_decile_ret": 0.04034362382974947,
+            "spread": -0.066324869151097,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2021-08-01",
+            "rank_ic": -0.03297751685397446,
+            "top_decile_ret": 0.026967182600791107,
+            "bot_decile_ret": 0.03960451737191922,
+            "spread": -0.012637334771128116,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2021-08-29",
+            "rank_ic": 0.04549940006465848,
+            "top_decile_ret": -0.008250168121870969,
+            "bot_decile_ret": -0.026643485935644418,
+            "spread": 0.01839331781377345,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2021-09-26",
+            "rank_ic": -0.0950931147384477,
+            "top_decile_ret": 0.040427968755414635,
+            "bot_decile_ret": 0.07271470779222906,
+            "spread": -0.03228673903681443,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2021-10-24",
+            "rank_ic": 0.06123144646989107,
+            "top_decile_ret": 0.012873016784996106,
+            "bot_decile_ret": 0.007719101069953049,
+            "spread": 0.005153915715043056,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2021-11-21",
+            "rank_ic": 0.03562825373116376,
+            "top_decile_ret": -0.02937124057970908,
+            "bot_decile_ret": -0.021456656144377736,
+            "spread": -0.007914584435331343,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2021-12-19",
+            "rank_ic": 0.0599075022820322,
+            "top_decile_ret": -0.028646585830512394,
+            "bot_decile_ret": -0.009027689436420818,
+            "spread": -0.019618896394091576,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2022-01-16",
+            "rank_ic": -0.13214824278843482,
+            "top_decile_ret": -0.03952754400828242,
+            "bot_decile_ret": -0.011392400104319453,
+            "spread": -0.02813514390396297,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2022-02-13",
+            "rank_ic": 0.08932893353510038,
+            "top_decile_ret": -0.03339051949026609,
+            "bot_decile_ret": -0.05309346186101056,
+            "spread": 0.01970294237074447,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2022-03-13",
+            "rank_ic": -0.16278760893526284,
+            "top_decile_ret": 0.04686364521912764,
+            "bot_decile_ret": 0.07542875308644933,
+            "spread": -0.028565107867321693,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2022-04-10",
+            "rank_ic": 0.05609551512535379,
+            "top_decile_ret": -0.09977564702507173,
+            "bot_decile_ret": -0.10948486937404249,
+            "spread": 0.009709222348970759,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2022-05-08",
+            "rank_ic": -0.03112676299626114,
+            "top_decile_ret": 0.01348055423738734,
+            "bot_decile_ret": 0.03187004409249122,
+            "spread": -0.018389489855103885,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2022-06-05",
+            "rank_ic": 0.007242938174637156,
+            "top_decile_ret": -0.08019241073924678,
+            "bot_decile_ret": -0.11215672103570613,
+            "spread": 0.03196431029645935,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2022-07-03",
+            "rank_ic": 0.16801312058131979,
+            "top_decile_ret": 0.09309850168336563,
+            "bot_decile_ret": 0.08083850662489327,
+            "spread": 0.012259995058472362,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2022-07-31",
+            "rank_ic": 0.18438329831306366,
+            "top_decile_ret": 0.007952696108955177,
+            "bot_decile_ret": -0.025325798293995595,
+            "spread": 0.033278494402950776,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2022-08-28",
+            "rank_ic": -0.023117767665733997,
+            "top_decile_ret": -0.11696783419098991,
+            "bot_decile_ret": -0.11810465140730426,
+            "spread": 0.0011368172163143536,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2022-09-25",
+            "rank_ic": 0.03169620699521278,
+            "top_decile_ret": 0.0768702513688186,
+            "bot_decile_ret": 0.024274567674732878,
+            "spread": 0.052595683694085724,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2022-10-23",
+            "rank_ic": -0.09368049046770181,
+            "top_decile_ret": 0.06355743886544499,
+            "bot_decile_ret": 0.0812148045847619,
+            "spread": -0.017657365719316906,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2022-11-20",
+            "rank_ic": -0.13630881698591696,
+            "top_decile_ret": -0.06658038918678982,
+            "bot_decile_ret": -0.01619758470255709,
+            "spread": -0.050382804484232734,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2022-12-18",
+            "rank_ic": 0.049264089988090246,
+            "top_decile_ret": 0.0436327605514033,
+            "bot_decile_ret": 0.0613116030692581,
+            "spread": -0.0176788425178548,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2023-01-15",
+            "rank_ic": 0.014178033022254127,
+            "top_decile_ret": 0.06330677063053083,
+            "bot_decile_ret": 0.06611079413852208,
+            "spread": -0.002804023507991249,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2023-02-12",
+            "rank_ic": -0.12874995946467613,
+            "top_decile_ret": -0.09013171727918703,
+            "bot_decile_ret": -0.03646127436591609,
+            "spread": -0.053670442913270944,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2023-03-12",
+            "rank_ic": 0.1311975946864385,
+            "top_decile_ret": 0.06420306656745985,
+            "bot_decile_ret": 0.0410453713662867,
+            "spread": 0.023157695201173147,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2023-05-07",
+            "rank_ic": 0.08508836489548804,
+            "top_decile_ret": 0.0716782371722328,
+            "bot_decile_ret": 0.018300652050808892,
+            "spread": 0.05337758512142391,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2023-06-04",
+            "rank_ic": -0.03588759151422416,
+            "top_decile_ret": 0.04814521073313996,
+            "bot_decile_ret": 0.051301983191789476,
+            "spread": -0.0031567724586495163,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2023-07-02",
+            "rank_ic": -0.02299576947904828,
+            "top_decile_ret": 0.0600019642362984,
+            "bot_decile_ret": 0.07702294946467772,
+            "spread": -0.017020985228379318,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2023-07-30",
+            "rank_ic": 0.0905832865342109,
+            "top_decile_ret": -0.03650336808566675,
+            "bot_decile_ret": -0.06371628526444391,
+            "spread": 0.027212917178777156,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2023-08-27",
+            "rank_ic": -0.08656804927655053,
+            "top_decile_ret": -0.04961489315111322,
+            "bot_decile_ret": -0.024839466760465192,
+            "spread": -0.024775426390648028,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2023-09-24",
+            "rank_ic": -0.09356522087279032,
+            "top_decile_ret": -0.03359917767148919,
+            "bot_decile_ret": -0.03008223961018363,
+            "spread": -0.003516938061305562,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2023-10-22",
+            "rank_ic": 0.16244030344775134,
+            "top_decile_ret": 0.11573781761913715,
+            "bot_decile_ret": 0.06465938888047462,
+            "spread": 0.05107842873866253,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2023-11-19",
+            "rank_ic": -0.030820881928005365,
+            "top_decile_ret": 0.09878993086064858,
+            "bot_decile_ret": 0.12184778510862951,
+            "spread": -0.02305785424798093,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2023-12-17",
+            "rank_ic": 0.01988651107533101,
+            "top_decile_ret": -0.0024339857165816946,
+            "bot_decile_ret": -0.030172580577569705,
+            "spread": 0.02773859486098801,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2024-01-14",
+            "rank_ic": -0.1454655027561706,
+            "top_decile_ret": -0.011652450915359054,
+            "bot_decile_ret": 0.04138898056203258,
+            "spread": -0.05304143147739163,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2024-02-11",
+            "rank_ic": 0.07754053766522984,
+            "top_decile_ret": 0.033879318853185396,
+            "bot_decile_ret": 0.05704327445082294,
+            "spread": -0.023163955597637544,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2024-03-10",
+            "rank_ic": 0.07620424273911836,
+            "top_decile_ret": 0.025966904530562416,
+            "bot_decile_ret": 0.004488900888268289,
+            "spread": 0.021478003642294127,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2024-04-07",
+            "rank_ic": 0.10036605875099074,
+            "top_decile_ret": 0.007669443007231178,
+            "bot_decile_ret": 0.001566086383314623,
+            "spread": 0.006103356623916555,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2024-05-05",
+            "rank_ic": -0.0067249446804508424,
+            "top_decile_ret": 0.017243011234898555,
+            "bot_decile_ret": 0.017540281993279318,
+            "spread": -0.0002972707583807632,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2024-06-02",
+            "rank_ic": -0.02437630627778019,
+            "top_decile_ret": -0.010103062762981748,
+            "bot_decile_ret": 0.010344503524597079,
+            "spread": -0.02044756628757883,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2024-06-30",
+            "rank_ic": 0.1288077513805436,
+            "top_decile_ret": 0.058521575152191356,
+            "bot_decile_ret": 0.02106808382687581,
+            "spread": 0.037453491325315544,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2024-07-28",
+            "rank_ic": 0.059307530098797114,
+            "top_decile_ret": 0.0409719127388087,
+            "bot_decile_ret": 0.01644406261400084,
+            "spread": 0.024527850124807862,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2024-08-25",
+            "rank_ic": -0.04583436499141095,
+            "top_decile_ret": 0.015698998540146912,
+            "bot_decile_ret": 0.025974926655022545,
+            "spread": -0.010275928114875633,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2024-09-22",
+            "rank_ic": -0.15461250676062446,
+            "top_decile_ret": 0.009877471249140114,
+            "bot_decile_ret": 0.07760071674203321,
+            "spread": -0.0677232454928931,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2024-10-20",
+            "rank_ic": -0.06413093098447087,
+            "top_decile_ret": -0.018889281466728365,
+            "bot_decile_ret": 0.006396883654252435,
+            "spread": -0.0252861651209808,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2024-11-17",
+            "rank_ic": -0.009772361242709183,
+            "top_decile_ret": 0.03860807011938029,
+            "bot_decile_ret": 0.02080327853954128,
+            "spread": 0.01780479157983901,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2024-12-15",
+            "rank_ic": -0.026913016680891782,
+            "top_decile_ret": -0.01138461814481028,
+            "bot_decile_ret": -0.008268789194758592,
+            "spread": -0.0031158289500516877,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2025-01-12",
+            "rank_ic": -0.05286115804146379,
+            "top_decile_ret": 0.03423182498445349,
+            "bot_decile_ret": 0.05941395162874359,
+            "spread": -0.0251821266442901,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2025-02-09",
+            "rank_ic": 0.22082495258371762,
+            "top_decile_ret": -0.02122919757859265,
+            "bot_decile_ret": -0.06923347026108545,
+            "spread": 0.0480042726824928,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2025-03-09",
+            "rank_ic": -0.14707300378306742,
+            "top_decile_ret": -0.12713352841110778,
+            "bot_decile_ret": -0.08734496212003118,
+            "spread": -0.039788566291076605,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2025-04-06",
+            "rank_ic": 0.12402332475401366,
+            "top_decile_ret": 0.12481087216583388,
+            "bot_decile_ret": 0.1268396286800487,
+            "spread": -0.002028756514214816,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2025-05-04",
+            "rank_ic": 0.12964681826309107,
+            "top_decile_ret": 0.07204394304726953,
+            "bot_decile_ret": 0.03150541918368875,
+            "spread": 0.04053852386358078,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2025-06-01",
+            "rank_ic": 0.3914336834674229,
+            "top_decile_ret": 0.10328056291094659,
+            "bot_decile_ret": 0.030420640392934538,
+            "spread": 0.07285992251801204,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2025-06-29",
+            "rank_ic": 0.2196415443506477,
+            "top_decile_ret": 0.0613647359265958,
+            "bot_decile_ret": 0.00353002881995778,
+            "spread": 0.05783470710663802,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2025-07-27",
+            "rank_ic": -0.002849177483851849,
+            "top_decile_ret": -0.012381767740983015,
+            "bot_decile_ret": 0.004545149438045494,
+            "spread": -0.016926917179028507,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2025-08-24",
+            "rank_ic": -0.06851126994469128,
+            "top_decile_ret": 0.0688541876322796,
+            "bot_decile_ret": 0.03376342996843612,
+            "spread": 0.03509075766384348,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2025-09-21",
+            "rank_ic": -0.0014207041087791587,
+            "top_decile_ret": 0.004347956174955296,
+            "bot_decile_ret": 0.017850612864595123,
+            "spread": -0.013502656689639826,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2025-10-19",
+            "rank_ic": -0.1518676512452446,
+            "top_decile_ret": -0.03922019561154378,
+            "bot_decile_ret": 0.006530872470954204,
+            "spread": -0.045751068082497987,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2025-11-16",
+            "rank_ic": 0.0382715007586934,
+            "top_decile_ret": 0.05597588683793431,
+            "bot_decile_ret": 0.03787332274553934,
+            "spread": 0.018102564092394968,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2025-12-14",
+            "rank_ic": -0.05681414406630685,
+            "top_decile_ret": 0.03472370398445977,
+            "bot_decile_ret": 0.06615328403145482,
+            "spread": -0.031429580046995045,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2026-01-11",
+            "rank_ic": -0.06477756007734767,
+            "top_decile_ret": 0.009067999507779291,
+            "bot_decile_ret": 0.06777569148338171,
+            "spread": -0.05870769197560242,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2026-02-08",
+            "rank_ic": 0.03501591307871218,
+            "top_decile_ret": 0.03037112779921602,
+            "bot_decile_ret": -0.0023837105524260305,
+            "spread": 0.03275483835164205,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        },
+        {
+            "date": "2026-03-08",
+            "rank_ic": -0.31889712645861296,
+            "top_decile_ret": -0.06913725608282893,
+            "bot_decile_ret": 0.05121710391618567,
+            "spread": -0.1203543599990146,
+            "precision_20": NaN,
+            "precision_50": NaN,
+            "sector_ic": {}
+        }
+    ]
+}

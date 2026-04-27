@@ -1,0 +1,14 @@
+{
+    "universe": "sp500_dynamic",
+    "n_tickers": 503,
+    "n_rebalances": 0,
+    "mean_rank_ic": null,
+    "median_rank_ic": null,
+    "pct_positive_ic": null,
+    "mean_spread": null,
+    "mean_top_decile": null,
+    "mean_bot_decile": null,
+    "precision_at_20": null,
+    "precision_at_50": null,
+    "per_rebalance": []
+}
