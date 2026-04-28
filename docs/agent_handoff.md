@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-28T13:26:25+00:00
+Last updated: 2026-04-28T14:54:09+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -207,3 +207,18 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   current crash-onset formulation is too broad and too late; do not adopt as production default.
 - Recommended next step:
   design a narrower crash detector around actual rebalance timing and early drawdown inflection, then re-test before adding any production risk overlay.
+- Intraperiod risk-control overlay test completed without changing alpha rankings, optimizer, regime switching, or RL.
+- Artifact saved:
+  `artifacts/reports/intraperiod_risk_control.md`.
+- Tested variants:
+  `baseline_v1`, `intraperiod_overlay`, `drawdown_brake`, `intraperiod_overlay_plus_drawdown_brake`, plus diagnostic `entry_smoothing` and `all_controls`.
+- Result:
+  `intraperiod_overlay` passed the gate with `CAGR=23.53%`, `Sharpe=1.334`, `MaxDD=-30.42%`, `2020 DD=-22.27%`, `2022 DD=-30.42%`.
+- `intraperiod_overlay_plus_drawdown_brake` also passed with `CAGR=16.86%`, `Sharpe=1.168`, `MaxDD=-23.27%`.
+- `all_controls` had the best drawdown at `MaxDD=-22.87%` but CAGR was close to the floor at `16.19%`.
+- Drawdown brake alone improved MaxDD to `-25.49%` but failed the CAGR gate at `12.81%`; do not use it alone.
+- Entry smoothing alone helped only modestly (`MaxDD=-34.35%`) and did not pass the MaxDD gate.
+- Important caveat:
+  this is a daily return overlay on realized baseline returns; before production adoption, implement the overlay in the execution/backtest path with explicit cash or SPY hedge mechanics and transaction-cost/slippage assumptions.
+- Recommended next step:
+  productionize the sparse intraperiod shock overlay first, then separately test whether the drawdown brake is worth keeping once execution and costs are modeled.

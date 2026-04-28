@@ -5,12 +5,12 @@ All repo rules, workflow rules, save rules, file lookup order, roadmap-first beh
 Do not treat this file as an independent source of repo instructions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-28T13:26:25+00:00
+## Current State — 2026-04-28T14:54:09+00:00
 - Branch: `main`
-- Working tree: 28 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M config/base.yaml`, ` M docs/agent_handoff.md`, ` M scripts/run_backtest.py`
-- Latest commit: `15768677 2026-04-28 feat: add regime-switch factor research`
-- Active jobs: backtest: pid=31122 elapsed=420s
+- Working tree: 3 changed path(s)
+- Dirty paths sample: `M docs/agent_handoff.md`, `?? artifacts/reports/intraperiod_risk_control.md`, `?? scripts/run_intraperiod_risk_control.py`
+- Latest commit: `c168bc42 2026-04-28 freeze volatility baseline and add crash diagnostics`
+- Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
 <!-- CURRENT_STATE_END -->
