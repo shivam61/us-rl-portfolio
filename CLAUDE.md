@@ -3,15 +3,17 @@
 Quantitative US equity portfolio: LightGBM alpha signal → MVO optimizer → heuristic risk engine → walk-forward backtest (2006–2026, NYSE, S&P 500 universe). RL overlay is parked.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-28T08:00:00
-**Phase A complete (sp100 research).**  
-Key finding: cross-sectional reversal + risk premium dominate in sp100 2016-2026.  
-Best factor: `volatility_only` (risk-premium) IC=0.050, `score_50_50` (combo) IC=0.041.  
-IC Sharpe gate (≥0.30) not met — structural at 44 tickers.  
-Next: validate on sp500 (503 tickers) or add fundamental momentum signal.
+## Current State — 2026-04-28T07:39:50
+**Active job:** diagnostics complete — see data/artifacts/reports/universe_expansion_results.md
 <!-- CURRENT_STATE_END -->
 
-## Stable Baselines (sp500 universe, 2008–2026, DO NOT redefine)
+## Baseline Convention
+
+- **sp100 (44 tickers)** = research baseline / dev universe / fast iteration track
+- **sp500 (503 tickers)** = validation baseline / system benchmark / locked comparison track
+- When a doc says just "baseline", verify which track it means before comparing results
+
+## Stable Baselines (sp500 validation baseline, 2008–2026, DO NOT redefine)
 | Experiment | CAGR | Sharpe | MaxDD |
 |---|---|---|---|
 | Equal Weight Universe | 12.9% | 0.62 | -55% |
@@ -20,7 +22,7 @@ Next: validate on sp500 (503 tickers) or add fundamental momentum signal.
 | Full System (opt + risk) | 8.7% | 0.59 | -34% |
 | Optimizer sensitivity to=0.5 | 11.9% | 0.68 | -40% |
 
-> Previous sp100 (44-ticker) baselines are in `data/artifacts/diagnostics/20260426_*/ablation_results.csv`. Do not compare cross-universe without the comparison report.
+> Previous sp100 (44-ticker) research baselines are in `data/artifacts/diagnostics/20260426_*/ablation_results.csv`. Do not compare cross-universe without the comparison report.
 
 ## Documentation
 
@@ -52,7 +54,7 @@ Next: validate on sp500 (503 tickers) or add fundamental momentum signal.
 - **Never commit** `data/`, `.venv/`, `__pycache__/`
 - **Leakage rule:** all features must be `.shift(1)` before use; targets use forward horizon only
 - **PIT rule:** any universe change requires rebuilding `universe_mask_*.parquet` first
-- **Research on sp100, validate on sp500**
+- **Research baseline on sp100, validation baseline on sp500**
 - Run `.venv/bin/python` — system Python has no packages
 
 ## Context Update

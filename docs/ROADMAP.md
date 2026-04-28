@@ -14,9 +14,15 @@
 | Best IC so far | 0.0379 mean Rank IC (momentum family) — gate needs 0.040 |
 | Best IC Sharpe | 0.186 (momentum) — gate needs 0.30 |
 | Blocking gate | IC Sharpe ≥ 0.30 before Phase B — try momentum+vol combo |
-| sp500 baselines | Locked — see table below, do not redefine |
+| sp500 baselines | Locked validation/system baseline — see table below, do not redefine |
 
-### Stable Baselines (sp500, 2008–2026)
+## Baseline Convention
+
+- **sp100 (44 tickers)** = research baseline / dev universe / fast iteration track
+- **sp500 (503 tickers)** = validation baseline / system benchmark / locked comparison track
+- If a note says only "baseline", resolve whether it refers to research (`sp100`) or validation (`sp500`) before comparing metrics
+
+### Stable Baselines (sp500 validation baseline, 2008–2026)
 
 | Experiment | CAGR | Sharpe | MaxDD |
 |---|---|---|---|
@@ -68,7 +74,7 @@
 
 ## Governance
 
-- **Research on sp100, validate on sp500** — sp100 (44 tickers) is 10× faster
+- **Research baseline on sp100, validate on sp500** — sp100 (44 tickers) is 10× faster
 - **Leakage rule:** all features `.shift(1)`; targets use forward horizon only
 - **PIT rule:** universe change → rebuild `universe_mask_*.parquet` first
 - **Baseline rule:** never redefine sp500 baselines without a full diagnostics run

@@ -1,6 +1,14 @@
 # Session Handoff — Deep Context
 
-Last updated: 2026-04-28T08:00:00
+Last updated: 2026-04-28T07:39:50
+
+---
+
+## Baseline Convention
+
+- **sp100 (44 tickers)** = research baseline / dev universe / fast iteration track
+- **sp500 (503 tickers)** = validation baseline / system benchmark / locked comparison track
+- Historical notes may say "baseline" loosely; check the universe before comparing any metric
 
 ---
 
@@ -176,13 +184,13 @@ print(m.loc['2020-01-31'][m.loc['2020-01-31']].index.tolist()[:10])
 
 ### Session 1 (prior)
 - Built initial pipeline: data ingestion → features → LightGBM ranker → MVO optimizer → risk engine → simulator
-- **sp100 universe (44 tickers), 2006–2026**
+- **sp100 universe (44 tickers), 2006–2026** — original research baseline
 - Initial ablation showed Sharpe 1.86 — **INVALID** (simulator MtM tautology bug)
 
 ### Session 2 (prior)
 - Fixed 5 bugs (simulator cash tracking, walk-forward KeyError, datetime mismatch, NYSE calendar, typos)
 - Expanded universe to sp500 (503 tickers), rebuilt PIT mask and features
-- sp500 ablation: EW=12.9%/0.62, Full=8.7%/0.59 (established stable baselines)
+- sp500 ablation: EW=12.9%/0.62, Full=8.7%/0.59 (established locked validation baselines)
 - IC on sp100 = 0.033, below 0.04 target → Phase A feature engineering
 
 ### Session 3 (prior)
