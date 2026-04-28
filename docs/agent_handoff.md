@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-28T14:54:09+00:00
+Last updated: 2026-04-28T15:28:52+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -222,3 +222,22 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   this is a daily return overlay on realized baseline returns; before production adoption, implement the overlay in the execution/backtest path with explicit cash or SPY hedge mechanics and transaction-cost/slippage assumptions.
 - Recommended next step:
   productionize the sparse intraperiod shock overlay first, then separately test whether the drawdown brake is worth keeping once execution and costs are modeled.
+- Production intraperiod overlay was implemented in the real walk-forward engine as an opt-in config block:
+  `intraperiod_risk.enabled`.
+- Named production overlay config:
+  `config/baseline_v1_intraperiod_overlay_sp100.yaml`.
+- Production comparison artifacts saved:
+  `artifacts/reports/production_intraperiod_overlay.md`,
+  `artifacts/reports/production_intraperiod_overlay_summary.csv`,
+  `artifacts/reports/production_intraperiod_overlay_events.csv`.
+- Implementation details:
+  SPY/VIX shock is measured at prior close and executed at the next trading day's open; active overlay scales target stock weights to `60%` and leaves the residual in cash.
+- Production result:
+  baseline `CAGR=17.30%`, `Sharpe=0.917`, `MaxDD=-37.06%`;
+  overlay `CAGR=16.25%`, `Sharpe=0.894`, `MaxDD=-34.61%`.
+- Production overlay did not pass the full gate:
+  MaxDD remained worse than `-32%` and Sharpe fell below `0.9`, though 2020 drawdown improved from `-37.06%` to `-33.18%`.
+- Main failure mode:
+  one-day enter/exit behavior increased churn; trade count rose from `5769` to `8237`, and total execution costs rose from about `$29.5k` to `$37.5k`.
+- Recommended next step:
+  do not adopt current production overlay as default; test hysteresis/min-hold exits or a SPY hedge sleeve that avoids repeatedly scaling the full stock book.

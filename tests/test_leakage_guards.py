@@ -83,3 +83,49 @@ def test_simulator_execution_lag():
     # Verify execution price is open (105) not close
     exec_price = trades.iloc[0]["price"]
     assert exec_price == 105.0
+
+
+def test_intraperiod_overlay_uses_prior_close_signal():
+    from src.backtest.walk_forward import WalkForwardEngine
+
+    config, universe = load_config("config/base.yaml", "config/universes/sp100.yaml")
+    config.intraperiod_risk.enabled = True
+    config.intraperiod_risk.benchmark_return_window = 5
+    config.intraperiod_risk.benchmark_return_trigger = -0.06
+    config.intraperiod_risk.vix_change_window = 3
+    config.intraperiod_risk.vix_change_trigger = 0.40
+    config.intraperiod_risk.exposure_multiplier = 0.60
+
+    dates = pd.bdate_range("2020-01-01", periods=8)
+    adj_close = pd.DataFrame(
+        {
+            "SPY": [100.0, 100.0, 100.0, 100.0, 100.0, 93.0, 93.0, 93.0],
+            "^VIX": [20.0] * 8,
+            "AAPL": [50.0] * 8,
+        },
+        index=dates,
+    )
+    prices_dict = {
+        "open": adj_close.copy(),
+        "close": adj_close.copy(),
+        "adj_close": adj_close.copy(),
+        "volume": pd.DataFrame(1_000_000, index=dates, columns=adj_close.columns),
+    }
+
+    engine = WalkForwardEngine(
+        config=config,
+        universe_config=universe,
+        stock_features=pd.DataFrame(),
+        macro_features=pd.DataFrame(),
+        targets=pd.DataFrame(),
+        prices_dict=prices_dict,
+    )
+
+    signal_date = dates[5]
+    execution_date = dates[6]
+    assert bool(engine.intraperiod_signals.loc[signal_date, "active"])
+
+    state = engine._intraperiod_overlay_state(execution_date)
+    assert state["signal_date"] == str(signal_date.date())
+    assert state["active"] is True
+    assert state["target_multiplier"] == 0.60

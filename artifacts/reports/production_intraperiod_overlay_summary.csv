@@ -1,0 +1,3 @@
+variant,cagr,sharpe,max_dd,dd_2020,dd_2022,overlay_events,overlay_enter_events,overlay_rebalance_scaled,avg_cash_exposure,high_cash_days_proxy,total_cost,trade_count,maxdd_lt_32pct,cagr_gt_16pct,sharpe_ge_0_9,dd_2020_reduces,all_pass
+baseline_v1,0.1730112501371912,0.9168754879984505,-0.37064522816044565,-0.37064522816044565,-0.33648808756968585,0,0,0,0.10695255520496695,1023,29516.73961668475,5769,False,True,True,True,False
+production_intraperiod_overlay,0.16245476842603668,0.8942573709799243,-0.3460867575666676,-0.3317575891712683,-0.3460867575666676,126,60,5,0.11453223028434802,1080,37487.38799446254,8237,False,True,False,True,False

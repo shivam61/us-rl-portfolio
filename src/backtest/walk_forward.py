@@ -33,6 +33,7 @@ class WalkForwardEngine:
         self.prices_close = prices_dict["close"].ffill()
         self.prices_adj_close = prices_dict["adj_close"].ffill()
         self.volume = prices_dict["volume"].fillna(0)
+        self.intraperiod_signals = self._build_intraperiod_risk_signals()
         
         # Pre-compute ADV (63 days)
         self.adv = (self.prices_close * self.volume).rolling(63, min_periods=1).mean().ffill()
@@ -84,6 +85,8 @@ class WalkForwardEngine:
         
         reb_idx = 0
         current_weights = pd.Series(dtype=float)
+        base_target_weights = pd.Series(dtype=float)
+        current_overlay_multiplier = 1.0
         
         # Diagnostics
         diagnostics = {
@@ -92,11 +95,13 @@ class WalkForwardEngine:
             "optimizer_stats": [],
             "exposure": [],
             "train_stats": [],
+            "intraperiod_risk": [],
         }
         
         logger.info(f"Starting walk-forward backtest from {first_execution_date.date()}")
         
         for date in mtm_dates:
+            overlay_state = self._intraperiod_overlay_state(date)
             if reb_idx < len(rebalance_dates):
                 try:
                     next_exec_date = get_next_trading_day(rebalance_dates[reb_idx], trading_dates)
@@ -135,29 +140,74 @@ class WalkForwardEngine:
                     daily_vol = self.volume.loc[date]
                     curr_adv = self._get_latest_available(self.adv, signal_date)
                     
+                    base_target_weights = target_weights.copy()
+                    current_overlay_multiplier = overlay_state["target_multiplier"]
+                    execution_weights = target_weights * current_overlay_multiplier
+                    if overlay_state["active"]:
+                        diagnostics["intraperiod_risk"].append({
+                            "date": str(date.date()),
+                            "signal_date": overlay_state["signal_date"],
+                            "event": "rebalance_scaled",
+                            "target_multiplier": current_overlay_multiplier,
+                            "spy_return": overlay_state["spy_return"],
+                            "vix_change": overlay_state["vix_change"],
+                        })
+
                     self.simulator.rebalance(
-                        target_weights=target_weights, 
+                        target_weights=execution_weights, 
                         execution_date=date, 
                         prices_open=exec_open,
                         prices_close=exec_close,
                         daily_volume=daily_vol,
                         adv=curr_adv
                     )
-                    current_weights = target_weights
+                    current_weights = execution_weights
                     reb_idx += 1
                     
                     # Exposure tracking
-                    w = target_weights[target_weights > 0.001]
+                    w = execution_weights[execution_weights > 0.001]
                     hhi   = float((w ** 2).sum()) if not w.empty else 1.0
                     eff_n = float(1.0 / hhi)      if hhi > 0    else float(len(w))
                     diagnostics["exposure"].append({
                         "date":           str(date.date()),
-                        "gross_exposure": float(target_weights.sum()),
-                        "cash_pct":       float(1.0 - target_weights.sum()),
-                        "num_holdings":   int((target_weights > 0.001).sum()),
+                        "gross_exposure": float(execution_weights.sum()),
+                        "cash_pct":       float(1.0 - execution_weights.sum()),
+                        "num_holdings":   int((execution_weights > 0.001).sum()),
                         "hhi":            hhi,
                         "effective_n":    eff_n,
+                        "intraperiod_multiplier": current_overlay_multiplier,
                     })
+                    continue
+
+            if self._intraperiod_risk_enabled() and not base_target_weights.empty:
+                desired_multiplier = overlay_state["target_multiplier"]
+                if not np.isclose(desired_multiplier, current_overlay_multiplier):
+                    exec_open = self.prices_open.loc[date]
+                    exec_close = self.prices_close.loc[date]
+                    daily_vol = self.volume.loc[date]
+                    signal_date = pd.Timestamp(overlay_state["signal_date"])
+                    curr_adv = self._get_latest_available(self.adv, signal_date)
+                    execution_weights = base_target_weights * desired_multiplier
+
+                    self.simulator.rebalance(
+                        target_weights=execution_weights,
+                        execution_date=date,
+                        prices_open=exec_open,
+                        prices_close=exec_close,
+                        daily_volume=daily_vol,
+                        adv=curr_adv,
+                    )
+                    diagnostics["intraperiod_risk"].append({
+                        "date": str(date.date()),
+                        "signal_date": overlay_state["signal_date"],
+                        "event": "overlay_enter" if desired_multiplier < current_overlay_multiplier else "overlay_exit",
+                        "previous_multiplier": current_overlay_multiplier,
+                        "target_multiplier": desired_multiplier,
+                        "spy_return": overlay_state["spy_return"],
+                        "vix_change": overlay_state["vix_change"],
+                    })
+                    current_overlay_multiplier = desired_multiplier
+                    current_weights = execution_weights
                     continue
                 
             # Mark to market
@@ -165,6 +215,63 @@ class WalkForwardEngine:
             self.simulator.mark_to_market(date, mtm_prices)
                 
         return self.simulator.get_history(), self.simulator.get_trades(), diagnostics
+
+    def _intraperiod_risk_enabled(self) -> bool:
+        return bool(getattr(getattr(self.config, "intraperiod_risk", None), "enabled", False))
+
+    def _build_intraperiod_risk_signals(self) -> pd.DataFrame:
+        signals = pd.DataFrame(index=self.prices_adj_close.index)
+        if not self._intraperiod_risk_enabled():
+            signals["active"] = False
+            signals["spy_return"] = np.nan
+            signals["vix_change"] = np.nan
+            return signals
+
+        risk_cfg = self.config.intraperiod_risk
+        benchmark = getattr(self.universe_config, "benchmark", "SPY")
+        vix_proxy = getattr(self.universe_config, "vix_proxy", None)
+        if benchmark not in self.prices_adj_close.columns:
+            raise ValueError(f"Intraperiod risk overlay requires benchmark column {benchmark}")
+
+        spy = self.prices_adj_close[benchmark].ffill()
+        if vix_proxy in self.prices_adj_close.columns:
+            vix = self.prices_adj_close[vix_proxy].ffill()
+        else:
+            vix_col = next((c for c in self.prices_adj_close.columns if "VIX" in c.upper()), None)
+            vix = self.prices_adj_close[vix_col].ffill() if vix_col else pd.Series(np.nan, index=signals.index)
+
+        signals["spy_return"] = spy.pct_change(risk_cfg.benchmark_return_window)
+        signals["vix_change"] = vix.pct_change(risk_cfg.vix_change_window)
+        signals["active"] = (
+            (signals["spy_return"] < risk_cfg.benchmark_return_trigger)
+            | (signals["vix_change"] > risk_cfg.vix_change_trigger)
+        ).fillna(False)
+        return signals
+
+    def _intraperiod_overlay_state(self, execution_date: pd.Timestamp) -> dict:
+        inactive = {
+            "active": False,
+            "target_multiplier": 1.0,
+            "signal_date": None,
+            "spy_return": np.nan,
+            "vix_change": np.nan,
+        }
+        if not self._intraperiod_risk_enabled():
+            return inactive
+
+        date_idx = self.prices_adj_close.index.get_indexer([execution_date], method="ffill")[0]
+        if date_idx <= 0:
+            return inactive
+        signal_date = self.prices_adj_close.index[date_idx - 1]
+        row = self.intraperiod_signals.loc[signal_date]
+        active = bool(row["active"])
+        return {
+            "active": active,
+            "target_multiplier": float(self.config.intraperiod_risk.exposure_multiplier if active else 1.0),
+            "signal_date": str(pd.Timestamp(signal_date).date()),
+            "spy_return": float(row["spy_return"]) if pd.notna(row["spy_return"]) else np.nan,
+            "vix_change": float(row["vix_change"]) if pd.notna(row["vix_change"]) else np.nan,
+        }
         
     def _get_latest_available(self, df_or_series, date: pd.Timestamp):
         idx = df_or_series.index.get_indexer([date], method='ffill')[0]

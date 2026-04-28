@@ -35,6 +35,14 @@ class PortfolioConfig(BaseModel):
 class AlphaConfig(BaseModel):
     default_score: str = "volatility_score"
 
+class IntraperiodRiskConfig(BaseModel):
+    enabled: bool = False
+    benchmark_return_window: int = 5
+    benchmark_return_trigger: float = -0.06
+    vix_change_window: int = 3
+    vix_change_trigger: float = 0.40
+    exposure_multiplier: float = 0.60
+
 class RLConfig(BaseModel):
     enabled: bool = False
     model_type: str = "ppo"
@@ -50,6 +58,7 @@ class BaseConfig(BaseModel):
     execution: ExecutionConfig = ExecutionConfig()
     portfolio: PortfolioConfig
     alpha: AlphaConfig = AlphaConfig()
+    intraperiod_risk: IntraperiodRiskConfig = IntraperiodRiskConfig()
     rl: RLConfig
     research: ResearchConfig = ResearchConfig()
 
