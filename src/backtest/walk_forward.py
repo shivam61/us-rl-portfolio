@@ -2,6 +2,7 @@ import time
 import pandas as pd
 import numpy as np
 import logging
+from collections.abc import Callable
 from typing import Dict, Any, List, Optional
 
 from src.models.stock_ranker import StockRanker
@@ -66,7 +67,8 @@ class WalkForwardEngine:
     def run(self, 
             use_optimizer: bool = True, 
             use_risk_engine: bool = True,
-            top_n_equal_weight: Optional[int] = None):
+            top_n_equal_weight: Optional[int] = None,
+            alpha_score_provider: Optional[Callable[[pd.Timestamp, List[str], "WalkForwardEngine"], pd.Series]] = None):
         """
         Run the walk-forward backtest loop with optional component overrides.
         """
@@ -112,7 +114,8 @@ class WalkForwardEngine:
                         current_weights,
                         use_optimizer=use_optimizer,
                         use_risk_engine=use_risk_engine,
-                        top_n_equal_weight=top_n_equal_weight
+                        top_n_equal_weight=top_n_equal_weight,
+                        alpha_score_provider=alpha_score_provider
                     )
                     
                     # Track diagnostics
@@ -217,7 +220,8 @@ class WalkForwardEngine:
                                  current_weights: pd.Series,
                                  use_optimizer: bool = True,
                                  use_risk_engine: bool = True,
-                                 top_n_equal_weight: Optional[int] = None) -> tuple[pd.Series, dict]:
+                                 top_n_equal_weight: Optional[int] = None,
+                                 alpha_score_provider: Optional[Callable[[pd.Timestamp, List[str], "WalkForwardEngine"], pd.Series]] = None) -> tuple[pd.Series, dict]:
         step_diag = {}
         
         active_tickers = self._get_active_tickers(signal_date)
@@ -230,79 +234,83 @@ class WalkForwardEngine:
         alpha_scores = pd.Series(0.0, index=active_tickers)
 
         try:
-            # Fast date-range slice on sorted (date, ticker) MultiIndex
-            X_train = self.stock_features.loc[pd.IndexSlice[train_start:cutoff_date, :], :]
-            X_train = X_train.loc[X_train.index.get_level_values('ticker').isin(active_tickers)]
-            # Use reindex to avoid KeyError on (date, ticker) pairs absent from targets
-            y_train = self.targets.reindex(X_train.index)["target_fwd_ret"]
-            
-            retrain_freq = getattr(self.config.backtest, 'retrain_frequency', 1)
-            should_retrain = (self._cached_ranker is None) or (self._retrain_counter % retrain_freq == 0)
-            self._retrain_counter += 1
-
-            t0 = time.perf_counter()
-            if should_retrain:
-                ranker = StockRanker()
-                ranker.fit(X_train, y_train)
-                self._cached_ranker = ranker
-            else:
-                ranker = self._cached_ranker
-            train_secs = time.perf_counter() - t0 if should_retrain else 0.0
-            step_diag["train_stats"] = {"trained": should_retrain, "train_seconds": train_secs}
-            
             idx = self.stock_features.index.levels[0].get_indexer([signal_date], method='ffill')[0]
             if idx < 0:
                 raise ValueError("No features available before signal date")
             latest_feature_date = self.stock_features.index.levels[0][idx]
-            
-            X_infer = self.stock_features.xs(latest_feature_date, level="date")
-            X_infer = X_infer.reindex(active_tickers).dropna(how='all')
-            
-            if not X_infer.empty:
-                alpha_scores = ranker.predict(X_infer)
-                
-                # Alpha Quality Metrics — isolated try so failures never affect weights
-                try:
-                    actual_fwd_rets = self.targets.xs(latest_feature_date, level="date")["target_fwd_ret"]
-                    common = alpha_scores.index.intersection(actual_fwd_rets.dropna().index)
-                    if len(common) > 10:
-                        rank_ic = alpha_scores.loc[common].rank().corr(actual_fwd_rets.loc[common].rank())
 
-                        # Top vs Bottom Decile
-                        labels = pd.qcut(alpha_scores.loc[common], 10, labels=False, duplicates='drop')
-                        top_decile = actual_fwd_rets.loc[common][labels == labels.max()].mean()
-                        bot_decile = actual_fwd_rets.loc[common][labels == labels.min()].mean()
+            if alpha_score_provider is not None:
+                alpha_scores = alpha_score_provider(signal_date, active_tickers, self)
+                step_diag["train_stats"] = {"trained": False, "train_seconds": 0.0}
+            else:
+                # Fast date-range slice on sorted (date, ticker) MultiIndex
+                X_train = self.stock_features.loc[pd.IndexSlice[train_start:cutoff_date, :], :]
+                X_train = X_train.loc[X_train.index.get_level_values('ticker').isin(active_tickers)]
+                # Use reindex to avoid KeyError on (date, ticker) pairs absent from targets
+                y_train = self.targets.reindex(X_train.index)["target_fwd_ret"]
 
-                        # Precision@N
-                        def _precision_at(n):
-                            if len(common) < n:
-                                return float("nan")
-                            pred_top = set(alpha_scores.loc[common].nlargest(n).index)
-                            act_top  = set(actual_fwd_rets.loc[common].nlargest(n).index)
-                            return len(pred_top & act_top) / n
+                retrain_freq = getattr(self.config.backtest, 'retrain_frequency', 1)
+                should_retrain = (self._cached_ranker is None) or (self._retrain_counter % retrain_freq == 0)
+                self._retrain_counter += 1
 
-                        # Per-sector IC
-                        sec_map = {t: s for t, s in self.universe_config.tickers.items() if t in common}
-                        sector_groups: dict = {}
-                        for t in common:
-                            sector_groups.setdefault(sec_map.get(t, "Unknown"), []).append(t)
-                        sector_ic = {
-                            sec: float(alpha_scores.loc[ts].rank().corr(actual_fwd_rets.loc[ts].rank()))
-                            for sec, ts in sector_groups.items() if len(ts) >= 5
-                        }
+                t0 = time.perf_counter()
+                if should_retrain:
+                    ranker = StockRanker()
+                    ranker.fit(X_train, y_train)
+                    self._cached_ranker = ranker
+                else:
+                    ranker = self._cached_ranker
+                train_secs = time.perf_counter() - t0 if should_retrain else 0.0
+                step_diag["train_stats"] = {"trained": should_retrain, "train_seconds": train_secs}
 
-                        step_diag["alpha_quality"] = {
-                            "date":           str(signal_date.date()),
-                            "rank_ic":        float(rank_ic),
-                            "top_decile_ret": float(top_decile),
-                            "bot_decile_ret": float(bot_decile),
-                            "spread":         float(top_decile - bot_decile),
-                            "precision_20":   _precision_at(20),
-                            "precision_50":   _precision_at(50),
-                            "sector_ic":      sector_ic,
-                        }
-                except Exception as diag_e:
-                    logger.debug(f"Alpha quality metrics failed at {signal_date}: {diag_e}")
+                X_infer = self.stock_features.xs(latest_feature_date, level="date")
+                X_infer = X_infer.reindex(active_tickers).dropna(how='all')
+
+                if not X_infer.empty:
+                    alpha_scores = ranker.predict(X_infer)
+
+            # Alpha Quality Metrics — isolated try so failures never affect weights
+            try:
+                actual_fwd_rets = self.targets.xs(latest_feature_date, level="date")["target_fwd_ret"]
+                common = alpha_scores.index.intersection(actual_fwd_rets.dropna().index)
+                if len(common) > 10:
+                    rank_ic = alpha_scores.loc[common].rank().corr(actual_fwd_rets.loc[common].rank())
+
+                    # Top vs Bottom Decile
+                    labels = pd.qcut(alpha_scores.loc[common], 10, labels=False, duplicates='drop')
+                    top_decile = actual_fwd_rets.loc[common][labels == labels.max()].mean()
+                    bot_decile = actual_fwd_rets.loc[common][labels == labels.min()].mean()
+
+                    # Precision@N
+                    def _precision_at(n):
+                        if len(common) < n:
+                            return float("nan")
+                        pred_top = set(alpha_scores.loc[common].nlargest(n).index)
+                        act_top  = set(actual_fwd_rets.loc[common].nlargest(n).index)
+                        return len(pred_top & act_top) / n
+
+                    # Per-sector IC
+                    sec_map = {t: s for t, s in self.universe_config.tickers.items() if t in common}
+                    sector_groups: dict = {}
+                    for t in common:
+                        sector_groups.setdefault(sec_map.get(t, "Unknown"), []).append(t)
+                    sector_ic = {
+                        sec: float(alpha_scores.loc[ts].rank().corr(actual_fwd_rets.loc[ts].rank()))
+                        for sec, ts in sector_groups.items() if len(ts) >= 5
+                    }
+
+                    step_diag["alpha_quality"] = {
+                        "date":           str(signal_date.date()),
+                        "rank_ic":        float(rank_ic),
+                        "top_decile_ret": float(top_decile),
+                        "bot_decile_ret": float(bot_decile),
+                        "spread":         float(top_decile - bot_decile),
+                        "precision_20":   _precision_at(20),
+                        "precision_50":   _precision_at(50),
+                        "sector_ic":      sector_ic,
+                    }
+            except Exception as diag_e:
+                logger.debug(f"Alpha quality metrics failed at {signal_date}: {diag_e}")
             
         except Exception as e:
             logger.warning(f"Model training failed at {signal_date}: {e}. Using equal weight.")

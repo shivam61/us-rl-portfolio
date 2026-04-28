@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-28T09:19:19+00:00
+Last updated: 2026-04-28T09:38:15+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -124,3 +124,11 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
 - Legacy handoff content was migrated into this file so there is a single deep handoff source.
 - Existing Claude implementation was refactored to use the shared refresh flow through `scripts/save_context.sh` and `.claude/settings.json`.
 - Target design keeps the auto-loaded context small and uses this file as the single deep history path.
+- Added non-LGBM regime-switch factor research via `scripts/run_regime_switch_strategy.py`.
+- Added `pct_pos_months_6m` and `sector_rel_momentum_6m` to `StockFeatureGenerator`, both still lagged by one day.
+- Added an optional `alpha_score_provider` path to `WalkForwardEngine.run()` so factor sleeves can be backtested through the existing selection, risk, and execution stack without enabling LGBM or RL.
+- sp100 regime-switch result was negative versus the strongest single sleeve:
+  `volatility_score` stayed best with `IC=0.0547`, `IC Sharpe=0.2085`, `Top-Bot=1.79%`, `CAGR=13.61%`, `MaxDD=-31.86%`.
+- `regime_switch_score` reached `IC=0.0427`, `IC Sharpe=0.1834`, `Top-Bot=1.27%`, `CAGR=13.49%`, `MaxDD=-31.86%`.
+- Main conclusion: the current regime map helps volatility signals in low-vol windows, but switching away from `volatility_score` in neutral and high-vol states degrades the overall sp100 result.
+- Artifacts saved to `artifacts/reports/regime_switch_results.md` and `artifacts/reports/regime_ic.csv`.

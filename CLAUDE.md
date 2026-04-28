@@ -5,11 +5,11 @@ All repo rules, workflow rules, save rules, file lookup order, roadmap-first beh
 Do not treat this file as an independent source of repo instructions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-28T09:19:19+00:00
+## Current State — 2026-04-28T09:38:15+00:00
 - Branch: `main`
-- Working tree: 8 changed path(s)
-- Dirty paths sample: `M .agent-context.json`, ` M .claudeignore`, ` M .codexignore`, ` M AGENTS.md`, ` M CLAUDE.md`
-- Latest commit: `d8abbb2f 2026-04-28 chore: add shared agent session context`
+- Working tree: 7 changed path(s)
+- Dirty paths sample: `M docs/agent_handoff.md`, ` M src/backtest/walk_forward.py`, ` M src/features/stock_features.py`, ` M tests/test_leakage_guards.py`, `?? artifacts/reports/regime_ic.csv`
+- Latest commit: `3f5b4e1c 2026-04-28 docs: align claude shim to agents flow`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

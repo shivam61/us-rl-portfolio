@@ -120,6 +120,7 @@ class StockFeatureGenerator(BaseFeatureGenerator):
         ret_6m_adj    = ret_6m / vol_63d.replace(0, np.nan)
         mom_stability_3m  = (returns > 0).rolling(63).mean()
         trend_consistency = (ret_3m.gt(0) == ret_6m.gt(0)).astype(float)
+        pct_pos_months_6m = ret_1m.gt(0).rolling(6).mean()
 
         # ── Shift all features by 1 day (leakage guard) ─────────────────────
         feature_frames = {
@@ -154,6 +155,7 @@ class StockFeatureGenerator(BaseFeatureGenerator):
             "ret_6m_adj":                    ret_6m_adj,
             "mom_stability_3m":              mom_stability_3m,
             "trend_consistency":             trend_consistency,
+            "pct_pos_months_6m":             pct_pos_months_6m,
         }
 
         shifted = {name: df.shift(1) for name, df in feature_frames.items()}
@@ -181,9 +183,12 @@ class StockFeatureGenerator(BaseFeatureGenerator):
             panel["_sector"] = tickers_idx.map(self.sector_mapping)
             sector_med = panel.groupby(["date", "_sector"])["ret_3m"].transform("median")
             panel["sector_rel_momentum_3m"] = panel["ret_3m"] - sector_med
+            sector_med_6m = panel.groupby(["date", "_sector"])["ret_6m"].transform("median")
+            panel["sector_rel_momentum_6m"] = panel["ret_6m"] - sector_med_6m
             panel.drop(columns=["_sector"], inplace=True)
         else:
             panel["sector_rel_momentum_3m"] = float("nan")
+            panel["sector_rel_momentum_6m"] = float("nan")
 
         logger.info(f"StockFeatureGenerator: {panel.shape[1]} features, "
                     f"{panel.index.get_level_values('ticker').nunique()} tickers, "

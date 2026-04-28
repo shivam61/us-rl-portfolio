@@ -30,6 +30,8 @@ def test_stock_features_lag(dummy_data):
     aapl_feats = features.xs("AAPL", level="ticker")
     # Feature available at T should only rely on info up to T-1
     assert "ret_1m" in aapl_feats.columns
+    assert "pct_pos_months_6m" in aapl_feats.columns
+    assert "sector_rel_momentum_6m" in aapl_feats.columns
     
     # Manually calculate T-1 return
     close = dummy_data["AAPL"]["adj_close"]
