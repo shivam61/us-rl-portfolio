@@ -1,3 +1,11 @@
+.git/
+.venv/
+.pytest_cache/
+__pycache__/
+*/__pycache__/*
+.claude/
+CLAUDE.md
+GEMINI.md
 data/
 reports/
 logs/
@@ -12,9 +20,5 @@ checkpoints/
 *.pkl
 *.zip
 *.log
-.venv/
-__pycache__/
-*.egg-info/
-.git/
 docs/agent_handoff.md
 docs/session_handoff.md

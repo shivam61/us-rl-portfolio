@@ -1,0 +1,30 @@
+{
+  "entry_docs": [
+    "AGENTS.md",
+    "CLAUDE.md"
+  ],
+  "handoff_docs": [
+    "docs/agent_handoff.md",
+    "docs/session_handoff.md"
+  ],
+  "process_patterns": [
+    {
+      "label": "diagnostics",
+      "pattern": "scripts/run_diagnostics.py"
+    },
+    {
+      "label": "backtest",
+      "pattern": "scripts/run_backtest.py"
+    },
+    {
+      "label": "alpha research",
+      "pattern": "scripts/run_alpha_research.py"
+    },
+    {
+      "label": "tests",
+      "pattern": "pytest"
+    }
+  ],
+  "dirty_paths_limit": 5,
+  "recent_commits_limit": 3
+}
