@@ -1,6 +1,8 @@
 # Claude Compatibility Context
 
 Claude should use [`AGENTS.md`](./AGENTS.md) as the primary repo entry point.
+All repo rules, workflow rules, save rules, file lookup order, roadmap-first behavior, and git workflow requirements are governed by `AGENTS.md`.
+Do not treat this file as an independent source of repo instructions.
 
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-04-28T09:19:19+00:00
@@ -15,7 +17,7 @@ Claude should use [`AGENTS.md`](./AGENTS.md) as the primary repo entry point.
 
 ## Rules
 
-- Keep this file small.
-- Use `AGENTS.md` for shared instructions.
-- Use `docs/agent_handoff.md` only when deep history is required.
+- Read `AGENTS.md` first and follow it as the canonical instruction file for this repo.
+- Use `docs/agent_handoff.md` only when deep history is required, following the pattern defined by `AGENTS.md`.
 - Refresh state with `bash scripts/refresh_session_context.sh`.
+- Do not add Claude-specific repo rules here unless they are purely compatibility notes that point back to `AGENTS.md`.
