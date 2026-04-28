@@ -4,6 +4,8 @@
 
 **Objective:** Lift mean Rank IC from 0.033 → ≥ 0.040 and IC Sharpe from 0.086 → ≥ 0.30 by adding differentiated feature families to replace commodity price/momentum factors.
 
+**Current decision:** Phase A is conditionally passed, not fully passed. Mean IC passed, but IC Sharpe remains below the original gate. Do not continue momentum-first research. Use `volatility_score` / `volatility_only` as the current production alpha candidate, keep RL disabled, and run Phase A.1 robustness validation before further optimizer/risk/RL tuning.
+
 ---
 
 ## Success Criteria
@@ -31,6 +33,7 @@
 | 2026-04-28 | **mom+vol combo (score_50_50)** | raw_fwd_ret | **0.0411** | 0.150 | 28.9% | 1.22% | Exceeds IC gate ✅ — factor directions calibrated empirically (reversal+risk-prem) |
 | 2026-04-28 | vol only (risk premium) | raw_fwd_ret | **0.0500** | 0.175 | 33.6% | 1.64% | Strongest raw signal — high-vol/high-beta outperforms in sp100 2016-2026 |
 | 2026-04-28 | **momentum_v2_calibrated** | raw_fwd_ret | 0.0271 | 0.097 | 24.7% | 0.97% | 11-feature momentum+stability composite; α_ann=8.9% (t=1.77, 90% sig) — IC below 0.030 gate ❌ |
+| 2026-04-28 | **Phase A.1 volatility robustness** | raw_fwd_ret | sp100 0.0379 / sp500 0.0259 | ~0.13 rebalance IC Sharpe | sp500 top-10 hit 37.3% | sp500 1.23% avg spread | High-vol/risk-premium direction survives sp500; low-vol quality rejected; portfolio drawdown remains too high |
 
 **Key insight:** In sp100 2016-2026, cross-sectional REVERSAL (not continuation) dominates, and RISK PREMIUM (not low-vol anomaly) dominates. All momentum return features have negative direct IC; vol/beta features have positive direct IC. Factor scores calibrated to these directions:
 - `momentum_score` = buy laggards (reversal, asc=False on all return features)
@@ -39,6 +42,63 @@
 - IC Sharpe 0.15 vs target 0.30 ❌ — structural constraint at 44 tickers; expect to improve at sp500 scale
 - `momentum_v2_calibrated`: 11-feature expanded set gives IC=0.027 (improvement over 0.018 but below 0.030 gate); IC Sharpe=0.097 ❌
 - Pure price-momentum factors cannot meet IC Sharpe ≥ 0.20 in sp100 — requires fundamental signal (SUE, revisions) or sp500 scale
+
+## Phase A.1 — Volatility Robustness Validation
+
+**Goal:** decide whether `volatility_score` is real alpha or a sp100 artifact before continuing production optimizer/risk/RL work.
+
+### Required validation
+
+| Dimension | Tests |
+|---|---|
+| Universes | sp100, sp500, optional `top_200_liquid` if available |
+| Time periods | 2006-2009, 2010-2014, 2015-2019, 2020-2022, 2023-2026 |
+| Regimes | low VIX, high VIX, crash, recovery, trending, sideways |
+| Selection sizes | top 10, top 20, top 30, top 50, sector-balanced top 20, sector-balanced top 50 |
+| Directionality | long high-vol rebound/risk-premium vs long low-vol quality |
+| Portfolio tests | Top-N equal weight, optimizer no risk, optimizer + risk, SPY, equal-weight universe |
+
+### Success criteria
+
+- Mean IC > 0.03 on sp100.
+- Mean IC > 0.02 on sp500 or optional top-200-liquid universe.
+- IC positive in most time periods.
+- Top-bottom spread > 1% per rebalance on sp100.
+- Top-N portfolio beats equal-weight by at least 1.5-2% CAGR, or materially improves Sharpe/drawdown.
+- Directionality stable enough to encode.
+
+### Stop condition
+
+If `volatility_score` fails robustness on sp500 and recent periods, stop optimizer/RL tuning and return to feature engineering:
+earnings quality, analyst revisions if available, value-quality composite, and regime-conditional factors.
+
+### Implementation
+
+| Step | File | Status |
+|---|---|---|
+| Phase A.1 robustness runner | `scripts/run_phase_a1_volatility_robustness.py` | ✅ Implemented |
+| Main report | `artifacts/reports/phase_a1_volatility_robustness.md` | ✅ Done |
+| IC by period | `artifacts/reports/volatility_ic_by_period.csv` | ✅ Done |
+| IC by regime | `artifacts/reports/volatility_ic_by_regime.csv` | ✅ Done |
+| Selection sweep | `artifacts/reports/volatility_selection_sweep.csv` | ✅ Done |
+| Directionality | `artifacts/reports/volatility_directionality.csv` | ✅ Done |
+| Portfolio backtests | `artifacts/reports/volatility_portfolio_backtests.csv` | ✅ Done |
+
+### Phase A.1 results
+
+| Check | Result | Decision |
+|---|---|---|
+| sp100 mean period IC > 0.03 | `0.0379` | ✅ Pass |
+| sp500 mean period IC > 0.02 | `0.0259` | ✅ Pass |
+| Positive in most periods | sp100 `4/5`, sp500 `5/5` | ✅ Pass |
+| sp100 top-bottom spread > 1% | `1.55%` | ✅ Pass |
+| sp500 top-bottom spread > 1% | `1.23%` | ✅ Pass |
+| Directionality | high-vol positive; low-vol negative in every sp500 period | ✅ Encode high-vol/risk-premium direction |
+| Portfolio vs equal weight | sp500 high-vol Top-N beats CAGR but has worse Sharpe/drawdown | ⚠️ Alpha real, expression not production-clean |
+
+**Conclusion:** `volatility_score` is not just a sp100 artifact. The high-vol/risk-premium direction is the correct direction to encode. However, naive Top-N and current optimizer/risk expressions create unacceptable sp500 drawdowns (`-58%` to `-71%` for high-vol variants) and Sharpe below equal-weight. Treat this as a production alpha candidate, not a finished production baseline.
+
+**Pushback:** the next step should not be RL or more momentum work. The next decision is how to express the validated high-vol alpha with controlled beta/crash exposure. If that cannot be solved without destroying the alpha, return to feature engineering: earnings quality, analyst revisions, value-quality composite, and regime-conditional factors.
 
 ---
 

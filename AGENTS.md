@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-28T16:30:03+00:00
+## Current State — 2026-04-28T18:48:23+00:00
 - Branch: `main`
-- Working tree: 6 changed path(s)
-- Dirty paths sample: `M docs/agent_handoff.md`, ` M src/backtest/walk_forward.py`, ` M src/config/loader.py`, `?? artifacts/reports/intraperiod_overlay_hysteresis.md`, `?? artifacts/reports/intraperiod_overlay_hysteresis_summary.csv`
-- Latest commit: `0c7370fd 2026-04-28 productionize intraperiod risk overlay`
+- Working tree: 11 changed path(s)
+- Dirty paths sample: `M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_a.md`, ` M src/optimizer/portfolio_optimizer.py`, `?? artifacts/reports/phase_a1_volatility_robustness.md`
+- Latest commit: `2dfd3699 2026-04-28 test intraperiod overlay hysteresis`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

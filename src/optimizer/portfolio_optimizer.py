@@ -142,12 +142,13 @@ class PortfolioOptimizer:
     ) -> dict:
         n = len(tickers)
         mu = alpha_scores.values
-        sigma = cov_matrix.values
+        sigma = np.asarray(cov_matrix.values, dtype=float)
+        sigma = 0.5 * (sigma + sigma.T)
 
         w = cp.Variable(n)
         cash = cp.Variable(1)
         ret = mu.T @ w
-        risk = cp.quad_form(w, sigma)
+        risk = cp.quad_form(w, cp.psd_wrap(sigma))
         turnover = cp.norm(w - current_weights, 1)
         objective = cp.Maximize(ret - risk_aversion * risk - turnover_penalty * turnover)
 

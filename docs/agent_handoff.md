@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-28T16:30:03+00:00
+Last updated: 2026-04-28T18:48:23+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -259,3 +259,31 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   hysteresis improves drawdown and Sharpe, but longer holds plus daily restore-ramp trades do not solve churn.
 - Recommended next step:
   stop full-book scaling variants for now; test either a no-ramp/fixed-hold exposure rule or a SPY hedge sleeve that avoids repeatedly trading the entire stock book.
+- Phase A.1 volatility/risk-premium robustness validation completed.
+- Artifacts saved:
+  `artifacts/reports/phase_a1_volatility_robustness.md`,
+  `artifacts/reports/volatility_ic_by_period.csv`,
+  `artifacts/reports/volatility_ic_by_regime.csv`,
+  `artifacts/reports/volatility_selection_sweep.csv`,
+  `artifacts/reports/volatility_directionality.csv`,
+  `artifacts/reports/volatility_portfolio_backtests.csv`.
+- Universes tested:
+  `sp100_sample` and `sp500_dynamic`; optional `config/universes/top_200_liquid.yaml` was not present and was skipped.
+- Directionality result:
+  high-vol/risk-premium direction passed; low-vol/quality direction was negative across sp500 periods and should not be used.
+- IC robustness:
+  `sp100` high-vol mean period IC `0.0379`, positive in `4/5` periods, average top-bottom spread `1.55%`;
+  `sp500` high-vol mean period IC `0.0259`, positive in `5/5` periods, average top-bottom spread `1.23%`.
+- Selection result:
+  Top-10 had the best forward-return selection edge on both universes; sp500 Top-10 excess forward return was about `2.03%` per rebalance.
+- Portfolio result:
+  sp500 high-vol Top-N variants beat equal-weight on CAGR but had much worse drawdowns and weaker Sharpe;
+  Top-50 EW had `CAGR=18.93%`, `Sharpe=0.596`, `MaxDD=-63.78%` versus equal-weight `CAGR=16.49%`, `Sharpe=0.779`, `MaxDD=-49.12%`.
+- Optimizer/risk result:
+  sp500 high-vol optimizer+risk reduced drawdown to `-57.79%` but still had weak Sharpe `0.583`; not production-clean.
+- Optimizer numerical patch:
+  `PortfolioOptimizer` now wraps the repaired covariance matrix with `cp.psd_wrap` before `quad_form`, eliminating repeated CVXPY ARPACK PSD-certification exceptions observed during sp500 Phase A.1.
+- Current decision:
+  `volatility_score` is real alpha, not just a sp100 artifact, but current portfolio expression is too crash/beta-heavy for production. Keep RL disabled and do not resume momentum-first work.
+- Recommended next step:
+  design a controlled-beta/crash-aware expression of the validated high-vol alpha, or return to feature engineering if the alpha cannot survive risk control.

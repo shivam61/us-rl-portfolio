@@ -6,14 +6,16 @@
 
 ---
 
-## Current State — 2026-04-27
+## Current State — 2026-04-28
 
 | | |
 |---|---|
-| Active phase | **A** — IC eval complete, momentum+vol combo next |
-| Best IC so far | 0.0379 mean Rank IC (momentum family) — gate needs 0.040 |
-| Best IC Sharpe | 0.186 (momentum) — gate needs 0.30 |
-| Blocking gate | IC Sharpe ≥ 0.30 before Phase B — try momentum+vol combo |
+| Active phase | **A.1** — volatility/risk-premium robustness complete; production-candidate critique next |
+| Current production alpha candidate | `volatility_score` / `volatility_only` |
+| Best IC so far | sp100 mean period IC 0.0379; sp500 mean period IC 0.0259; rebalance IC ~0.034 on sp500 |
+| Best IC Sharpe | ~0.13 in Phase A.1 portfolio diagnostics — original 0.30 gate still not met |
+| Phase A status | Conditionally passed: high-vol/risk-premium direction is real, but IC Sharpe and drawdown remain weak |
+| Blocking gate | Do not continue momentum-first or enable RL; decide how to express volatility alpha without unacceptable sp500 drawdown |
 | sp500 baselines | Locked validation/system baseline — see table below, do not redefine |
 
 ## Baseline Convention
@@ -78,5 +80,6 @@
 - **Leakage rule:** all features `.shift(1)`; targets use forward horizon only
 - **PIT rule:** universe change → rebuild `universe_mask_*.parquet` first
 - **Baseline rule:** never redefine sp500 baselines without a full diagnostics run
+- **Docs-current rule:** after material implementation, experiment results, baseline decisions, or next-step changes, update the relevant phase doc plus `docs/agent_handoff.md`, then refresh shared session state
 - **Never commit** `data/`, `.venv/`, `__pycache__/`
 - **Python:** always use `.venv/bin/python`

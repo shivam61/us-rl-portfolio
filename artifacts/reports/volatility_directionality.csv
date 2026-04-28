@@ -1,0 +1,5 @@
+universe,direction,mean_period_ic,positive_period_count,period_count,best_selection,best_selection_excess_forward_return,best_portfolio_variant,best_portfolio_cagr,best_portfolio_sharpe
+sp100_sample,long_high_vol_rebound,0.03793289941808726,4,5,top_10,0.008150537128819184,long_high_vol_rebound_optimizer_risk,0.2500629923556166,0.9170771997491411
+sp100_sample,long_low_vol_quality,-0.03793289941808726,1,5,top_50,1.389504873792368e-20,long_low_vol_quality_top_50_ew,0.16160635027960857,0.852331789098915
+sp500_dynamic,long_high_vol_rebound,0.025925116968688912,5,5,top_10,0.020276683645740944,long_high_vol_rebound_top_50_ew,0.24117824754584682,0.5957537087262508
+sp500_dynamic,long_low_vol_quality,-0.025925116968688912,0,5,sector_balanced_top_50,-0.0032375162393769863,long_low_vol_quality_optimizer_risk,0.09385528218994965,0.6983358725178341
