@@ -5,11 +5,11 @@ All repo rules, workflow rules, save rules, file lookup order, roadmap-first beh
 Do not treat this file as an independent source of repo instructions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-28T15:28:52+00:00
+## Current State — 2026-04-28T16:30:03+00:00
 - Branch: `main`
-- Working tree: 9 changed path(s)
-- Dirty paths sample: `M docs/agent_handoff.md`, ` M src/backtest/walk_forward.py`, ` M src/config/loader.py`, ` M tests/test_leakage_guards.py`, `?? artifacts/reports/production_intraperiod_overlay.md`
-- Latest commit: `73e45470 2026-04-28 test intraperiod risk controls`
+- Working tree: 6 changed path(s)
+- Dirty paths sample: `M docs/agent_handoff.md`, ` M src/backtest/walk_forward.py`, ` M src/config/loader.py`, `?? artifacts/reports/intraperiod_overlay_hysteresis.md`, `?? artifacts/reports/intraperiod_overlay_hysteresis_summary.csv`
+- Latest commit: `0c7370fd 2026-04-28 productionize intraperiod risk overlay`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

@@ -42,6 +42,12 @@ class IntraperiodRiskConfig(BaseModel):
     vix_change_window: int = 3
     vix_change_trigger: float = 0.40
     exposure_multiplier: float = 0.60
+    use_hysteresis: bool = False
+    exit_benchmark_return_trigger: float = -0.02
+    exit_vix_change_trigger: float = 0.15
+    min_hold_days: int = 0
+    cooldown_days: int = 0
+    restore_exposure_multipliers: List[float] = Field(default_factory=lambda: [1.0])
 
 class RLConfig(BaseModel):
     enabled: bool = False

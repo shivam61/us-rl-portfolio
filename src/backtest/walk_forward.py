@@ -87,6 +87,7 @@ class WalkForwardEngine:
         current_weights = pd.Series(dtype=float)
         base_target_weights = pd.Series(dtype=float)
         current_overlay_multiplier = 1.0
+        overlay_control_state = self._new_intraperiod_overlay_control_state()
         
         # Diagnostics
         diagnostics = {
@@ -96,12 +97,25 @@ class WalkForwardEngine:
             "exposure": [],
             "train_stats": [],
             "intraperiod_risk": [],
+            "intraperiod_risk_daily": [],
         }
         
         logger.info(f"Starting walk-forward backtest from {first_execution_date.date()}")
         
         for date in mtm_dates:
-            overlay_state = self._intraperiod_overlay_state(date)
+            overlay_state = self._intraperiod_overlay_state(date, overlay_control_state)
+            if self._intraperiod_risk_enabled():
+                diagnostics["intraperiod_risk_daily"].append({
+                    "date": str(date.date()),
+                    "signal_date": overlay_state["signal_date"],
+                    "active": overlay_state["active"],
+                    "target_multiplier": overlay_state["target_multiplier"],
+                    "reason": overlay_state["reason"],
+                    "hold_days": overlay_state["hold_days"],
+                    "cooldown_remaining": overlay_state["cooldown_remaining"],
+                    "spy_return": overlay_state["spy_return"],
+                    "vix_change": overlay_state["vix_change"],
+                })
             if reb_idx < len(rebalance_dates):
                 try:
                     next_exec_date = get_next_trading_day(rebalance_dates[reb_idx], trading_dates)
@@ -148,9 +162,12 @@ class WalkForwardEngine:
                             "date": str(date.date()),
                             "signal_date": overlay_state["signal_date"],
                             "event": "rebalance_scaled",
+                            "reason": overlay_state["reason"],
                             "target_multiplier": current_overlay_multiplier,
                             "spy_return": overlay_state["spy_return"],
                             "vix_change": overlay_state["vix_change"],
+                            "hold_days": overlay_state["hold_days"],
+                            "cooldown_remaining": overlay_state["cooldown_remaining"],
                         })
 
                     self.simulator.rebalance(
@@ -197,14 +214,24 @@ class WalkForwardEngine:
                         daily_volume=daily_vol,
                         adv=curr_adv,
                     )
+                    if overlay_state["reason"] == "restore_ramp":
+                        event_name = "overlay_restore"
+                    elif desired_multiplier < current_overlay_multiplier:
+                        event_name = "overlay_enter"
+                    else:
+                        event_name = "overlay_exit"
+
                     diagnostics["intraperiod_risk"].append({
                         "date": str(date.date()),
                         "signal_date": overlay_state["signal_date"],
-                        "event": "overlay_enter" if desired_multiplier < current_overlay_multiplier else "overlay_exit",
+                        "event": event_name,
+                        "reason": overlay_state["reason"],
                         "previous_multiplier": current_overlay_multiplier,
                         "target_multiplier": desired_multiplier,
                         "spy_return": overlay_state["spy_return"],
                         "vix_change": overlay_state["vix_change"],
+                        "hold_days": overlay_state["hold_days"],
+                        "cooldown_remaining": overlay_state["cooldown_remaining"],
                     })
                     current_overlay_multiplier = desired_multiplier
                     current_weights = execution_weights
@@ -242,19 +269,36 @@ class WalkForwardEngine:
 
         signals["spy_return"] = spy.pct_change(risk_cfg.benchmark_return_window)
         signals["vix_change"] = vix.pct_change(risk_cfg.vix_change_window)
-        signals["active"] = (
+        signals["entry_signal"] = (
             (signals["spy_return"] < risk_cfg.benchmark_return_trigger)
             | (signals["vix_change"] > risk_cfg.vix_change_trigger)
         ).fillna(False)
+        signals["exit_signal"] = (
+            (signals["spy_return"] > risk_cfg.exit_benchmark_return_trigger)
+            & (signals["vix_change"] < risk_cfg.exit_vix_change_trigger)
+        ).fillna(False)
+        signals["active"] = signals["entry_signal"]
         return signals
 
-    def _intraperiod_overlay_state(self, execution_date: pd.Timestamp) -> dict:
+    def _new_intraperiod_overlay_control_state(self) -> dict:
+        return {
+            "active": False,
+            "hold_days": 0,
+            "cooldown_remaining": 0,
+            "ramp": [],
+            "last_multiplier": 1.0,
+        }
+
+    def _intraperiod_overlay_state(self, execution_date: pd.Timestamp, control_state: Optional[dict] = None) -> dict:
         inactive = {
             "active": False,
             "target_multiplier": 1.0,
             "signal_date": None,
             "spy_return": np.nan,
             "vix_change": np.nan,
+            "reason": "disabled",
+            "hold_days": 0,
+            "cooldown_remaining": 0,
         }
         if not self._intraperiod_risk_enabled():
             return inactive
@@ -264,13 +308,63 @@ class WalkForwardEngine:
             return inactive
         signal_date = self.prices_adj_close.index[date_idx - 1]
         row = self.intraperiod_signals.loc[signal_date]
-        active = bool(row["active"])
+        risk_cfg = self.config.intraperiod_risk
+        if control_state is None or not risk_cfg.use_hysteresis:
+            active = bool(row["entry_signal"])
+            return {
+                "active": active,
+                "target_multiplier": float(risk_cfg.exposure_multiplier if active else 1.0),
+                "signal_date": str(pd.Timestamp(signal_date).date()),
+                "spy_return": float(row["spy_return"]) if pd.notna(row["spy_return"]) else np.nan,
+                "vix_change": float(row["vix_change"]) if pd.notna(row["vix_change"]) else np.nan,
+                "reason": "entry_signal" if active else "inactive",
+                "hold_days": 1 if active else 0,
+                "cooldown_remaining": 0,
+            }
+
+        entry_signal = bool(row["entry_signal"])
+        exit_signal = bool(row["exit_signal"])
+        reason = "hold" if control_state["active"] else "inactive"
+
+        if control_state["active"]:
+            control_state["hold_days"] += 1
+            if exit_signal and control_state["hold_days"] >= risk_cfg.min_hold_days:
+                control_state["active"] = False
+                control_state["hold_days"] = 0
+                control_state["cooldown_remaining"] = risk_cfg.cooldown_days
+                control_state["ramp"] = list(risk_cfg.restore_exposure_multipliers)
+                reason = "exit_signal"
+        else:
+            if control_state["cooldown_remaining"] <= 0 and entry_signal:
+                control_state["active"] = True
+                control_state["hold_days"] = 1
+                control_state["ramp"] = []
+                reason = "entry_signal"
+            elif control_state["cooldown_remaining"] > 0:
+                reason = "cooldown"
+            elif control_state["ramp"]:
+                reason = "restore_ramp"
+
+        if control_state["active"]:
+            target_multiplier = float(risk_cfg.exposure_multiplier)
+        elif control_state["ramp"]:
+            target_multiplier = float(control_state["ramp"].pop(0))
+        else:
+            target_multiplier = 1.0
+
+        if not control_state["active"] and control_state["cooldown_remaining"] > 0:
+            control_state["cooldown_remaining"] -= 1
+        control_state["last_multiplier"] = target_multiplier
+
         return {
-            "active": active,
-            "target_multiplier": float(self.config.intraperiod_risk.exposure_multiplier if active else 1.0),
+            "active": bool(control_state["active"]),
+            "target_multiplier": target_multiplier,
             "signal_date": str(pd.Timestamp(signal_date).date()),
             "spy_return": float(row["spy_return"]) if pd.notna(row["spy_return"]) else np.nan,
             "vix_change": float(row["vix_change"]) if pd.notna(row["vix_change"]) else np.nan,
+            "reason": reason,
+            "hold_days": int(control_state["hold_days"]),
+            "cooldown_remaining": int(control_state["cooldown_remaining"]),
         }
         
     def _get_latest_available(self, df_or_series, date: pd.Timestamp):

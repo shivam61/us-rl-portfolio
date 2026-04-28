@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-28T15:28:52+00:00
+Last updated: 2026-04-28T16:30:03+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -241,3 +241,21 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   one-day enter/exit behavior increased churn; trade count rose from `5769` to `8237`, and total execution costs rose from about `$29.5k` to `$37.5k`.
 - Recommended next step:
   do not adopt current production overlay as default; test hysteresis/min-hold exits or a SPY hedge sleeve that avoids repeatedly scaling the full stock book.
+- Intraperiod overlay hysteresis test completed without changing alpha, optimizer, or RL.
+- Artifact saved:
+  `artifacts/reports/intraperiod_overlay_hysteresis.md`.
+- Tested variants:
+  `baseline_v1`, `overlay_hysteresis_3d`, `overlay_hysteresis_5d`, `overlay_hysteresis_10d`,
+  `overlay_hysteresis_5d_cooldown_3d`, `overlay_hysteresis_5d_cooldown_5d`.
+- Hysteresis mechanics:
+  same entry trigger as current overlay, exit requires both `SPY 5d > -2%` and `VIX 3d < +15%`,
+  min-hold/cooldown variants, and a `60% -> 75% -> 90% -> 100%` restore ramp.
+- Result:
+  no hysteresis variant passed the full gate because trade counts remained above the current overlay reference.
+- Best candidate:
+  `overlay_hysteresis_10d` with `CAGR=16.95%`, `Sharpe=1.005`, `MaxDD=-32.37%`,
+  `2020 DD=-25.02%`, `2022 DD=-32.19%`, but trade count `9264` and cost about `$37.6k`.
+- Main conclusion:
+  hysteresis improves drawdown and Sharpe, but longer holds plus daily restore-ramp trades do not solve churn.
+- Recommended next step:
+  stop full-book scaling variants for now; test either a no-ramp/fixed-hold exposure rule or a SPY hedge sleeve that avoids repeatedly trading the entire stock book.
