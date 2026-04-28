@@ -17,4 +17,3 @@ __pycache__/
 *.egg-info/
 .git/
 docs/agent_handoff.md
-docs/session_handoff.md

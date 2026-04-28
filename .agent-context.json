@@ -4,8 +4,7 @@
     "CLAUDE.md"
   ],
   "handoff_docs": [
-    "docs/agent_handoff.md",
-    "docs/session_handoff.md"
+    "docs/agent_handoff.md"
   ],
   "process_patterns": [
     {

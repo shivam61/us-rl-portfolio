@@ -21,4 +21,3 @@ checkpoints/
 *.zip
 *.log
 docs/agent_handoff.md
-docs/session_handoff.md

@@ -68,7 +68,7 @@
 | `src/rl/environment.py` | RL env skeleton (Phase D) |
 | `docs/phases/phase_a.md` | Phase A detail: features, IC results, decisions |
 | `docs/phases/phase_d.md` | Phase D detail: RL design, state/action/reward |
-| `docs/session_handoff.md` | Experiment history, bug fixes, useful commands |
+| `docs/agent_handoff.md` | Experiment history, legacy session notes, useful commands |
 
 ---
 
