@@ -5,9 +5,13 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime
 
+from src.alpha import build_alpha_score_provider, compute_volatility_score_frame
 from src.config.loader import load_config
 from src.backtest.walk_forward import WalkForwardEngine
 from src.data.ingestion import DataIngestion
+from src.features.macro_features import MacroFeatureGenerator
+from src.features.stock_features import StockFeatureGenerator
+from src.labels.targets import TargetGenerator
 from src.backtest.baselines import BaselineEngine
 from src.reporting.metrics import calculate_metrics, calculate_annual_returns
 
@@ -18,21 +22,52 @@ logger = logging.getLogger(__name__)
 def _load_data(base_config, universe_config):
     cache_dir    = Path(base_config.data.cache_dir)
     features_dir = cache_dir / "features"
-    stock_features = pd.read_parquet(features_dir / "stock_features.parquet")
-    macro_features = pd.read_parquet(features_dir / "macro_features.parquet")
-    targets        = pd.read_parquet(features_dir / "targets.parquet")
+    ingestion   = DataIngestion(cache_dir=base_config.data.cache_dir, force_download=False)
+    all_tickers = list(set(
+        list(universe_config.tickers.keys()) +
+        universe_config.macro_etfs + universe_config.sector_etfs +
+        [universe_config.benchmark, universe_config.vix_proxy]
+    ))
+    data_dict   = ingestion.fetch_universe_data(tickers=all_tickers, start_date=base_config.backtest.start_date)
+    prices_dict = ingestion.build_all_matrices(data_dict)
 
     pit_mask = None
     if not universe_config.is_static and universe_config.pit_mask_path:
         pit_mask = pd.read_parquet(universe_config.pit_mask_path)
 
-    ingestion   = DataIngestion(cache_dir=base_config.data.cache_dir, force_download=False)
-    all_tickers = list(set(
-        list(universe_config.tickers.keys()) +
-        universe_config.macro_etfs + universe_config.sector_etfs + [universe_config.benchmark]
-    ))
-    data_dict   = ingestion.fetch_universe_data(tickers=all_tickers, start_date=base_config.backtest.start_date)
-    prices_dict = ingestion.build_all_matrices(data_dict)
+    use_cached = (
+        (features_dir / "stock_features.parquet").exists()
+        and (features_dir / "macro_features.parquet").exists()
+        and (features_dir / "targets.parquet").exists()
+    )
+    stock_features = macro_features = targets = None
+    if use_cached:
+        stock_features = pd.read_parquet(features_dir / "stock_features.parquet")
+        macro_features = pd.read_parquet(features_dir / "macro_features.parquet")
+        targets = pd.read_parquet(features_dir / "targets.parquet")
+        cached_tickers = set(stock_features.index.get_level_values("ticker").unique())
+        universe_tickers = set(universe_config.tickers.keys())
+        if not universe_tickers.issubset(cached_tickers):
+            logger.info("Cached features do not match %s; rebuilding feature panels from raw cache.", universe_config.name)
+            stock_features = macro_features = targets = None
+
+    if stock_features is None or macro_features is None or targets is None:
+        sector_mapping = dict(universe_config.tickers)
+        stock_features = StockFeatureGenerator(
+            data_dict,
+            benchmark_ticker=universe_config.benchmark,
+            sector_mapping=sector_mapping,
+        ).generate()
+        macro_features = MacroFeatureGenerator(
+            data_dict,
+            benchmark_ticker=universe_config.benchmark,
+            vix_proxy=universe_config.vix_proxy,
+        ).generate()
+        targets = TargetGenerator(
+            data_dict,
+            forward_horizon=21,
+            sector_mapping=sector_mapping,
+        ).generate()
 
     return stock_features, macro_features, targets, prices_dict, pit_mask
 
@@ -55,10 +90,16 @@ def run_single(base_config, universe_config, out_dir: Path, label: str = "Strate
         pit_mask=pit_mask
     )
 
+    alpha_provider = None
+    if getattr(base_config.alpha, "default_score", "") == "volatility_score":
+        alpha_scores = compute_volatility_score_frame(stock_features)
+        alpha_provider = build_alpha_score_provider(alpha_scores, score_col="volatility_score")
+
     history, trades, _ = engine.run(
         use_optimizer=True,
         use_risk_engine=True,
-        top_n_equal_weight=base_config.portfolio.top_n_stocks
+        top_n_equal_weight=None,
+        alpha_score_provider=alpha_provider,
     )
 
     baseline_engine = BaselineEngine(base_config, universe_config, prices_dict)

@@ -342,7 +342,7 @@ class WalkForwardEngine:
             
             active_sector_mapping = {t: s for t, s in self.universe_config.tickers.items() if t in active_tickers}
 
-            raw_weights = self.optimizer.optimize(
+            raw_weights, optimizer_diag = self.optimizer.optimize(
                 alpha_scores=alpha_scores_filtered,
                 cov_matrix=cov_matrix,
                 current_weights=current_weights,
@@ -351,7 +351,8 @@ class WalkForwardEngine:
             step_diag["optimizer_stats"] = {
                 "date": str(signal_date.date()),
                 "num_assets": len(active_tickers),
-                "gross_raw": float(raw_weights.sum())
+                "gross_raw": float(raw_weights.sum()),
+                **optimizer_diag,
             }
         else:
             # Simple equal weight of all active

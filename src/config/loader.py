@@ -32,6 +32,9 @@ class PortfolioConfig(BaseModel):
     cash_max: float = 0.30
     top_n_stocks: int = 50
 
+class AlphaConfig(BaseModel):
+    default_score: str = "volatility_score"
+
 class RLConfig(BaseModel):
     enabled: bool = False
     model_type: str = "ppo"
@@ -46,6 +49,7 @@ class BaseConfig(BaseModel):
     backtest: BacktestConfig
     execution: ExecutionConfig = ExecutionConfig()
     portfolio: PortfolioConfig
+    alpha: AlphaConfig = AlphaConfig()
     rl: RLConfig
     research: ResearchConfig = ResearchConfig()
 

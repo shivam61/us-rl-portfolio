@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-28T09:38:15+00:00
+Last updated: 2026-04-28T13:26:25+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -132,3 +132,78 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
 - `regime_switch_score` reached `IC=0.0427`, `IC Sharpe=0.1834`, `Top-Bot=1.27%`, `CAGR=13.49%`, `MaxDD=-31.86%`.
 - Main conclusion: the current regime map helps volatility signals in low-vol windows, but switching away from `volatility_score` in neutral and high-vol states degrades the overall sp100 result.
 - Artifacts saved to `artifacts/reports/regime_switch_results.md` and `artifacts/reports/regime_ic.csv`.
+- Production default was switched to `volatility_score` via a reusable `src/alpha/` module and the default backtest path now uses that sleeve when `alpha.default_score` is set to `volatility_score`.
+- `trend_score` and `mean_reversion_score` remain research-only in `scripts/run_regime_switch_strategy.py`; no regime switching or RL changes were carried into production.
+- New sp100 production sweep artifacts:
+  `artifacts/reports/volatility_alpha_production.md`,
+  `artifacts/reports/volatility_topn_sensitivity.csv`,
+  `artifacts/reports/volatility_sector_cap_sensitivity.csv`.
+- sp100 production sweep result:
+  `volatility_score + optimizer + risk` improved risk-adjusted performance to `CAGR=17.97%`, `Sharpe=0.932`, `MaxDD=-36.51%`.
+- Best sector-cap variant on sp100 was `20%` with `CAGR=18.13%`, `Sharpe=0.941`, `MaxDD=-36.50%`; Sharpe target passed, drawdown target still failed.
+- Equal-weight Top-N sensitivity on sp100 favored smaller books for CAGR (`Top-20 = 19.76%`) but none of the equal-weight variants met Sharpe `> 0.9` or MaxDD `< 32%`.
+- During optimizer-based runs, OSQP occasionally returned `infeasible` or `user_limit`, so some periods fell back to the optimizer's equal-weight backup path; worth hardening before treating optimizer results as final production behavior.
+- Baseline frozen as `baseline_v1_volatility_score_sp100` with:
+  `sp100`, `volatility_score`, optimizer enabled, risk enabled, sector cap `20%`, RL disabled.
+- Exact frozen run ID:
+  `baseline_v1_volatility_score_sp100_2026-04-28T12:25:04Z`
+- Baseline record saved to:
+  `artifacts/reports/baseline_v1_volatility_score_sp100.md`
+- Production-default config now aligns with the frozen sector cap (`config/base.yaml`) and the named baseline config is:
+  `config/baseline_v1_volatility_score_sp100.yaml`
+- Recommended next step: harden optimizer stability first, then do drawdown decomposition on the frozen baseline.
+- Optimizer stability hardening implemented:
+  alpha z-score clipping at `±3`, covariance repair helpers, deterministic fallback hierarchy (`full -> relaxed -> equal-weight Top-N`), and per-rebalance optimizer diagnostics.
+- Optimizer diagnostics now capture:
+  covariance condition number, fallback level, solver attempt statuses, constraint-violation summaries, asset count, and sector distribution.
+- Stability regression report saved to:
+  `artifacts/reports/optimizer_stability.md`
+- Optimizer stability report run ID:
+  `optimizer_stability_20260428T125149Z`
+- Report summary on frozen sp100 baseline:
+  `239` rebalances, `236` full solves, `2` relaxed solves, `1` equal-weight fallback.
+- Post-hardening baseline run in the stability report came in at:
+  `CAGR=17.30%`, `Sharpe=0.917`, `MaxDD=-37.06%`.
+- Constraint enforcement is effectively stable:
+  max stock-cap overage `0`, max sector-cap overage `0`, max turnover overage `4.399e-04` (numerical-scale residual).
+- Recommended next step tightened:
+  analyze the remaining drawdown episodes first, then decide whether the final optimizer polish should target turnover tolerance, alternate solver settings, or additional cash/risk controls.
+- Drawdown attribution completed for frozen `baseline_v1_volatility_score_sp100` without changing strategy.
+- Artifacts saved:
+  `artifacts/reports/drawdown_attribution.md`,
+  `artifacts/reports/drawdown_periods.csv`.
+- Top drawdowns were:
+  2020 COVID crash `-37.06%`, 2022 bear market `-33.65%`, 2008 crisis `-29.83%`, 2011 drawdown `-21.94%`, 2018 Q4 `-19.63%`.
+- Attribution conclusion:
+  drawdowns are primarily from market crashes plus volatility-factor failure during stress windows; not primarily from sector concentration or turnover/whipsaw.
+- Drawdown aggregate:
+  average gross exposure during top drawdowns `77.46%` vs normal `91.02%`, average drawdown beta `0.915`, average top-10 loser contribution `-22.66%`.
+- Next recommended work:
+  focus risk controls on stress-window exposure/beta reduction and factor-failure detection rather than tighter sector caps or turnover throttles.
+- Stress-conditioned alpha tests completed without inversion, new features, optimizer changes, or RL.
+- Artifact saved:
+  `artifacts/reports/stress_conditioned_alpha.md`.
+- Tested variants:
+  baseline, sector-neutral stress alpha, stress cash/exposure scaling, and dampened alpha control.
+- Result:
+  `sector_neutral_stress` improved 2022 drawdown (`-28.95%` vs baseline `-33.65%`) but lowered broad stress IC (`0.0249` vs `0.0371`) and did not pass the MaxDD gate (`-36.92%`).
+- `stress_cash_exposure` improved 2020/2022 drawdowns (`-36.36%`, `-29.37%`) and Sharpe (`0.934`) but still missed MaxDD `<32%` and CAGR was barely above the `16%` gate (`16.06%`).
+- `dampened_stress` was identical to baseline, confirming scalar alpha dampening is a no-op under per-rebalance optimizer alpha normalization.
+- Important nuance:
+  broad stress regime IC remained positive for baseline; the negative IC issue appears concentrated in the top drawdown windows, not every `vix>=0.8 or drawdown<=-10%` stress date.
+- Recommended next step:
+  stop sector-neutral stress alpha as formulated; focus on narrower drawdown-onset / crash-state detection and exposure/beta risk control, or add a true alpha-confidence channel inside the optimizer if confidence weighting is needed.
+- Crash-onset exposure/beta control test completed without changing alpha rankings, optimizer normalization, sector-neutral alpha, or RL.
+- Artifacts saved:
+  `artifacts/reports/crash_onset_control.md`,
+  `artifacts/reports/crash_onset_events.csv`.
+- Tested variants:
+  `baseline_v1`, `crash_onset_exposure_50`, `crash_onset_exposure_60`, `crash_onset_beta_cap_075`, `crash_onset_exposure_60_plus_beta_cap`.
+- Result:
+  no crash-onset variant improved MaxDD or 2020/2022 drawdowns; all remained around `MaxDD=-37.06%`.
+- Trigger diagnostics:
+  `576` trigger days, `11.27%` trigger-day share, `75.17%` false-positive rate, `41.75%` missed-crash rate.
+- Conclusion:
+  current crash-onset formulation is too broad and too late; do not adopt as production default.
+- Recommended next step:
+  design a narrower crash detector around actual rebalance timing and early drawdown inflection, then re-test before adding any production risk overlay.

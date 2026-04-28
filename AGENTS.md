@@ -5,12 +5,12 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-28T09:38:15+00:00
+## Current State — 2026-04-28T13:26:25+00:00
 - Branch: `main`
-- Working tree: 7 changed path(s)
-- Dirty paths sample: `M docs/agent_handoff.md`, ` M src/backtest/walk_forward.py`, ` M src/features/stock_features.py`, ` M tests/test_leakage_guards.py`, `?? artifacts/reports/regime_ic.csv`
-- Latest commit: `3f5b4e1c 2026-04-28 docs: align claude shim to agents flow`
-- Active jobs: none detected
+- Working tree: 28 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M config/base.yaml`, ` M docs/agent_handoff.md`, ` M scripts/run_backtest.py`
+- Latest commit: `15768677 2026-04-28 feat: add regime-switch factor research`
+- Active jobs: backtest: pid=31122 elapsed=420s
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
 <!-- CURRENT_STATE_END -->
