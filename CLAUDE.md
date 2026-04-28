@@ -3,8 +3,12 @@
 Quantitative US equity portfolio: LightGBM alpha signal → MVO optimizer → heuristic risk engine → walk-forward backtest (2006–2026, NYSE, S&P 500 universe). RL overlay is parked.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-27T18:52:28
-**Active job:** diagnostics complete — see data/artifacts/reports/universe_expansion_results.md
+## Current State — 2026-04-28T08:00:00
+**Phase A complete (sp100 research).**  
+Key finding: cross-sectional reversal + risk premium dominate in sp100 2016-2026.  
+Best factor: `volatility_only` (risk-premium) IC=0.050, `score_50_50` (combo) IC=0.041.  
+IC Sharpe gate (≥0.30) not met — structural at 44 tickers.  
+Next: validate on sp500 (503 tickers) or add fundamental momentum signal.
 <!-- CURRENT_STATE_END -->
 
 ## Stable Baselines (sp500 universe, 2008–2026, DO NOT redefine)

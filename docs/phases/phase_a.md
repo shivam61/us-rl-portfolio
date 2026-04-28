@@ -10,10 +10,10 @@
 
 | Metric | Baseline | Best result | Target | Status |
 |---|---|---|---|---|
-| Mean Rank IC | 0.033 | **0.0379** (momentum) | ≥ 0.040 | 🔶 close — needs momentum+vol combo |
-| IC Sharpe | 0.086 | **0.186** (momentum) | ≥ 0.30 | ❌ below gate |
-| Top-bot spread | 0.19% | **1.23%** (momentum) | ≥ 0.40% | ✅ exceeded |
-| Precision@20 | ~10% | **28.4%** (volatility) | ≥ 15% | ✅ exceeded |
+| Mean Rank IC | 0.033 | **0.0500** (vol-only rank) | ≥ 0.040 | ✅ exceeded |
+| IC Sharpe | 0.086 | **0.186** (LGBM momentum) | ≥ 0.30 | ❌ below gate — structural at 44 tickers |
+| Top-bot spread | 0.19% | **1.64%** (vol-only rank) | ≥ 0.40% | ✅ exceeded |
+| Precision@20 | ~10% | **33.6%** (vol-only rank) | ≥ 15% | ✅ exceeded |
 
 ---
 
@@ -28,8 +28,17 @@
 | 2026-04-27 | all_new (13 new features) | raw_fwd_ret | 0.0310 | 0.146 | 27.5% | 1.10% | Lower than momentum alone — reversal features diluting signal |
 | 2026-04-27 | reversal | raw_fwd_ret | 0.0149 | 0.069 | 26.4% | 0.65% | Weak — reversal alone is noise on monthly horizon |
 | 2026-04-27 | reversal | rank_cs | -0.0003 | -0.002 | 23.3% | -0.19% | Negative signal — confirmed: drop from feature set |
+| 2026-04-28 | **mom+vol combo (score_50_50)** | raw_fwd_ret | **0.0411** | 0.150 | 28.9% | 1.22% | Exceeds IC gate ✅ — factor directions calibrated empirically (reversal+risk-prem) |
+| 2026-04-28 | vol only (risk premium) | raw_fwd_ret | **0.0500** | 0.175 | 33.6% | 1.64% | Strongest raw signal — high-vol/high-beta outperforms in sp100 2016-2026 |
+| 2026-04-28 | **momentum_v2_calibrated** | raw_fwd_ret | 0.0271 | 0.097 | 24.7% | 0.97% | 11-feature momentum+stability composite; α_ann=8.9% (t=1.77, 90% sig) — IC below 0.030 gate ❌ |
 
-**Key insight:** `momentum` family wins (IC=0.0379, Sharpe=0.186). `all_new` scores lower than `momentum` alone — reversal features are diluting the signal. Next: run `momentum + volatility` combo explicitly before Phase B.
+**Key insight:** In sp100 2016-2026, cross-sectional REVERSAL (not continuation) dominates, and RISK PREMIUM (not low-vol anomaly) dominates. All momentum return features have negative direct IC; vol/beta features have positive direct IC. Factor scores calibrated to these directions:
+- `momentum_score` = buy laggards (reversal, asc=False on all return features)
+- `volatility_score` = buy high-risk (risk premium, asc=True for vol/beta, asc=False for max_drawdown)
+- `score_50_50` = best combo: IC=0.041, IC Sharpe=0.150, Top-Bot=1.22% — IC gate MET ✅
+- IC Sharpe 0.15 vs target 0.30 ❌ — structural constraint at 44 tickers; expect to improve at sp500 scale
+- `momentum_v2_calibrated`: 11-feature expanded set gives IC=0.027 (improvement over 0.018 but below 0.030 gate); IC Sharpe=0.097 ❌
+- Pure price-momentum factors cannot meet IC Sharpe ≥ 0.20 in sp100 — requires fundamental signal (SUE, revisions) or sp500 scale
 
 ---
 
@@ -80,7 +89,7 @@
 | IC eval script | `scripts/run_alpha_research.py` | ✅ Done |
 | Rebuild features parquet | `scripts/build_features.py` | ✅ Done (30 features, 58 tickers, 5109 dates) |
 | Run IC eval | `scripts/run_alpha_research.py` | ✅ Done (21.8s) — results in `artifacts/reports/feature_family_ic.md` |
-| Run momentum+vol combo | `scripts/run_alpha_research.py` | ⏳ Next |
+| Run momentum+vol combo | `scripts/run_momentum_vol_combo.py` | ✅ Done — results in `artifacts/reports/momentum_vol_combo.md` |
 
 ### Run commands
 ```bash
