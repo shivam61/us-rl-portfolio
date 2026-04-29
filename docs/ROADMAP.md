@@ -10,12 +10,12 @@
 
 | | |
 |---|---|
-| Active phase | **A.7.1** — trend hedge overlay is leading Sleeve 2 candidate; next reduce sp500 drawdown below 40% |
+| Active phase | **A.7.2** — A.7.1 trend drawdown control passed; next robustness/cost/leverage review |
 | Current production alpha candidate | `volatility_score` as component only, not standalone sleeve |
 | Best IC so far | sp100 mean period IC 0.0379; sp500 mean period IC 0.0259; rebalance IC ~0.034 on sp500 |
 | Best IC Sharpe | ~0.13 in Phase A.1 portfolio diagnostics — original 0.30 gate still not met |
-| Phase A status | Conditionally passed for alpha discovery only: high-vol/risk-premium alpha is real; trend overlay is orthogonal but not yet drawdown-clean |
-| Blocking gate | Do not continue optimizer/RL; reduce sp500 trend+vol blend MaxDD from ~45% to <40% while keeping Sharpe > equal-weight |
+| Phase A status | Candidate investable non-RL expression found: `vol_top_20` + stress-scaled trend overlay passed sp500 drawdown/Sharpe gates |
+| Blocking gate | Do not continue optimizer/RL until A.7.2 robustness confirms A.7.1 candidate under costs, leverage caps, periods, and regimes |
 | sp500 baselines | Locked validation/system baseline — see table below, do not redefine |
 
 ## Baseline Convention

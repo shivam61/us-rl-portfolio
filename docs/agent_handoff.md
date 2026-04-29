@@ -217,6 +217,15 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   SP100 research passed with 29 blend variants, but SP500 validation failed because MaxDD remained above the `<40%` gate. Best SP500 Sharpe variant was `blend_vol_top_20_trend_3m_6m_long_cash_60_40` with `CAGR=24.15%`, `Sharpe=0.947`, `MaxDD=-45.09%`. Best drawdown group was long/short 60/40 around `MaxDD=-44.57%`.
 - Current decision:
   trend hedge overlay is the leading Sleeve 2 candidate, but not production-passed. Next work should be A.7.1 drawdown control: stronger hedge expression, higher trend allocation, crash-triggered trend scaling, explicit SPY hedge overlay, or portfolio-level beta cap. Keep RL disabled.
+- Added `scripts/run_phase_a7_1_drawdown_control.py`, a focused sp500 validation runner for wider trend weights, continuous stress scaling, and residual beta hedging. It keeps `vol_top_20` and `trend_3m_6m_long_cash` fixed.
+- A.7.1 result:
+  passed the sp500 validation gate. 16 variants cleared MaxDD `<40%`, Sharpe above equal-weight, CAGR `>18%`, and low trend crisis correlation.
+- Leading simple candidate:
+  `a7_1_stress_50_50_k_30` with `CAGR=22.76%`, `Sharpe=1.488`, `MaxDD=-26.41%`, max gross `1.375`, and no residual SPY short hedge.
+- Best Sharpe hedged candidate:
+  `a7_1_hedge_50_50_k_20_beta_0_5` with `CAGR=23.59%`, `Sharpe=1.584`, `MaxDD=-28.85%`, but it uses residual SPY hedge down to about `-59%` and max gross `1.713`.
+- Current decision:
+  A.7.1 produced the first candidate investable non-RL expression. Prefer the simpler stress-scaled blend for next validation; treat beta-hedged variants as secondary until leverage/turnover are reviewed. Next work should be A.7.2 robustness/cost/leverage review before optimizer/RL.
 - Future 20-year/RL note:
   current raw backtest starts in 2006, but metrics start after warmup around 2008. Preserve chronological splits for RL, keep 2019-2026 as a candidate final holdout, and require A.5 coverage by period before using fundamentals in RL state features.
 

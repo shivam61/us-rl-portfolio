@@ -622,6 +622,56 @@ SP500 validation:
 
 ---
 
+## Phase A.7.1 — Trend Drawdown Control
+
+**Goal:** close the remaining sp500 drawdown gap from about `-45%` to below `-40%` without changing `volatility_score` or enabling RL.
+
+### Implementation
+
+| Item | File | Status |
+|---|---|---|
+| A.7.1 drawdown-control runner | `scripts/run_phase_a7_1_drawdown_control.py` | Implemented |
+| Main report | `artifacts/reports/phase_a7_1_drawdown_control_results.md` | Done |
+| Metrics | `artifacts/reports/phase_a7_1_metrics.csv` | Done |
+| Gate report | `artifacts/reports/phase_a7_1_gate_report.csv` | Done |
+| Weight diagnostics | `artifacts/reports/phase_a7_1_weight_diagnostics.csv` | Done |
+
+Tests:
+- Base blend frontier: `60/40`, `55/45`, `50/50`, `45/55`, `40/60`
+- Continuous stress scaling:
+  `trend_weight = base_trend_weight + k * stress_score`
+- `stress_score = 0.5 * VIX percentile + 0.5 * normalized SPY drawdown`
+- Residual beta hedge:
+  `hedge_weight = -stress_score * max(0, portfolio_beta - target_beta)`
+- Beta targets: `0.7`, `0.5`
+
+### Phase A.7.1 result
+
+Run scope:
+- Validation universe: `sp500_dynamic`
+- Base alpha: unchanged `vol_top_20`
+- Hedge sleeve: `trend_3m_6m_long_cash`
+
+Gate:
+- MaxDD `<40%`
+- Sharpe `>` equal-weight
+- CAGR `>18%`
+- Trend crisis correlation versus volatility sleeve `<0.6`
+
+Result:
+- 16 variants passed the sp500 gate.
+- Simple frontier `50/50` passed: CAGR `21.47%`, Sharpe `0.992`, MaxDD `-39.95%`.
+- Simple frontier `40/60` passed with MaxDD `-34.31%`, but CAGR fell to `19.82%`.
+- Best simple stress-scaled candidate: `a7_1_stress_50_50_k_30`, CAGR `22.76%`, Sharpe `1.488`, MaxDD `-26.41%`, max gross `1.375`, no SPY short hedge.
+- Best Sharpe hedged candidate: `a7_1_hedge_50_50_k_20_beta_0_5`, CAGR `23.59%`, Sharpe `1.584`, MaxDD `-28.85%`, but max gross `1.713` and residual SPY hedge as low as `-59%`.
+- Best CAGR hedged candidate: `a7_1_hedge_60_40_k_10_beta_0_5`, CAGR `27.09%`, Sharpe `1.498`, MaxDD `-34.38%`, but max gross near `2.0`.
+
+**Decision:** A.7.1 passed the sp500 validation gate. The leading production-candidate expression should be the simpler continuous stress-scaled blend, especially `50/50 + k=0.30`, because it clears drawdown without relying on large residual SPY shorts. Beta-hedged variants are promising but need separate leverage/turnover review before consideration.
+
+**Next implication:** do not move to RL yet. First run A.7.2 robustness on the A.7.1 candidate: period/regime breakdown, turnover/cost sensitivity, gross exposure caps, stress-score parameter sensitivity, and validation on both `sp100_sample` and `sp500_dynamic`.
+
+---
+
 ## Feature Families
 
 ### Baseline (17 features — already existed)
