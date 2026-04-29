@@ -10,12 +10,12 @@
 
 | | |
 |---|---|
-| Active phase | **A.3** — first multi-sleeve blend failed sp500 gate; defensive-sleeve feature engineering next |
+| Active phase | **A.4** — beta-targeted defensive sleeve improved correlation but failed sp500 gate; data-layer upgrade next |
 | Current production alpha candidate | `volatility_score` as component only, not standalone sleeve |
 | Best IC so far | sp100 mean period IC 0.0379; sp500 mean period IC 0.0259; rebalance IC ~0.034 on sp500 |
 | Best IC Sharpe | ~0.13 in Phase A.1 portfolio diagnostics — original 0.30 gate still not met |
-| Phase A status | Conditionally passed for alpha discovery only: high-vol/risk-premium alpha is real, but standalone and first blend expression failed |
-| Blocking gate | Do not continue optimizer/RL; rebuild independent defensive sleeve with stronger non-price fundamentals |
+| Phase A status | Conditionally passed for alpha discovery only: high-vol/risk-premium alpha is real, but standalone and defensive-blend expressions failed |
+| Blocking gate | Do not continue optimizer/RL; add true point-in-time survivability fundamentals before more sleeve-blend tuning |
 | sp500 baselines | Locked validation/system baseline — see table below, do not redefine |
 
 ## Baseline Convention

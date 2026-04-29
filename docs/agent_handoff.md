@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-29T04:07:48+00:00
+Last updated: 2026-04-29T05:18:10+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -142,6 +142,29 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   do not proceed to optimizer integration, improved risk engine, or RL from this A.3 blend. Keep `volatility_score` as Sleeve 1 and return to defensive-sleeve feature engineering.
 - Recommended next work:
   build Sleeve 2 with stronger non-price fundamentals: true leverage/debt, accruals or earnings quality, profitability persistence, value-quality composite, and analyst revisions if available. Avoid price-risk-heavy defensive quality because it remains correlated with volatility alpha in stress regimes.
+- Phase A.4 defensive stability sleeve was implemented in `scripts/run_phase_a4_defensive_sleeve.py`.
+- A.4 intentionally avoided `ROE + momentum + growth` as the quality score. Sleeve 2 was reframed as stability/survivability plus beta control inside the defensive sleeve.
+- A.4 outputs were saved to:
+  `artifacts/reports/phase_a4_defensive_sleeve_results.md`,
+  `artifacts/reports/phase_a4_sleeve_metrics.csv`,
+  `artifacts/reports/phase_a4_blend_metrics.csv`,
+  `artifacts/reports/phase_a4_correlation_matrix.csv`,
+  `artifacts/reports/phase_a4_overlap_report.csv`,
+  `artifacts/reports/phase_a4_data_availability.csv`.
+- Beta targeting worked mechanically:
+  target beta `0.6` realized around `0.604-0.606` on sp100 and `0.601-0.603` on sp500.
+- A.4 lowered sp500 vol-defensive correlation, but not enough:
+  best full correlation was `0.563`, best crisis correlation was `0.645`; gates were `<0.5` and `<0.6`.
+- A.4 sp500 defensive sleeve remained weak:
+  best standalone defensive sleeve `CAGR=8.51%`, `Sharpe=0.487`, `MaxDD=-48.78%`.
+- A.4 best sp500 blend Sharpe:
+  `0.694` with `CAGR=18.29%`, `MaxDD=-53.51%`, below equal-weight Sharpe `0.779`.
+- A.4 best sp500 blend drawdown:
+  `MaxDD=-50.49%`, still above the `<40%` gate.
+- Data audit explains the failure:
+  sp500 ROE/PE/PB/EPS-growth coverage is only about `8.0-8.5%`; debt/leverage, cash-flow accruals, gross margin, and analyst revisions are unavailable.
+- Decision:
+  beta-neutralization inside Sleeve 2 is directionally correct and should be retained, but A.4 still failed the sp500 gate. Do not proceed to optimizer/risk/RL. Next work should be data-layer upgrade for true survivability fundamentals before more blend tuning.
 
 ### 2026-04-28
 

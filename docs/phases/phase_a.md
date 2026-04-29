@@ -241,6 +241,78 @@ Artifacts:
 
 ---
 
+## Phase A.4 — Defensive Stability Sleeve With Beta Targeting
+
+**Goal:** create a more orthogonal Sleeve 2 by changing the economic exposure from growth/quality to stability/survivability and by enforcing beta control inside the defensive sleeve.
+
+**Rules:**
+- Do not modify `volatility_score`.
+- Do not merge defensive features into the volatility model.
+- Do not enable RL.
+- Avoid the trap `quality_score = ROE + momentum + growth`; that becomes growth/high-beta exposure.
+- Apply beta targeting inside the defensive sleeve, not only at the final blend layer.
+
+### Implementation
+
+| Component | Design |
+|---|---|
+| Runner | `scripts/run_phase_a4_defensive_sleeve.py` |
+| Sleeve 1 | Existing `volatility_score`, Top-10 and Top-20 equal weight |
+| Sleeve 2 score | `defensive_stability_score` |
+| Defensive selection | Sector-balanced Top-30 and Top-50 |
+| Defensive beta targets | Equal weight, target beta `0.6`, target beta `0.8` |
+| Blends | `60/40`, `50/50`, `70/30`, `40/60` |
+
+Defensive score ingredients use only currently available point-in-time features:
+- Profitability survival from clipped `roe`.
+- Profitability stability from rolling ROE stability.
+- Earnings stability and downside EPS survival from `eps_growth_yoy`.
+- Valuation buffer from `pe_ratio` and `pb_ratio`.
+- Low downside volatility and low max drawdown.
+- Beta survivability around target beta `0.65`.
+- Return stability around steady positive-day frequency.
+
+### Data availability
+
+| Data family | sp100 | sp500 | Decision |
+|---|---:|---:|---|
+| ROE / PE / PB / EPS growth | `91.6%` to `96.5%` coverage on sp100 | only `8.0%` to `8.5%` coverage on sp500 | Insufficient for sp500 defensive sleeve |
+| Price risk / beta / stability | `96.7%` to `98.8%` coverage on sp100 | `90.5%` to `98.8%` coverage on sp500 | Usable but not independent alpha |
+| Debt, leverage, interest coverage | `0%` | `0%` | Missing |
+| Cash-flow accruals, gross margin | `0%` | `0%` | Missing |
+| Analyst revisions | `0%` | `0%` | Missing |
+
+### Phase A.4 results
+
+Artifacts:
+- `artifacts/reports/phase_a4_defensive_sleeve_results.md`
+- `artifacts/reports/phase_a4_sleeve_metrics.csv`
+- `artifacts/reports/phase_a4_blend_metrics.csv`
+- `artifacts/reports/phase_a4_correlation_matrix.csv`
+- `artifacts/reports/phase_a4_overlap_report.csv`
+- `artifacts/reports/phase_a4_data_availability.csv`
+
+| Check | sp100 result | sp500 result | Decision |
+|---|---:|---:|---|
+| Defensive beta targeting mechanics | Target `0.6` realized `0.604` to `0.606` | Target `0.6` realized `0.601` to `0.603` | Pass mechanically |
+| Best defensive sleeve | CAGR `17.02%`, Sharpe `0.901`, MaxDD `-42.13%` | CAGR `8.51%`, Sharpe `0.487`, MaxDD `-48.78%` | Does not generalize |
+| Best beta-targeted defensive sleeve | CAGR `13.15%`, Sharpe `0.828`, MaxDD `-39.60%` | CAGR `7.50%`, Sharpe `0.468`, MaxDD `-47.17%` | Beta lower, alpha too weak |
+| Best sp500 blend Sharpe | n/a | Sharpe `0.694`, CAGR `18.29%`, MaxDD `-53.51%` | Fails equal-weight Sharpe `0.779` |
+| Best sp500 blend drawdown | n/a | MaxDD `-50.49%`, CAGR `16.37%`, Sharpe `0.685` | Fails MaxDD `<40%` |
+| Best sp500 vol-defensive correlation | n/a | full corr `0.563`, crisis corr `0.645` | Improved but fails `<0.5` / `<0.6` gates |
+
+**Conclusion:** A.4 confirms the critique: beta-neutralization is necessary, but not sufficient. It materially reduces correlation versus A.3, especially for `vol_top_10` with beta-target `0.6`, but the current defensive sleeve still lacks enough independent economic alpha on sp500. The core blocker is data, not blend math: sp500 fundamental coverage for ROE/PE/PB/EPS growth is only about `8%`, and the real defensive fields needed for survivability are unavailable.
+
+**Decision:** do not proceed to optimizer integration, improved risk engine, or RL. Keep `volatility_score` as Sleeve 1 and keep the beta-targeted defensive-sleeve machinery, but pause further sleeve-blend tuning until the data layer supports true orthogonal fundamentals.
+
+**Next logical work:** Phase A.5 should be a data-layer and feature-layer upgrade for orthogonal economic exposure:
+1. Add point-in-time balance sheet and cash-flow fields: debt/equity, debt/assets, interest coverage, operating cash flow, accruals, gross margin, asset turnover.
+2. Add analyst revisions or earnings surprise data if available.
+3. Rebuild Defensive Sleeve v3 from survivability, balance-sheet strength, cash-flow quality, and valuation buffer.
+4. Retest A.4 beta-targeted construction only after sp500 fundamental coverage is adequate.
+
+---
+
 ## Feature Families
 
 ### Baseline (17 features — already existed)
