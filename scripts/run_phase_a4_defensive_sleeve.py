@@ -33,7 +33,12 @@ def load_inputs(config_path: str, universe_path: str) -> dict:
     if not universe_config.is_static and universe_config.pit_mask_path:
         pit_mask = pd.read_parquet(universe_config.pit_mask_path)
 
-    ingestion = DataIngestion(cache_dir=base_config.data.cache_dir, force_download=False)
+    ingestion = DataIngestion(
+        cache_dir=base_config.data.cache_dir,
+        force_download=False,
+        fundamental_provider=base_config.fundamentals.provider,
+        fundamental_path=base_config.fundamentals.path,
+    )
     tickers = list(
         set(
             list(universe_config.tickers.keys())

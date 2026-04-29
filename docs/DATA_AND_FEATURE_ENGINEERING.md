@@ -15,7 +15,57 @@ This document is the operating guide for adding data sources and features. Futur
 | Source | Provider | Cache | Notes |
 |---|---|---|---|
 | Prices / volume | `src/data/providers/yfinance_provider.py` | `data/raw/{ticker}.parquet` | Used for price, volume, beta, volatility, drawdown, labels |
-| Fundamentals | `src/data/providers/fundamental_provider.py` | `data/raw/fundamentals_{universe}.parquet` | Current provider is simulated; useful for plumbing, not research-grade alpha |
+| Fundamentals | `src/data/providers/canonical_fundamental_provider.py` | canonical parquet/CSV path from `config/base.yaml` | Canonical local contract for research-grade fundamental data |
+| Simulated fundamentals | `src/data/providers/fundamental_provider.py` | `data/raw/fundamentals_{universe}.parquet` | Plumbing/testing only; not research-grade alpha |
+
+## Canonical Local Fundamentals Contract
+
+The canonical local parquet/CSV adapter is the stable boundary between vendor data and research.
+
+Every future source must normalize into this schema before feature generation:
+
+```text
+filing_date
+ticker
+eps
+book_value
+net_income
+shares_outstanding
+revenue
+gross_profit
+total_assets
+total_debt
+operating_income
+interest_expense
+operating_cash_flow
+```
+
+Optional columns:
+
+```text
+cash_and_equivalents
+total_equity
+capex
+free_cash_flow
+ebitda
+analyst_eps_revision_1m
+analyst_eps_revision_3m
+earnings_surprise
+```
+
+`filing_date` must be the date the information became available to the market. Do not use fiscal period end date as a proxy unless a conservative filing lag has been applied upstream and documented.
+
+Configure the provider in `config/base.yaml`:
+
+```yaml
+fundamentals:
+  provider: "canonical_local"
+  path: "data/fundamentals/canonical_fundamentals.parquet"
+  min_ticker_coverage: 0.80
+  require_pit_dates: true
+```
+
+Use `provider: "simulated"` only for plumbing tests.
 
 ## Fundamental Cache Convention
 
@@ -47,7 +97,7 @@ The old global cache name `data/raw/fundamentals.parquet` is legacy and should n
 
 New experiments should prefer universe-scoped artifacts when reading from disk.
 
-## Current Fundamental Schema
+## Simulated Fundamental Schema
 
 The current simulated provider emits:
 
@@ -65,15 +115,15 @@ The current simulated provider emits:
 | `interest_expense` | `interest_coverage` |
 | `operating_cash_flow` | `ocf_to_net_income`, `accruals_proxy` |
 
-These fields are simulated unless replaced by a real provider. Treat them as a schema and pipeline test, not an investable signal source.
+These fields are simulated unless replaced by the canonical local provider. Treat them as a schema and pipeline test, not an investable signal source.
 
 ## Adding A New Data Source
 
-1. Add a provider under `src/data/providers/`.
-2. Include an availability date per row. For fundamentals, this is usually `filing_date`.
-3. Add or update an ingestion method in `src/data/ingestion.py`.
-4. Cache by source plus universe/ticker set.
-5. Add raw-field coverage checks to `scripts/run_phase_a5_data_feature_audit.py`.
+1. Write a source-specific adapter that outputs the canonical local schema.
+2. Include an availability date per row as `filing_date`.
+3. Save the normalized file as parquet or CSV.
+4. Point `fundamentals.path` at that file with `provider: "canonical_local"`.
+5. Run the A.5 audit and fix coverage/schema failures before research.
 6. Add engineered features in `src/features/`, with a one-day lag.
 7. Add engineered-feature coverage checks to the A.5 audit.
 8. Update this document with raw fields, engineered features, and known caveats.

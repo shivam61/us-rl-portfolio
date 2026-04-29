@@ -10,12 +10,12 @@
 
 | | |
 |---|---|
-| Active phase | **A.5** — plumbing fixed; next needs real point-in-time survivability fundamentals |
+| Active phase | **A.6** — canonical local fundamentals contract implemented; next load real PIT data |
 | Current production alpha candidate | `volatility_score` as component only, not standalone sleeve |
 | Best IC so far | sp100 mean period IC 0.0379; sp500 mean period IC 0.0259; rebalance IC ~0.034 on sp500 |
 | Best IC Sharpe | ~0.13 in Phase A.1 portfolio diagnostics — original 0.30 gate still not met |
 | Phase A status | Conditionally passed for alpha discovery only: high-vol/risk-premium alpha is real, but standalone and defensive-blend expressions failed |
-| Blocking gate | Do not continue optimizer/RL; replace simulated survivability fundamentals with real PIT data before alpha decisions |
+| Blocking gate | Do not continue optimizer/RL; run A.5/A.4 on `canonical_local` real PIT fundamentals before alpha decisions |
 | sp500 baselines | Locked validation/system baseline — see table below, do not redefine |
 
 ## Baseline Convention

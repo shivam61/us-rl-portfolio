@@ -24,7 +24,12 @@ def main():
     all_tickers = list(set(all_tickers))
     
     logger.info(f"Downloading data for {len(all_tickers)} tickers...")
-    ingestion = DataIngestion(cache_dir=base_config.data.cache_dir, force_download=base_config.data.force_download)
+    ingestion = DataIngestion(
+        cache_dir=base_config.data.cache_dir,
+        force_download=base_config.data.force_download,
+        fundamental_provider=base_config.fundamentals.provider,
+        fundamental_path=base_config.fundamentals.path,
+    )
     
     # Fetch data
     _ = ingestion.fetch_universe_data(

@@ -24,7 +24,12 @@ def main():
     features_dir = cache_dir / "features"
     features_dir.mkdir(parents=True, exist_ok=True)
     
-    ingestion = DataIngestion(cache_dir=base_config.data.cache_dir, force_download=False)
+    ingestion = DataIngestion(
+        cache_dir=base_config.data.cache_dir,
+        force_download=False,
+        fundamental_provider=base_config.fundamentals.provider,
+        fundamental_path=base_config.fundamentals.path,
+    )
     
     all_tickers = list(universe_config.tickers.keys()) + \
                   universe_config.sector_etfs + \

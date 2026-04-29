@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-29T05:53:24+00:00
+Last updated: 2026-04-29T06:06:52+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -187,6 +187,14 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   best sp500 standalone defensive Sharpe improved from `0.487` to `0.650`; best blend Sharpe improved from `0.694` to `0.745`, but remains below equal-weight `0.779`; best blend MaxDD remained around `-49.34%`; best crisis correlation improved to `0.610` but still missed `<0.6`.
 - Decision:
   A.5 plumbing is fixed, A.4 direction improved, but no production decision should be made from simulated fundamentals. Next step is replacing/augmenting the fundamental provider with real point-in-time survivability data, then rerunning A.5 and A.4.
+- Phase A.6 canonical fundamentals contract was implemented.
+- `src/data/providers/canonical_fundamental_provider.py` now defines the canonical local parquet/CSV schema, required fields, common column aliases, date parsing, ticker normalization, deduping, ticker/date filtering, and schema validation.
+- `config/base.yaml` now has `fundamentals.provider`, `fundamentals.path`, `fundamentals.min_ticker_coverage`, and `fundamentals.require_pit_dates`.
+- `src/data/ingestion.py` selects either `simulated` or `canonical_local` fundamentals based on config.
+- `scripts/run_phase_a5_data_feature_audit.py` now records provider, minimum coverage threshold, coverage pass/fail, and canonical required-column presence.
+- `docs/DATA_AND_FEATURE_ENGINEERING.md` was updated to state that local parquet/CSV canonical fundamentals are the stable research contract. Future SEC/FMP/Polygon/Sharadar/manual sources should normalize into that schema first.
+- Next step:
+  obtain or create a real PIT canonical fundamentals parquet/CSV, switch `fundamentals.provider` to `canonical_local`, rerun A.5 audit, then rerun A.4. Do not make optimizer/RL decisions from the simulated provider.
 
 ### 2026-04-28
 

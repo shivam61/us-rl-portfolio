@@ -7,17 +7,31 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from src.data.providers.yfinance_provider import YFinanceProvider
 from src.data.providers.fundamental_provider import FundamentalProvider
+from src.data.providers.canonical_fundamental_provider import CanonicalFundamentalProvider
 
 logger = logging.getLogger(__name__)
 
 class DataIngestion:
-    def __init__(self, cache_dir: str, force_download: bool = False):
+    def __init__(
+        self,
+        cache_dir: str,
+        force_download: bool = False,
+        fundamental_provider: str = "simulated",
+        fundamental_path: Optional[str] = None,
+    ):
         self.cache_dir = Path(cache_dir)
         self.raw_dir = self.cache_dir / "raw"
         self.raw_dir.mkdir(parents=True, exist_ok=True)
         self.force_download = force_download
         self.provider = YFinanceProvider()
-        self.fundamental_provider = FundamentalProvider()
+        if fundamental_provider == "simulated":
+            self.fundamental_provider = FundamentalProvider()
+        elif fundamental_provider == "canonical_local":
+            if not fundamental_path:
+                raise ValueError("fundamental_path is required for canonical_local fundamentals")
+            self.fundamental_provider = CanonicalFundamentalProvider(fundamental_path)
+        else:
+            raise ValueError(f"Unsupported fundamental provider: {fundamental_provider}")
 
     def _fundamentals_cache_path(self, tickers: List[str], cache_key: Optional[str] = None) -> Path:
         if cache_key:

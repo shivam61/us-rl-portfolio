@@ -328,6 +328,8 @@ Artifacts:
 | Universe-scoped feature artifact writes | `scripts/build_features.py` | ✅ Implemented |
 | Reusable data/feature guide | `docs/DATA_AND_FEATURE_ENGINEERING.md` | ✅ Implemented |
 | Coverage audit runner | `scripts/run_phase_a5_data_feature_audit.py` | ✅ Implemented |
+| Canonical local fundamentals provider | `src/data/providers/canonical_fundamental_provider.py` | ✅ Implemented |
+| Config-driven fundamentals provider selection | `config/base.yaml`, `src/config/loader.py`, `src/data/ingestion.py` | ✅ Implemented |
 
 ### New Engineered Fundamental Features
 
@@ -393,6 +395,42 @@ A.4 was rerun after wiring the new survivability features into `defensive_stabil
 | Best crisis correlation | `0.645` | `0.610` | Improved but still above `<0.6` |
 
 **Conclusion:** A.5 fixed the feature-engineering plumbing problem. The A.4 revisit moved in the right direction, especially on defensive sleeve Sharpe, but still did not pass the investability gates. Because the expanded fundamentals are simulated, this rerun is only a plumbing validation. The next research-grade step is to replace the simulated fundamental provider with real point-in-time survivability data, then rerun A.5 and A.4.
+
+## Phase A.6 — Canonical Fundamentals Contract
+
+**Goal:** make the local parquet/CSV fundamentals adapter the canonical contract. Future vendor sources must normalize into this schema before research code sees them.
+
+### Implementation
+
+| Item | File | Status |
+|---|---|---|
+| Canonical provider | `src/data/providers/canonical_fundamental_provider.py` | ✅ Implemented |
+| Required schema and aliases | `src/data/providers/canonical_fundamental_provider.py` | ✅ Implemented |
+| Config fields | `config/base.yaml`, `src/config/loader.py` | ✅ Implemented |
+| Ingestion provider switch | `src/data/ingestion.py` | ✅ Implemented |
+| A.5 audit includes provider and schema gate fields | `scripts/run_phase_a5_data_feature_audit.py` | ✅ Implemented |
+| Documentation | `docs/DATA_AND_FEATURE_ENGINEERING.md` | ✅ Implemented |
+
+### Canonical schema
+
+Required columns:
+- `filing_date`
+- `ticker`
+- `eps`
+- `book_value`
+- `net_income`
+- `shares_outstanding`
+- `revenue`
+- `gross_profit`
+- `total_assets`
+- `total_debt`
+- `operating_income`
+- `interest_expense`
+- `operating_cash_flow`
+
+Optional columns include cash, capex, free cash flow, EBITDA, analyst revisions, and earnings surprise fields.
+
+**Decision:** all future fundamental data sources should normalize into this local schema. `simulated` remains available for plumbing tests, but research-grade A.4 decisions require `provider: canonical_local` with real PIT data and A.5 coverage passing.
 
 ---
 

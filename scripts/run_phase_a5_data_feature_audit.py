@@ -7,6 +7,7 @@ import pandas as pd
 from src.config.loader import load_config
 from src.data.ingestion import DataIngestion
 from src.features.fundamental_features import FundamentalFeatureGenerator
+from src.data.providers.canonical_fundamental_provider import REQUIRED_CANONICAL_COLUMNS
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -86,7 +87,12 @@ def main():
     for universe_path in args.universes:
         base_config, universe_config = load_config(args.config, universe_path)
         tickers = list(universe_config.tickers.keys())
-        fundamental_ingestion = DataIngestion(cache_dir=base_config.data.cache_dir, force_download=args.force_download)
+        fundamental_ingestion = DataIngestion(
+            cache_dir=base_config.data.cache_dir,
+            force_download=args.force_download,
+            fundamental_provider=base_config.fundamentals.provider,
+            fundamental_path=base_config.fundamentals.path,
+        )
         fundamentals = fundamental_ingestion.fetch_universe_fundamentals(
             tickers=tickers,
             start_date=base_config.backtest.start_date,
@@ -114,6 +120,10 @@ def main():
                 "fundamental_ticker_coverage_pct": len(cached_tickers & set(tickers)) / max(len(tickers), 1),
                 "raw_columns": ",".join(fundamentals.columns) if not fundamentals.empty else "",
                 "engineered_columns": ",".join([c for c in engineered.columns]) if not engineered.empty else "",
+                "provider": base_config.fundamentals.provider,
+                "min_ticker_coverage": base_config.fundamentals.min_ticker_coverage,
+                "coverage_pass": (len(cached_tickers & set(tickers)) / max(len(tickers), 1)) >= base_config.fundamentals.min_ticker_coverage,
+                "canonical_required_columns_present": all(col in fundamentals.columns for col in REQUIRED_CANONICAL_COLUMNS),
             }
         )
         logger.info(

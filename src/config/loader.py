@@ -7,6 +7,12 @@ class DataConfig(BaseModel):
     cache_dir: str = "data"
     force_download: bool = False
 
+class FundamentalsConfig(BaseModel):
+    provider: str = "simulated"
+    path: Optional[str] = None
+    min_ticker_coverage: float = 0.80
+    require_pit_dates: bool = True
+
 class BacktestConfig(BaseModel):
     start_date: str = "2013-01-01"
     end_date: Optional[str] = None
@@ -60,6 +66,7 @@ class ResearchConfig(BaseModel):
 class BaseConfig(BaseModel):
     project: str = "us-rl-portfolio"
     data: DataConfig
+    fundamentals: FundamentalsConfig = FundamentalsConfig()
     backtest: BacktestConfig
     execution: ExecutionConfig = ExecutionConfig()
     portfolio: PortfolioConfig

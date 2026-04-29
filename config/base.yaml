@@ -3,6 +3,12 @@ data:
   cache_dir: "data"
   force_download: false
 
+fundamentals:
+  provider: "simulated"  # canonical_local expects path below
+  path: "data/fundamentals/canonical_fundamentals.parquet"
+  min_ticker_coverage: 0.80
+  require_pit_dates: true
+
 backtest:
   start_date: "2006-01-01"
   end_date: null
