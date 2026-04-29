@@ -1,4 +1,5 @@
-import os
+import hashlib
+import re
 import pandas as pd
 from typing import List, Dict, Optional
 import logging
@@ -18,13 +19,40 @@ class DataIngestion:
         self.provider = YFinanceProvider()
         self.fundamental_provider = FundamentalProvider()
 
-    def fetch_universe_fundamentals(self, tickers: List[str], start_date: str, end_date: Optional[str] = None) -> pd.DataFrame:
-        file_path = self.raw_dir / "fundamentals.parquet"
+    def _fundamentals_cache_path(self, tickers: List[str], cache_key: Optional[str] = None) -> Path:
+        if cache_key:
+            safe_key = re.sub(r"[^A-Za-z0-9_.-]+", "_", cache_key).strip("_").lower()
+        else:
+            digest = hashlib.sha1(",".join(sorted(set(tickers))).encode("utf-8")).hexdigest()[:12]
+            safe_key = f"tickers_{digest}"
+        return self.raw_dir / f"fundamentals_{safe_key}.parquet"
+
+    def fetch_universe_fundamentals(
+        self,
+        tickers: List[str],
+        start_date: str,
+        end_date: Optional[str] = None,
+        cache_key: Optional[str] = None,
+    ) -> pd.DataFrame:
+        requested = sorted(set(tickers))
+        file_path = self._fundamentals_cache_path(requested, cache_key=cache_key)
         if file_path.exists() and not self.force_download:
-            logger.debug("Loading fundamentals from cache.")
-            return pd.read_parquet(file_path)
+            logger.debug("Loading fundamentals from cache: %s", file_path)
+            df = pd.read_parquet(file_path)
+            if "ticker" in df.columns:
+                cached = set(df["ticker"].dropna().astype(str).unique())
+                missing = sorted(set(requested) - cached)
+                if missing:
+                    logger.warning(
+                        "Fundamental cache %s covers %d/%d requested tickers; missing sample=%s",
+                        file_path,
+                        len(cached & set(requested)),
+                        len(requested),
+                        missing[:10],
+                    )
+            return df
             
-        df = self.fundamental_provider.fetch_fundamentals(tickers, start_date, end_date)
+        df = self.fundamental_provider.fetch_fundamentals(requested, start_date, end_date)
         if not df.empty:
             df.to_parquet(file_path)
         return df

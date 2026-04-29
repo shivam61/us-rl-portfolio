@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-29T05:18:10+00:00
+## Current State — 2026-04-29T05:53:24+00:00
 - Branch: `main`
-- Working tree: 12 changed path(s)
-- Dirty paths sample: `M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_a.md`, `?? artifacts/reports/phase_a4_benchmarks.csv`, `?? artifacts/reports/phase_a4_blend_metrics.csv`
-- Latest commit: `47ff631f 2026-04-29 test phase a3 multi sleeve alpha`
+- Working tree: 22 changed path(s)
+- Dirty paths sample: `M artifacts/reports/phase_a4_blend_metrics.csv`, ` M artifacts/reports/phase_a4_correlation_matrix.csv`, ` M artifacts/reports/phase_a4_data_availability.csv`, ` M artifacts/reports/phase_a4_defensive_sleeve_results.md`, ` M artifacts/reports/phase_a4_overlap_report.csv`
+- Latest commit: `22ae12f7 2026-04-29 test phase a4 defensive sleeve`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

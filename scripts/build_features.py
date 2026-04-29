@@ -37,7 +37,11 @@ def main():
     
     # Load fundamental data from cache
     stock_tickers = list(universe_config.tickers.keys())
-    fundamentals_df = ingestion.fetch_universe_fundamentals(tickers=stock_tickers, start_date=base_config.backtest.start_date)
+    fundamentals_df = ingestion.fetch_universe_fundamentals(
+        tickers=stock_tickers,
+        start_date=base_config.backtest.start_date,
+        cache_key=universe_config.name,
+    )
     
     sector_mapping = dict(universe_config.tickers)  # {ticker: sector_etf}
 
@@ -70,6 +74,11 @@ def main():
     sector_features.to_parquet(features_dir / "sector_features.parquet")
     macro_features.to_parquet(features_dir / "macro_features.parquet")
     targets.to_parquet(features_dir / "targets.parquet")
+    universe_key = universe_config.name.lower().replace(" ", "_")
+    stock_features.to_parquet(features_dir / f"stock_features_{universe_key}.parquet")
+    sector_features.to_parquet(features_dir / f"sector_features_{universe_key}.parquet")
+    macro_features.to_parquet(features_dir / f"macro_features_{universe_key}.parquet")
+    targets.to_parquet(features_dir / f"targets_{universe_key}.parquet")
     
     logger.info("Feature building complete.")
 

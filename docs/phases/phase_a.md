@@ -313,6 +313,89 @@ Artifacts:
 
 ---
 
+## Phase A.5 — Data And Feature Layer Hygiene
+
+**Goal:** fix the feature-engineering foundation before revisiting A.4. The A.4 failure exposed a data plumbing issue: `sp500_dynamic` was reading a global `fundamentals.parquet` cache created from the 44-name `sp100_sample` universe.
+
+### Implementation
+
+| Item | File | Status |
+|---|---|---|
+| Universe-scoped fundamental cache | `src/data/ingestion.py` | ✅ Implemented |
+| Fundamental cache call sites pass `cache_key=universe_config.name` | `scripts/build_features.py`, `scripts/download_data.py`, A.3/A.4 runners | ✅ Implemented |
+| Simulated survivability schema for plumbing | `src/data/providers/fundamental_provider.py` | ✅ Implemented |
+| Engineered survivability features when raw fields exist | `src/features/fundamental_features.py` | ✅ Implemented |
+| Universe-scoped feature artifact writes | `scripts/build_features.py` | ✅ Implemented |
+| Reusable data/feature guide | `docs/DATA_AND_FEATURE_ENGINEERING.md` | ✅ Implemented |
+| Coverage audit runner | `scripts/run_phase_a5_data_feature_audit.py` | ✅ Implemented |
+
+### New Engineered Fundamental Features
+
+When raw fields are available, `FundamentalFeatureGenerator` now emits:
+- `debt_to_assets`
+- `debt_to_equity`
+- `asset_turnover`
+- `accruals_proxy`
+- `net_debt_to_assets`
+- `interest_coverage`
+- `ocf_to_net_income`
+- `gross_margin`
+
+### Important caveat
+
+The current `FundamentalProvider` is simulated. A.5 fixes plumbing and coverage, but it does not make the defensive sleeve research-grade. Synthetic fields can validate feature engineering mechanics; they cannot validate alpha. Before treating survivability factors as real alpha, replace or augment the provider with real point-in-time fundamentals and rerun A.5 coverage plus A.4.
+
+### Audit command
+
+```bash
+.venv/bin/python scripts/run_phase_a5_data_feature_audit.py \
+  --config config/base.yaml \
+  --universes config/universes/sp100.yaml config/universes/sp500.yaml
+```
+
+Expected outputs:
+- `artifacts/reports/phase_a5_data_feature_audit.md`
+- `artifacts/reports/phase_a5_data_feature_summary.csv`
+- `artifacts/reports/phase_a5_data_feature_coverage.csv`
+
+**Decision rule:** revisit A.4 only after `sp500_dynamic` has universe-scoped fundamental coverage and the required defensive fields appear in the A.5 audit. If those fields are simulated, label the rerun as a plumbing validation, not an alpha decision.
+
+### Phase A.5 results
+
+Artifacts:
+- `artifacts/reports/phase_a5_data_feature_audit.md`
+- `artifacts/reports/phase_a5_data_feature_summary.csv`
+- `artifacts/reports/phase_a5_data_feature_coverage.csv`
+
+| Check | Result | Decision |
+|---|---|---|
+| sp100 universe-scoped fundamental cache | `44/44` tickers covered | ✅ Pass |
+| sp500 universe-scoped fundamental cache | `503/503` tickers covered | ✅ Pass |
+| sp500 engineered survivability coverage | most fields `98.6%` row coverage, `100%` ticker coverage | ✅ Plumbing pass |
+| Analyst revisions | `0%` coverage | Missing |
+| Research credibility | Current provider remains simulated | ⚠️ Do not treat as real alpha evidence |
+
+The new cache files are:
+- `data/raw/fundamentals_sp100_sample.parquet`
+- `data/raw/fundamentals_sp500_dynamic.parquet`
+
+### A.4 revisit after A.5 plumbing
+
+A.4 was rerun after wiring the new survivability features into `defensive_stability_score`.
+
+| Check | Previous A.4 sp500 | A.5-plumbing A.4 rerun | Decision |
+|---|---:|---:|---|
+| Best standalone defensive sleeve Sharpe | `0.487` | `0.650` | Improved |
+| Best standalone defensive sleeve MaxDD | `-47.17%` | `-45.24%` | Improved but still high |
+| Best blend Sharpe | `0.694` | `0.745` | Improved but below equal-weight `0.779` |
+| Best blend MaxDD | `-50.49%` | `-49.34%` | Still fails `<40%` |
+| Best vol-defensive full correlation | `0.563` | `0.566` | No real improvement |
+| Best crisis correlation | `0.645` | `0.610` | Improved but still above `<0.6` |
+
+**Conclusion:** A.5 fixed the feature-engineering plumbing problem. The A.4 revisit moved in the right direction, especially on defensive sleeve Sharpe, but still did not pass the investability gates. Because the expanded fundamentals are simulated, this rerun is only a plumbing validation. The next research-grade step is to replace the simulated fundamental provider with real point-in-time survivability data, then rerun A.5 and A.4.
+
+---
+
 ## Feature Families
 
 ### Baseline (17 features — already existed)

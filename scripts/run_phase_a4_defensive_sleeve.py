@@ -53,6 +53,7 @@ def load_inputs(config_path: str, universe_path: str) -> dict:
     fundamentals = ingestion.fetch_universe_fundamentals(
         tickers=list(universe_config.tickers.keys()),
         start_date=base_config.backtest.start_date,
+        cache_key=universe_config.name,
     )
     fund_features = FundamentalFeatureGenerator(data_dict, fundamentals_df=fundamentals).generate()
     if not fund_features.empty:
@@ -78,6 +79,13 @@ def audit_feature_availability(panel: pd.DataFrame, tickers: list[str]) -> pd.Da
         "eps_growth_yoy",
         "pe_ratio",
         "pb_ratio",
+        "debt_to_assets",
+        "debt_to_equity",
+        "interest_coverage",
+        "ocf_to_net_income",
+        "accruals_proxy",
+        "gross_margin",
+        "asset_turnover",
         "beta_to_spy_63d",
         "downside_vol_63d",
         "max_drawdown_63d",
@@ -98,15 +106,7 @@ def audit_feature_availability(panel: pd.DataFrame, tickers: list[str]) -> pd.Da
                 "ticker_coverage_pct": float(values.dropna().index.get_level_values("ticker").nunique() / max(len(tickers), 1)),
             }
         )
-    unavailable = [
-        "debt_to_equity",
-        "debt_to_assets",
-        "interest_coverage",
-        "operating_cash_flow",
-        "accruals",
-        "gross_margin",
-        "analyst_revisions",
-    ]
+    unavailable = ["analyst_revisions"]
     rows.extend({"feature": feature, "coverage_pct": 0.0, "ticker_coverage_pct": 0.0} for feature in unavailable)
     return pd.DataFrame(rows)
 
@@ -155,6 +155,46 @@ def compute_defensive_stability_score_frame(panel: pd.DataFrame, sector_mapping:
         defensive["valuation_buffer_pe"] = -np.log1p(pe.where(pe > 0.0).clip(upper=100.0))
     else:
         defensive["valuation_buffer_pe"] = np.nan
+
+    if "debt_to_assets" in panel.columns:
+        defensive["low_debt_to_assets"] = -panel["debt_to_assets"].replace([np.inf, -np.inf], np.nan).clip(-1.0, 3.0)
+    else:
+        defensive["low_debt_to_assets"] = np.nan
+
+    if "debt_to_equity" in panel.columns:
+        defensive["low_debt_to_equity"] = -panel["debt_to_equity"].replace([np.inf, -np.inf], np.nan).clip(-5.0, 10.0)
+    else:
+        defensive["low_debt_to_equity"] = np.nan
+
+    if "interest_coverage" in panel.columns:
+        defensive["interest_coverage_survival"] = np.log1p(
+            panel["interest_coverage"].replace([np.inf, -np.inf], np.nan).clip(lower=0.0, upper=100.0)
+        )
+    else:
+        defensive["interest_coverage_survival"] = np.nan
+
+    if "ocf_to_net_income" in panel.columns:
+        defensive["cashflow_quality"] = panel["ocf_to_net_income"].replace([np.inf, -np.inf], np.nan).clip(-5.0, 5.0)
+    else:
+        defensive["cashflow_quality"] = np.nan
+
+    if "accruals_proxy" in panel.columns:
+        defensive["low_accruals"] = -panel["accruals_proxy"].replace([np.inf, -np.inf], np.nan).abs().clip(upper=1.0)
+    else:
+        defensive["low_accruals"] = np.nan
+
+    if "gross_margin" in panel.columns:
+        gross_margin = panel["gross_margin"].replace([np.inf, -np.inf], np.nan).clip(-1.0, 1.0)
+        defensive["gross_margin_survival"] = gross_margin
+        defensive["gross_margin_stability"] = _rolling_stability(gross_margin)
+    else:
+        defensive["gross_margin_survival"] = np.nan
+        defensive["gross_margin_stability"] = np.nan
+
+    if "asset_turnover" in panel.columns:
+        defensive["asset_efficiency"] = panel["asset_turnover"].replace([np.inf, -np.inf], np.nan).clip(-5.0, 5.0)
+    else:
+        defensive["asset_efficiency"] = np.nan
 
     downside = panel.get("downside_vol_63d", pd.Series(np.nan, index=panel.index))
     drawdown = panel.get("max_drawdown_63d", pd.Series(np.nan, index=panel.index))

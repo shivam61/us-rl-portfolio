@@ -26,3 +26,4 @@ Raw Data (yfinance) → Features → Labels → LightGBM Ranker
 - Targets use `shift(-horizon)` (forward-only)
 - RL sits above optimizer, below hard risk engine floor
 - Research on sp100 (44 tickers), validation on sp500 (503 tickers)
+- Data and feature additions must follow [DATA_AND_FEATURE_ENGINEERING.md](DATA_AND_FEATURE_ENGINEERING.md)

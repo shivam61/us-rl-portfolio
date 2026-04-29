@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-29T05:18:10+00:00
+Last updated: 2026-04-29T05:53:24+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -165,6 +165,28 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   sp500 ROE/PE/PB/EPS-growth coverage is only about `8.0-8.5%`; debt/leverage, cash-flow accruals, gross margin, and analyst revisions are unavailable.
 - Decision:
   beta-neutralization inside Sleeve 2 is directionally correct and should be retained, but A.4 still failed the sp500 gate. Do not proceed to optimizer/risk/RL. Next work should be data-layer upgrade for true survivability fundamentals before more blend tuning.
+- Phase A.5 data/feature hygiene was implemented.
+- Root cause fixed:
+  `fetch_universe_fundamentals()` previously used one global `data/raw/fundamentals.parquet`, so sp500 reused a 44-ticker sp100 cache. It now supports universe/ticker-set scoped cache files such as `fundamentals_sp100_sample.parquet` and `fundamentals_sp500_dynamic.parquet`.
+- Fundamental call sites now pass `cache_key=universe_config.name`.
+- `FundamentalFeatureGenerator` now emits survivability features when raw fields exist:
+  `debt_to_assets`, `debt_to_equity`, `asset_turnover`, `accruals_proxy`, `net_debt_to_assets`, `interest_coverage`, `ocf_to_net_income`, `gross_margin`.
+- Added `docs/DATA_AND_FEATURE_ENGINEERING.md` as the guide for future data/feature additions.
+- Added A.5 audit runner:
+  `scripts/run_phase_a5_data_feature_audit.py`.
+- A.5 audit artifacts:
+  `artifacts/reports/phase_a5_data_feature_audit.md`,
+  `artifacts/reports/phase_a5_data_feature_summary.csv`,
+  `artifacts/reports/phase_a5_data_feature_coverage.csv`.
+- A.5 audit result:
+  sp100 fundamental coverage `44/44`; sp500 fundamental coverage `503/503`; engineered survivability fields mostly `~98.6%` row coverage and `100%` ticker coverage on sp500.
+- Important caveat:
+  current `FundamentalProvider` is simulated. A.5 validates plumbing and schema coverage, not research-grade alpha.
+- A.4 was revisited after wiring survivability features into `defensive_stability_score`.
+- A.4 revisit result:
+  best sp500 standalone defensive Sharpe improved from `0.487` to `0.650`; best blend Sharpe improved from `0.694` to `0.745`, but remains below equal-weight `0.779`; best blend MaxDD remained around `-49.34%`; best crisis correlation improved to `0.610` but still missed `<0.6`.
+- Decision:
+  A.5 plumbing is fixed, A.4 direction improved, but no production decision should be made from simulated fundamentals. Next step is replacing/augmenting the fundamental provider with real point-in-time survivability data, then rerunning A.5 and A.4.
 
 ### 2026-04-28
 

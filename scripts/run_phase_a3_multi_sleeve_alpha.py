@@ -46,6 +46,7 @@ def load_inputs(config_path: str, universe_path: str) -> dict:
     fundamentals = ingestion.fetch_universe_fundamentals(
         tickers=list(universe_config.tickers.keys()),
         start_date=base_config.backtest.start_date,
+        cache_key=universe_config.name,
     )
     fund_features = FundamentalFeatureGenerator(data_dict, fundamentals_df=fundamentals).generate()
     if not fund_features.empty:

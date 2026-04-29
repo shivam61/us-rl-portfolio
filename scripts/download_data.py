@@ -38,7 +38,8 @@ def main():
     _ = ingestion.fetch_universe_fundamentals(
         tickers=stock_tickers,
         start_date=base_config.backtest.start_date,
-        end_date=base_config.backtest.end_date
+        end_date=base_config.backtest.end_date,
+        cache_key=universe_config.name,
     )
     
     logger.info("Data download complete.")

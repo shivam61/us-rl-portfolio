@@ -68,6 +68,29 @@ class FundamentalFeatureGenerator(BaseFeatureGenerator):
             # Compute EPS Growth YoY
             # Use 252 trading days to approximate 1 year ago, since merge_asof forward-fills
             f_df['eps_growth_yoy'] = merged['eps'] / merged['eps'].shift(252).replace(0, np.nan) - 1.0
+
+            if {"total_debt", "total_assets"}.issubset(merged.columns):
+                assets_safe = merged["total_assets"].replace(0, np.nan)
+                debt_safe = merged["total_debt"].replace(0, np.nan)
+                f_df["debt_to_assets"] = merged["total_debt"] / assets_safe
+                f_df["debt_to_equity"] = merged["total_debt"] / bv_safe
+                f_df["asset_turnover"] = merged.get("revenue", np.nan) / assets_safe
+                f_df["accruals_proxy"] = (
+                    merged["net_income"] - merged.get("operating_cash_flow", np.nan)
+                ) / assets_safe
+                f_df["net_debt_to_assets"] = debt_safe / assets_safe
+
+            if {"operating_income", "interest_expense"}.issubset(merged.columns):
+                interest_safe = merged["interest_expense"].replace(0, np.nan)
+                f_df["interest_coverage"] = merged["operating_income"] / interest_safe
+
+            if {"operating_cash_flow", "net_income"}.issubset(merged.columns):
+                ni_abs = merged["net_income"].abs().replace(0, np.nan)
+                f_df["ocf_to_net_income"] = merged["operating_cash_flow"] / ni_abs
+
+            if {"gross_profit", "revenue"}.issubset(merged.columns):
+                revenue_safe = merged["revenue"].replace(0, np.nan)
+                f_df["gross_margin"] = merged["gross_profit"] / revenue_safe
             
             # Shift everything by 1 day to prevent leakage
             f_df = f_df.shift(1)
