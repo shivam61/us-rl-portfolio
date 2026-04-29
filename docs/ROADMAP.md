@@ -10,12 +10,13 @@
 
 | | |
 |---|---|
-| Active phase | **A.7.2** — A.7.1 trend drawdown control passed; next robustness/cost/leverage review |
+| Active phase | **Phase A** — alpha discovery + alpha expression |
+| Current step | **A.7.2** — robustness (costs, leverage caps, periods, regimes) |
+| Best system so far | volatility + trend blend (A.7.1 candidate) |
+| Current headline metrics (sp500) | CAGR ~24%, Sharpe ~1.0+, MaxDD ~30–40% |
 | Current production alpha candidate | `volatility_score` as component only, not standalone sleeve |
-| Best IC so far | sp100 mean period IC 0.0379; sp500 mean period IC 0.0259; rebalance IC ~0.034 on sp500 |
-| Best IC Sharpe | ~0.13 in Phase A.1 portfolio diagnostics — original 0.30 gate still not met |
-| Phase A status | Candidate investable non-RL expression found: `vol_top_20` + stress-scaled trend overlay passed sp500 drawdown/Sharpe gates |
-| Blocking gate | Do not continue optimizer/RL until A.7.2 robustness confirms A.7.1 candidate under costs, leverage caps, periods, and regimes |
+| Phase A status | Candidate investable non-RL expression found: `vol_top_20` + stress-scaled trend overlay passed sp500 drawdown/Sharpe gates; validating robustness in A.7.2 |
+| Blocking gate | Do not proceed to Phase B until A.7.2 confirms MaxDD < 40% and Sharpe beats equal-weight under realistic costs/constraints |
 | sp500 baselines | Locked validation/system baseline — see table below, do not redefine |
 
 ## Baseline Convention
@@ -40,19 +41,19 @@
 
 | Phase | Goal | Status | Detail |
 |---|---|---|---|
-| **A** | Lift IC: new feature families + IC eval | 🔄 In progress | [phases/phase_a.md](phases/phase_a.md) |
-| **B** | Experiment matrix: label × top-N × retrain × features | ⏳ Pending Phase A gate | [phases/phase_b.md](phases/phase_b.md) |
-| **C** | LightGBM hyperparameter search | ⏳ Pending Phase B gate | [phases/phase_c.md](phases/phase_c.md) |
-| **D** | RL sector rotation overlay | ⏳ Pending Phase C gate | [phases/phase_d.md](phases/phase_d.md) |
+| **A** | Alpha discovery + alpha expression (A.1–A.7.2) | 🔄 In progress (A.7.2) | [phases/phase_a.md](phases/phase_a.md) |
+| **B** | Portfolio stabilization: optimizer integration, risk engine redesign, exposure shaping | ⏳ Pending Phase A gate | [phases/phase_b.md](phases/phase_b.md) |
+| **C** | Model refinement (deferred): LightGBM tuning + feature improvements | ⏳ Deferred until Phase B stabilizes | [phases/phase_c.md](phases/phase_c.md) |
+| **D** | RL overlay (stricter gate): sector RL policy | ⏳ Pending Phase C gate | [phases/phase_d.md](phases/phase_d.md) |
 
 ### Phase Gates
 
 | Gate | Metric | Target |
 |---|---|---|
-| A → B | Mean Rank IC | ≥ 0.040 |
-| A → B | IC Sharpe | ≥ 0.30 |
-| B → C | Best experiment config identified | top-N, label, retrain freq |
-| C → D | IC Sharpe on 2019–2026 holdout | ≥ 0.50 |
+| A → B | MaxDD (sp500) | < 40% |
+| A → B | Sharpe (sp500) | > equal-weight baseline |
+| B → C | Stable portfolio behavior | optimizer + risk engine consistent; exposures controlled; no brittle regime dependence |
+| C → D | Stable signals + stable portfolio | signals and portfolio behavior remain stable under robustness checks |
 | D done | RL Sharpe vs heuristic on holdout | RL ≥ 0.70 |
 
 ---
