@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-29T17:39:08+00:00
+## Current State — 2026-04-29T18:06:12+00:00
 - Branch: `main`
 - Working tree: 0 changed path(s)
 - Dirty paths sample: none
-- Latest commit: `df037a82 2026-04-29 test phase a7 trend overlay`
+- Latest commit: `835a2676 2026-04-29 test phase a7.1 drawdown control`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
