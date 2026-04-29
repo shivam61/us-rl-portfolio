@@ -81,6 +81,7 @@
 - **Leakage rule:** all features `.shift(1)`; targets use forward horizon only
 - **PIT rule:** universe change → rebuild `universe_mask_*.parquet` first
 - **Baseline rule:** never redefine sp500 baselines without a full diagnostics run
+- **Long-horizon rule:** preserve 2006+ raw data and remember metrics start after warmup; future RL splits must remain chronological
 - **Docs-current rule:** after material implementation, experiment results, baseline decisions, or next-step changes, update the relevant phase doc plus `docs/agent_handoff.md`, then refresh shared session state
 - **Never commit** `data/`, `.venv/`, `__pycache__/`
 - **Python:** always use `.venv/bin/python`

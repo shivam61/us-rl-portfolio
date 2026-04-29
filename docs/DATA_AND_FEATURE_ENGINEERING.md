@@ -128,6 +128,28 @@ These fields are simulated unless replaced by the canonical local provider. Trea
 7. Add engineered-feature coverage checks to the A.5 audit.
 8. Update this document with raw fields, engineered features, and known caveats.
 
+For simple local vendor exports, use the canonical preparation utility:
+
+```bash
+.venv/bin/python scripts/prepare_canonical_fundamentals.py \
+  --input data/vendor/fundamentals_export.csv \
+  --output data/fundamentals/canonical_fundamentals.parquet \
+  --column-map config/fundamental_column_map.json
+```
+
+The optional JSON column map should map source columns to canonical names, for example:
+
+```json
+{
+  "symbol": "ticker",
+  "acceptedDate": "filing_date",
+  "totalDebt": "total_debt",
+  "cashFlowFromOperations": "operating_cash_flow"
+}
+```
+
+After preparing the canonical file, switch `fundamentals.provider` to `canonical_local`, run the A.5 audit, and only then rerun A.4.
+
 ## Adding A New Feature
 
 Before using a feature in research:
@@ -156,3 +178,16 @@ Outputs:
 - `artifacts/reports/phase_a5_data_feature_coverage.csv`
 
 The audit should be run before any experiment that depends on new fundamental or alternative data.
+
+## Long-Horizon Backtests And RL Scope
+
+Current backtests start in 2006 and use a two-year warmup, so the effective evaluated period starts around 2008. That gives exposure to the global financial crisis, 2011, 2018 Q4, COVID, 2022, and the 2023-2026 recovery/AI cycle.
+
+For future RL work, keep these constraints in mind:
+
+- Preserve the 2006 raw start date or earlier if data quality supports it.
+- Treat the first warmup window as unavailable for scoring.
+- Split RL chronologically; do not random-shuffle market history.
+- Reserve a true holdout such as 2019-2026 for final policy evaluation.
+- Keep A.5 coverage checks by period, not just full-sample coverage, before using fundamentals in RL state features.
+- Store regime labels and crisis periods explicitly so RL evaluation can report regime-conditional performance, not only full-period Sharpe.

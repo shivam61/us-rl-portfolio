@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-29T06:06:52+00:00
+## Current State — 2026-04-29T06:15:22+00:00
 - Branch: `main`
-- Working tree: 14 changed path(s)
-- Dirty paths sample: `M artifacts/reports/phase_a5_data_feature_audit.md`, ` M artifacts/reports/phase_a5_data_feature_summary.csv`, ` M config/base.yaml`, ` M docs/DATA_AND_FEATURE_ENGINEERING.md`, ` M docs/ROADMAP.md`
-- Latest commit: `2b765449 2026-04-29 fix phase a5 data feature plumbing`
+- Working tree: 4 changed path(s)
+- Dirty paths sample: `M docs/DATA_AND_FEATURE_ENGINEERING.md`, ` M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, `?? scripts/prepare_canonical_fundamentals.py`
+- Latest commit: `6255a454 2026-04-29 add phase a6 canonical fundamentals contract`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

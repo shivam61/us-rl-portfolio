@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-29T06:06:52+00:00
+Last updated: 2026-04-29T06:15:22+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -195,6 +195,9 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
 - `docs/DATA_AND_FEATURE_ENGINEERING.md` was updated to state that local parquet/CSV canonical fundamentals are the stable research contract. Future SEC/FMP/Polygon/Sharadar/manual sources should normalize into that schema first.
 - Next step:
   obtain or create a real PIT canonical fundamentals parquet/CSV, switch `fundamentals.provider` to `canonical_local`, rerun A.5 audit, then rerun A.4. Do not make optimizer/RL decisions from the simulated provider.
+- Added `scripts/prepare_canonical_fundamentals.py`, a local CSV/parquet normalization utility for vendor exports. It writes the canonical schema consumed by `canonical_local` and validates required columns, PIT dates, duplicate ticker/date rows, and optional ticker coverage.
+- Future 20-year/RL note:
+  current raw backtest starts in 2006, but metrics start after warmup around 2008. Preserve chronological splits for RL, keep 2019-2026 as a candidate final holdout, and require A.5 coverage by period before using fundamentals in RL state features.
 
 ### 2026-04-28
 
