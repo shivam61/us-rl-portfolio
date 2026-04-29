@@ -196,6 +196,13 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
 - Next step:
   obtain or create a real PIT canonical fundamentals parquet/CSV, switch `fundamentals.provider` to `canonical_local`, rerun A.5 audit, then rerun A.4. Do not make optimizer/RL decisions from the simulated provider.
 - Added `scripts/prepare_canonical_fundamentals.py`, a local CSV/parquet normalization utility for vendor exports. It writes the canonical schema consumed by `canonical_local` and validates required columns, PIT dates, duplicate ticker/date rows, and optional ticker coverage.
+- Added `scripts/build_sec_fundamentals_poc.py`, a bounded SEC company-facts POC that downloads SEC company ticker mapping and company facts, maps available us-gaap tags into the canonical schema, and writes `data/fundamentals/sec_poc_canonical_fundamentals.parquet`.
+- SEC POC outputs when run:
+  `artifacts/reports/phase_a6_1_sec_fundamentals_poc.md` and `artifacts/reports/phase_a6_1_sec_fundamentals_coverage.csv`.
+- SEC POC status:
+  compile and CLI help passed; live SEC download has not been run yet because SEC requires a descriptive User-Agent/contact string. Run with `SEC_USER_AGENT="name email@example.com"` or `--user-agent`.
+- SEC POC decision rule:
+  run SP100 real-PIT A.5 and A.4 first. Scale SEC ingestion to sp500/2006+ only if the real-PIT defensive sleeve materially improves correlation, Sharpe, or drawdown versus the simulated-fundamentals plumbing run.
 - Future 20-year/RL note:
   current raw backtest starts in 2006, but metrics start after warmup around 2008. Preserve chronological splits for RL, keep 2019-2026 as a candidate final holdout, and require A.5 coverage by period before using fundamentals in RL state features.
 

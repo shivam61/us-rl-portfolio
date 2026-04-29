@@ -434,6 +434,63 @@ Optional columns include cash, capex, free cash flow, EBITDA, analyst revisions,
 
 ---
 
+## Phase A.6.1 — SEC Fundamentals POC
+
+**Goal:** avoid building a full fundamentals data platform before we know the ROI. Build a small real point-in-time SEC company-facts extract, normalize it into the canonical contract, and use it to decide whether survivability fundamentals are worth scaling.
+
+### Scope
+
+| Dimension | POC choice |
+|---|---|
+| Source | SEC company facts API |
+| Universe | Start with `sp100_sample`, optionally limit with `--max-tickers` |
+| Date range | Default `2015-01-01` onward; expand only if coverage is usable |
+| PIT date | SEC `filed` date |
+| Output | `data/fundamentals/sec_poc_canonical_fundamentals.parquet` |
+| Report | `artifacts/reports/phase_a6_1_sec_fundamentals_poc.md` |
+
+### Implementation
+
+| Item | File | Status |
+|---|---|---|
+| SEC company ticker map and company-facts downloader | `scripts/build_sec_fundamentals_poc.py` | Implemented |
+| Canonical schema writer | `scripts/build_sec_fundamentals_poc.py` | Implemented |
+| Coverage report | `artifacts/reports/phase_a6_1_sec_fundamentals_coverage.csv` | Generated when run |
+
+### Run command
+
+SEC requires a descriptive User-Agent. Use your contact email in the value.
+
+```bash
+SEC_USER_AGENT="your-name your-email@example.com" \
+.venv/bin/python scripts/build_sec_fundamentals_poc.py \
+  --config config/base.yaml \
+  --universe config/universes/sp100.yaml \
+  --max-tickers 44 \
+  --start-date 2015-01-01
+```
+
+Then point `config/base.yaml` at the generated file with:
+
+```yaml
+fundamentals:
+  provider: "canonical_local"
+  path: "data/fundamentals/sec_poc_canonical_fundamentals.parquet"
+```
+
+Run A.5 audit and A.4 on the same limited universe before expanding to sp500.
+
+### Caveats
+
+- This is a scale/no-scale POC, not a production data source.
+- SEC company facts can include restated/amended facts; the POC keeps the latest observed value per filing date.
+- Some 10-Q cash-flow fields are year-to-date, not clean quarterly values.
+- Analyst revisions and earnings surprise are not available from SEC company facts.
+
+**Decision rule:** scale SEC ingestion only if the SP100 real-PIT A.4 rerun lowers vol-defensive correlation and materially improves Sharpe/drawdown versus the simulated-fundamentals plumbing run.
+
+---
+
 ## Feature Families
 
 ### Baseline (17 features — already existed)

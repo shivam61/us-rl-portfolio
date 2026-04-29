@@ -150,6 +150,29 @@ The optional JSON column map should map source columns to canonical names, for e
 
 After preparing the canonical file, switch `fundamentals.provider` to `canonical_local`, run the A.5 audit, and only then rerun A.4.
 
+## SEC Company Facts POC
+
+If no vendor data is available, use the bounded SEC proof-of-concept before building a full fundamentals platform:
+
+```bash
+SEC_USER_AGENT="your-name your-email@example.com" \
+.venv/bin/python scripts/build_sec_fundamentals_poc.py \
+  --config config/base.yaml \
+  --universe config/universes/sp100.yaml \
+  --max-tickers 44 \
+  --start-date 2015-01-01
+```
+
+This writes:
+
+- `data/fundamentals/sec_poc_canonical_fundamentals.parquet`
+- `artifacts/reports/phase_a6_1_sec_fundamentals_poc.md`
+- `artifacts/reports/phase_a6_1_sec_fundamentals_coverage.csv`
+
+The POC uses SEC filing dates as `filing_date` and normalizes available company-facts tags into the canonical schema. Treat it as a scale/no-scale test for the defensive sleeve, not a finished data product. Known limitations: amended/restated facts, imperfect quarterly cash-flow treatment, and no analyst revisions.
+
+Scale SEC ingestion only if the SP100 real-PIT A.4 rerun improves sleeve correlation, Sharpe, or drawdown enough to justify the larger data-engineering effort.
+
 ## Adding A New Feature
 
 Before using a feature in research:
