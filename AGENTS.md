@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-29T09:18:02+00:00
+## Current State — 2026-04-29T16:12:49+00:00
 - Branch: `main`
 - Working tree: 0 changed path(s)
 - Dirty paths sample: none
-- Latest commit: `5114d5b3 2026-04-29 add canonical fundamentals preparation utility`
+- Latest commit: `bdc9f7ff 2026-04-29 add sec fundamentals poc builder`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
