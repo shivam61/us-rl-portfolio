@@ -1,0 +1,9 @@
+universe,vol_sleeve,quality_sleeve,ticker_overlap_pct,sector_overlap_pct,n_rebalances
+sp100_sample,vol_top_10,quality_sector_balanced_top_30,0.5175732217573222,0.99721059972106,239
+sp100_sample,vol_top_10,quality_sector_balanced_top_50,1.0,1.0,239
+sp100_sample,vol_top_20,quality_sector_balanced_top_30,0.6332635983263599,0.9980822873082287,239
+sp100_sample,vol_top_20,quality_sector_balanced_top_50,1.0,1.0,239
+sp500_dynamic,vol_top_10,quality_sector_balanced_top_30,0.0004184100418410042,0.9980075712293285,239
+sp500_dynamic,vol_top_10,quality_sector_balanced_top_50,0.005439330543933055,1.0,239
+sp500_dynamic,vol_top_20,quality_sector_balanced_top_30,0.005020920502092051,0.997426446171216,239
+sp500_dynamic,vol_top_20,quality_sector_balanced_top_50,0.01569037656903766,0.9994022713687986,239

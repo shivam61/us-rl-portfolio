@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-29T02:59:38+00:00
+Last updated: 2026-04-29T04:07:48+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -117,6 +117,31 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   `.venv/bin/python scripts/run_backtest.py --config config/base.yaml --universe config/universes/sp500.yaml`
 
 ## Session Notes
+
+### 2026-04-29
+
+- Phase A.3 multi-sleeve alpha system was implemented in `scripts/run_phase_a3_multi_sleeve_alpha.py`.
+- Experiment rules were preserved: existing `volatility_score` was not modified, quality features were not merged into the volatility model, and RL stayed disabled.
+- Outputs were saved to:
+  `artifacts/reports/multi_sleeve_results.md`,
+  `artifacts/reports/sleeve_metrics.csv`,
+  `artifacts/reports/blend_metrics.csv`,
+  `artifacts/reports/correlation_matrix.csv`,
+  `artifacts/reports/overlap_report.csv`.
+- sp100 quality sleeve looked superficially useful:
+  best quality sleeve `CAGR=16.82%`, `Sharpe=0.897`, `MaxDD=-39.43%`.
+- sp500 quality sleeve did not generalize:
+  best quality sleeve `CAGR=9.82%`, `Sharpe=0.555`, `MaxDD=-48.42%`.
+- sp500 blends preserved high CAGR but failed the investability gate:
+  best blend Sharpe was `0.698` versus equal-weight `0.779`, with MaxDD `-53.53%`.
+- Best sp500 blend CAGR was `22.80%`, but Sharpe was only `0.606` and MaxDD was `-69.68%`.
+- Cross-sleeve independence failed:
+  sp500 vol-quality full correlations ranged `0.633` to `0.708`, and crisis correlations ranged `0.728` to `0.798`.
+- Ticker overlap on sp500 was very low (`0.04%` to `1.57%`), so the failure is not duplicate names; it is common market/risk exposure and weak defensive signal quality.
+- Decision:
+  do not proceed to optimizer integration, improved risk engine, or RL from this A.3 blend. Keep `volatility_score` as Sleeve 1 and return to defensive-sleeve feature engineering.
+- Recommended next work:
+  build Sleeve 2 with stronger non-price fundamentals: true leverage/debt, accruals or earnings quality, profitability persistence, value-quality composite, and analyst revisions if available. Avoid price-risk-heavy defensive quality because it remains correlated with volatility alpha in stress regimes.
 
 ### 2026-04-28
 

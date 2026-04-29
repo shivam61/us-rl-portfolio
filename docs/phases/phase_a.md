@@ -161,6 +161,84 @@ The most likely investable construction is explicit SPY hedging or beta-targeted
 
 **Next decision:** stop standalone volatility-sleeve tuning for now. Keep `volatility_score` as a useful alpha component, but move to multi-factor blending before Phase B/C/RL: combine the validated risk-premium signal with stabilizers such as earnings quality, value-quality, and revisions where available.
 
+## Phase A.3 — Multi-Sleeve Alpha System
+
+**Goal:** build a non-RL multi-sleeve alpha system that separates alpha discovery from portfolio construction.
+
+**Rules:**
+- Do not modify `volatility_score`.
+- Do not merge quality/value features into the volatility model.
+- Do not enable RL.
+- Treat each sleeve as an independent portfolio, then blend sleeve weights.
+
+### Sleeve design
+
+| Sleeve | Purpose | Selection |
+|---|---|---|
+| Sleeve 1: volatility | Existing high-vol/risk-premium return engine | Top-10 and Top-20 equal weight |
+| Sleeve 2: defensive quality | Low drawdown and low correlation to volatility sleeve | Sector-balanced Top-30 and Top-50 |
+
+Quality sleeve features:
+- `roe` clipped.
+- Earnings stability from rolling `eps_growth_yoy` stability.
+- Low leverage proxy from low `pb_ratio` because true debt/leverage is not currently available in cached fundamentals.
+- Low downside volatility.
+- Low max drawdown.
+- Return consistency.
+- Sector-relative normalization before scoring.
+
+### Blend tests
+
+| Volatility weight | Quality weight |
+|---:|---:|
+| 0.6 | 0.4 |
+| 0.5 | 0.5 |
+| 0.7 | 0.3 |
+| 0.4 | 0.6 |
+
+### Diagnostics
+
+| Output | Purpose |
+|---|---|
+| `artifacts/reports/multi_sleeve_results.md` | Main experiment report |
+| `artifacts/reports/sleeve_metrics.csv` | Standalone sleeve metrics |
+| `artifacts/reports/blend_metrics.csv` | Blend metrics |
+| `artifacts/reports/correlation_matrix.csv` | Full, rolling, and crisis vol-quality correlations |
+| `artifacts/reports/overlap_report.csv` | Ticker and sector overlap |
+
+### Success criteria
+
+Proceed only if a sp500 blend reaches:
+- CAGR >= equal-weight.
+- Sharpe > equal-weight.
+- MaxDD < 40%.
+- Vol-quality correlation < 0.5.
+
+If successful, proceed to optimizer integration, improved risk engine, then RL. If it fails, return to feature engineering for the defensive sleeve.
+
+### Phase A.3 results
+
+Artifacts:
+- `artifacts/reports/multi_sleeve_results.md`
+- `artifacts/reports/sleeve_metrics.csv`
+- `artifacts/reports/blend_metrics.csv`
+- `artifacts/reports/correlation_matrix.csv`
+- `artifacts/reports/overlap_report.csv`
+
+| Check | sp100 result | sp500 result | Decision |
+|---|---:|---:|---|
+| Equal-weight universe benchmark | CAGR `16.20%`, Sharpe `0.830`, MaxDD `-43.18%` | CAGR `16.49%`, Sharpe `0.779`, MaxDD `-49.12%` | Comparison baseline |
+| Best quality sleeve | CAGR `16.82%`, Sharpe `0.897`, MaxDD `-39.43%` | CAGR `9.82%`, Sharpe `0.555`, MaxDD `-48.42%` | Defensive sleeve does not generalize |
+| Best sp500 blend Sharpe | n/a | Sharpe `0.698`, CAGR `19.41%`, MaxDD `-53.53%` | ❌ Below equal-weight Sharpe and drawdown gate |
+| Best sp500 blend CAGR | n/a | CAGR `22.80%`, Sharpe `0.606`, MaxDD `-69.68%` | ❌ Return comes with unacceptable drawdown |
+| Vol-quality correlation | `0.877` to `0.967` | `0.633` to `0.708` | ❌ Fails `<0.5` independence gate |
+| Crisis correlation | `0.922` to `0.980` | `0.728` to `0.798` | ❌ Diversification weakens when needed most |
+| Ticker overlap | `51.8%` to `100%` | `0.04%` to `1.57%` | Low sp500 overlap, but common market/risk exposure remains |
+
+**Conclusion:** Phase A.3 failed the sp500 decision gate. The multi-sleeve structure is implemented correctly and kept `volatility_score` unchanged, but the first defensive quality sleeve is not independent enough and does not stabilize the system. On sp500, blends preserve high CAGR but still miss equal-weight Sharpe, fail MaxDD `<40%`, and remain too correlated with volatility alpha.
+
+**Decision:** do not proceed to optimizer integration, improved risk engine, or RL from this A.3 blend. Keep `volatility_score` as Sleeve 1, but return to feature engineering for Sleeve 2. The next defensive sleeve needs stronger non-price fundamentals such as true leverage/debt, earnings quality/accruals, profitability persistence, value-quality composite, and analyst revisions if available. Avoid relying mainly on price-risk features for the defensive sleeve because they leave the sleeve tied to the same market stress exposure.
+
 ---
 
 ## Feature Families

@@ -6,16 +6,16 @@
 
 ---
 
-## Current State — 2026-04-28
+## Current State — 2026-04-29
 
 | | |
 |---|---|
-| Active phase | **A.2** — standalone volatility portfolio expression failed; multi-factor blending next |
+| Active phase | **A.3** — first multi-sleeve blend failed sp500 gate; defensive-sleeve feature engineering next |
 | Current production alpha candidate | `volatility_score` as component only, not standalone sleeve |
 | Best IC so far | sp100 mean period IC 0.0379; sp500 mean period IC 0.0259; rebalance IC ~0.034 on sp500 |
 | Best IC Sharpe | ~0.13 in Phase A.1 portfolio diagnostics — original 0.30 gate still not met |
-| Phase A status | Conditionally passed: high-vol/risk-premium alpha is real, but standalone investable expression failed |
-| Blocking gate | Do not continue momentum-first or enable RL; add stabilizing non-momentum factors before Phase B/C/RL |
+| Phase A status | Conditionally passed for alpha discovery only: high-vol/risk-premium alpha is real, but standalone and first blend expression failed |
+| Blocking gate | Do not continue optimizer/RL; rebuild independent defensive sleeve with stronger non-price fundamentals |
 | sp500 baselines | Locked validation/system baseline — see table below, do not redefine |
 
 ## Baseline Convention
