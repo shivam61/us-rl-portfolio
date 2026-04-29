@@ -210,6 +210,13 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   failed hard gate. Best full corr was about `0.711`, best crisis corr about `0.766`, despite standalone Sharpe above `0.7` for most variants. Blend metrics were skipped by rule because no standalone diversifier passed.
 - SEC POC decision rule:
   do not scale SEC ingestion to sp500/2006+ from this result. Quality/fundamental-only defensive sleeves still behave like long-equity risk in stress. Next Sleeve 2 candidate should be a different economic exposure: explicit crisis hedge/carry, trend-following hedge, sector/cash rotation, or market-neutral long-short research.
+- Added `scripts/run_phase_a7_trend_overlay.py`, an isolated trend hedge overlay runner. It uses `SPY`, `TLT`, `GLD`, and `UUP`; tests 3m, 6m, and 3m/6m TSMOM; supports long/cash and long/short variants; inverse-vol weights to a 10% target sleeve vol with 1.5x gross cap; and blends with unchanged `volatility_score` sleeves.
+- A.7 result:
+  trend sleeves are genuinely orthogonal to volatility alpha in crisis. On sp500, trend crisis correlations versus `vol_top_20` ranged roughly `-0.10` to `-0.23`.
+- A.7 validation result:
+  SP100 research passed with 29 blend variants, but SP500 validation failed because MaxDD remained above the `<40%` gate. Best SP500 Sharpe variant was `blend_vol_top_20_trend_3m_6m_long_cash_60_40` with `CAGR=24.15%`, `Sharpe=0.947`, `MaxDD=-45.09%`. Best drawdown group was long/short 60/40 around `MaxDD=-44.57%`.
+- Current decision:
+  trend hedge overlay is the leading Sleeve 2 candidate, but not production-passed. Next work should be A.7.1 drawdown control: stronger hedge expression, higher trend allocation, crash-triggered trend scaling, explicit SPY hedge overlay, or portfolio-level beta cap. Keep RL disabled.
 - Future 20-year/RL note:
   current raw backtest starts in 2006, but metrics start after warmup around 2008. Preserve chronological splits for RL, keep 2019-2026 as a candidate final holdout, and require A.5 coverage by period before using fundamentals in RL state features.
 

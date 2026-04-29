@@ -564,6 +564,64 @@ Hard gate:
 
 ---
 
+## Phase A.7 — Trend Hedge Overlay
+
+**Goal:** introduce a true orthogonal hedge sleeve that can change sign or reduce beta in stress, without modifying `volatility_score`.
+
+Rules:
+- Do not modify `volatility_score`.
+- Do not revisit quality/defensive sleeve.
+- Do not enable RL.
+- Measure trend-sleeve correlation versus volatility sleeve separately from blend correlation.
+
+### Implementation
+
+| Item | File | Status |
+|---|---|---|
+| Trend overlay runner | `scripts/run_phase_a7_trend_overlay.py` | Implemented |
+| Main report | `artifacts/reports/phase_a7_trend_results.md` | Done |
+| Standalone metrics | `artifacts/reports/phase_a7_metrics.csv` | Done |
+| Blend metrics | `artifacts/reports/phase_a7_blend_metrics.csv` | Done |
+| Gate report | `artifacts/reports/phase_a7_gate_report.csv` | Done |
+| Crisis correlation report | `artifacts/reports/phase_a7_crisis_corr_report.csv` | Done |
+
+Trend assets:
+- `SPY`
+- `TLT`
+- `GLD`
+- `UUP`
+
+Signals:
+- 3-month TSMOM
+- 6-month TSMOM
+- 50/50 3-month + 6-month TSMOM
+- long/cash and long/short variants
+- inverse-vol weighting, target sleeve vol `10%`, gross cap `1.5x`
+
+### Phase A.7 result
+
+Run scope:
+- Research universe: `sp100_sample`
+- Validation universe: `sp500_dynamic`
+
+SP100 result:
+- 29 blend variants passed the research gate.
+- Best SP100 blend Sharpe was above `1.18`.
+- Trend sleeves had low to negative crisis correlation versus volatility sleeve.
+
+SP500 validation:
+- No blend passed the full gate because MaxDD remained above the `<40%` requirement.
+- Best SP500 Sharpe: `blend_vol_top_20_trend_3m_6m_long_cash_60_40`, CAGR `24.15%`, Sharpe `0.947`, MaxDD `-45.09%`.
+- Best SP500 drawdown group: long/short trend with 60/40 blend, MaxDD about `-44.57%`, still above gate.
+- Equal-weight validation benchmark: CAGR `16.48%`, Sharpe `0.778`, MaxDD `-49.12%`.
+- Trend sleeve crisis correlations versus volatility sleeve were genuinely orthogonal, around `-0.10` to `-0.29`.
+
+**Decision:** A.7 is directionally successful but not production-passed. It is the first sleeve family that is truly orthogonal in crisis and materially improves Sharpe/drawdown on sp500, but the best drawdown remains around `-45%`, above the `<40%` gate. Do not move to optimizer/RL yet.
+
+**Next implication:** continue with an A.7.1 drawdown-control pass, not more quality work. Test stronger hedge expression: higher trend allocation, crash-triggered trend scaling, explicit SPY hedge overlay, or portfolio-level beta cap. Keep the trend overlay as the leading Sleeve 2 candidate.
+
+---
+
 ## Feature Families
 
 ### Baseline (17 features — already existed)
