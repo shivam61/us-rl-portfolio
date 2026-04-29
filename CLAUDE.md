@@ -5,11 +5,11 @@ All repo rules, workflow rules, save rules, file lookup order, roadmap-first beh
 Do not treat this file as an independent source of repo instructions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-28T18:48:23+00:00
+## Current State — 2026-04-29T02:59:38+00:00
 - Branch: `main`
-- Working tree: 11 changed path(s)
-- Dirty paths sample: `M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_a.md`, ` M src/optimizer/portfolio_optimizer.py`, `?? artifacts/reports/phase_a1_volatility_robustness.md`
-- Latest commit: `2dfd3699 2026-04-28 test intraperiod overlay hysteresis`
+- Working tree: 10 changed path(s)
+- Dirty paths sample: `M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_a.md`, `?? artifacts/reports/beta_targeting_results.csv`, `?? artifacts/reports/hedge_comparison.csv`
+- Latest commit: `5b5af0f6 2026-04-28 validate phase a1 volatility robustness`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

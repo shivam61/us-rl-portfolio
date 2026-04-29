@@ -10,12 +10,12 @@
 
 | | |
 |---|---|
-| Active phase | **A.1** — volatility/risk-premium robustness complete; production-candidate critique next |
-| Current production alpha candidate | `volatility_score` / `volatility_only` |
+| Active phase | **A.2** — standalone volatility portfolio expression failed; multi-factor blending next |
+| Current production alpha candidate | `volatility_score` as component only, not standalone sleeve |
 | Best IC so far | sp100 mean period IC 0.0379; sp500 mean period IC 0.0259; rebalance IC ~0.034 on sp500 |
 | Best IC Sharpe | ~0.13 in Phase A.1 portfolio diagnostics — original 0.30 gate still not met |
-| Phase A status | Conditionally passed: high-vol/risk-premium direction is real, but IC Sharpe and drawdown remain weak |
-| Blocking gate | Do not continue momentum-first or enable RL; decide how to express volatility alpha without unacceptable sp500 drawdown |
+| Phase A status | Conditionally passed: high-vol/risk-premium alpha is real, but standalone investable expression failed |
+| Blocking gate | Do not continue momentum-first or enable RL; add stabilizing non-momentum factors before Phase B/C/RL |
 | sp500 baselines | Locked validation/system baseline — see table below, do not redefine |
 
 ## Baseline Convention

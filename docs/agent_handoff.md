@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-28T18:48:23+00:00
+Last updated: 2026-04-29T02:59:38+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -287,3 +287,25 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   `volatility_score` is real alpha, not just a sp100 artifact, but current portfolio expression is too crash/beta-heavy for production. Keep RL disabled and do not resume momentum-first work.
 - Recommended next step:
   design a controlled-beta/crash-aware expression of the validated high-vol alpha, or return to feature engineering if the alpha cannot survive risk control.
+- Phase A.2 portfolio-expression experiment completed.
+- Artifacts saved:
+  `artifacts/reports/portfolio_expression_results.md`,
+  `artifacts/reports/portfolio_expression_results.csv`,
+  `artifacts/reports/beta_targeting_results.csv`,
+  `artifacts/reports/vol_scaling_results.csv`,
+  `artifacts/reports/hedge_comparison.csv`,
+  `artifacts/reports/portfolio_expression_benchmarks.csv`.
+- Tested without changing the alpha:
+  beta-targeted long-only weights, equal/inverse-vol/alpha-vol weighting, regime-aware exposure scaling, sector-balanced selection, and explicit SPY hedge variants.
+- sp500 result:
+  no variant met the hard gate of `MaxDD < 40%` and Sharpe above equal-weight.
+- Best sp500 Sharpe:
+  `sector_balanced_top_20_beta_target_0.7_exposure_scaled` with `CAGR=16.29%`, `Sharpe=0.753`, `MaxDD=-46.32%`; equal-weight Sharpe was `0.779`.
+- Best drawdown-controlled sp500 hedge:
+  `sector_balanced_top_20_spy_hedge_beta_1.0_exposure_scaled` with `CAGR=13.58%`, `Sharpe=0.727`, `MaxDD=-35.88%`.
+- Best high-CAGR sp500 expression:
+  `top_20_equal_weight_exposure_scaled` with `CAGR=22.08%`, `Sharpe=0.700`, `MaxDD=-52.73%`.
+- Important critique:
+  SPY hedging controls drawdown but gives up too much return/Sharpe; long-only beta targeting preserves return but cannot truly hit low beta targets and leaves drawdown too high.
+- Current decision:
+  stop standalone volatility-sleeve tuning for now. Keep `volatility_score` as a validated alpha component, but move next to multi-factor blending before Phase B/C/RL.

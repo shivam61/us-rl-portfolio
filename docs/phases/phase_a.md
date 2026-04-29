@@ -100,6 +100,67 @@ earnings quality, analyst revisions if available, value-quality composite, and r
 
 **Pushback:** the next step should not be RL or more momentum work. The next decision is how to express the validated high-vol alpha with controlled beta/crash exposure. If that cannot be solved without destroying the alpha, return to feature engineering: earnings quality, analyst revisions, value-quality composite, and regime-conditional factors.
 
+## Phase A.2 — Portfolio Expression of Volatility Alpha
+
+**Goal:** convert the validated `volatility_score` alpha into an investable portfolio without changing the alpha definition.
+
+**Experiment discipline:**
+- Do not remove high-beta stocks from the candidate set.
+- Do not disable the alpha in crash regimes.
+- Do not add new factors yet.
+- Keep RL disabled.
+- Use sp100 as the quick development screen and sp500 as the final decision universe.
+
+### Hypothesis
+
+`volatility_score` has real cross-sectional alpha, but naive long-only Top-N portfolios express it as excessive beta/crash exposure. A better construction may preserve the selection edge while reducing drawdown through beta-targeted weights, volatility scaling, explicit SPY hedging, and regime-aware gross exposure.
+
+### Test matrix
+
+| Dimension | Tests |
+|---|---|
+| Universes | sp100, sp500_dynamic |
+| Selection | Top-10, Top-20, Top-30, sector-balanced Top-20, sector-balanced Top-30 |
+| Volatility scaling | equal weight, inverse-vol, alpha/vol |
+| Beta targeting | target beta 1.0, 0.7, 0.5; long-only, max weight 15% |
+| Exposure scaling | crash 0.6, high VIX 0.7, trending 0.9, normal 1.0 |
+| Hedge comparison | long-only beta targeting vs explicit SPY hedge |
+
+### Required outputs
+
+| Output | Purpose |
+|---|---|
+| `artifacts/reports/portfolio_expression_results.md` | Main interpretation and decision |
+| `artifacts/reports/beta_targeting_results.csv` | Long-only beta-targeted variants |
+| `artifacts/reports/vol_scaling_results.csv` | Equal/inverse-vol/alpha-vol variants |
+| `artifacts/reports/hedge_comparison.csv` | Beta-targeting versus SPY hedge variants |
+
+### Success criteria
+
+Find at least one sp500 configuration with:
+- MaxDD < 40%.
+- Sharpe above equal-weight universe.
+- CAGR within 2-3% of simple Top-N equal weight, or materially better Sharpe/drawdown.
+- Realized beta reasonably close to target; do not accept a nominal target that the long-only basket cannot actually reach.
+
+### Expected outcome
+
+The most likely investable construction is explicit SPY hedging or beta-targeted weighting plus regime-aware exposure scaling. If no configuration clears the sp500 criteria, conclude the standalone volatility alpha is not directly investable and move to multi-factor blending.
+
+### Phase A.2 results
+
+| Check | Result | Decision |
+|---|---|---|
+| Best sp500 Sharpe | `0.753` (`sector_balanced_top_20_beta_target_0.7`) vs equal-weight `0.779` | ❌ Fail |
+| Best sp500 drawdown-controlled hedge | MaxDD `-35.88%`, CAGR `13.58%`, Sharpe `0.727` | ❌ Drawdown passes, Sharpe/CAGR insufficient |
+| Best sp500 CAGR expression | `22.08%` (`top_20_equal_weight_exposure_scaled`) | ⚠️ MaxDD `-52.73%`, Sharpe `0.700` |
+| Long-only beta targeting | Realized beta stayed around `0.86-0.87` for target `0.5-0.7` | ❌ Low beta targets not truly reachable |
+| Hard gate | MaxDD < 40% and Sharpe > equal-weight | ❌ No sp500 variant passed |
+
+**Conclusion:** Phase A.2 did not find an investable standalone `volatility_score` sleeve. SPY hedging can reduce drawdown, but it gives up too much return and still does not beat equal-weight Sharpe. Long-only beta targeting preserves more return but fails to hit low beta targets and leaves drawdown too high.
+
+**Next decision:** stop standalone volatility-sleeve tuning for now. Keep `volatility_score` as a useful alpha component, but move to multi-factor blending before Phase B/C/RL: combine the validated risk-premium signal with stabilizers such as earnings quality, value-quality, and revisions where available.
+
 ---
 
 ## Feature Families
