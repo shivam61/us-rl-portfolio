@@ -489,6 +489,79 @@ Run A.5 audit and A.4 on the same limited universe before expanding to sp500.
 
 **Decision rule:** scale SEC ingestion only if the SP100 real-PIT A.4 rerun lowers vol-defensive correlation and materially improves Sharpe/drawdown versus the simulated-fundamentals plumbing run.
 
+### Phase A.6.1 live POC result
+
+Artifacts:
+- `artifacts/reports/phase_a6_1_sec_fundamentals_poc.md`
+- `artifacts/reports/phase_a6_1_sec_fundamentals_coverage.csv`
+- `artifacts/reports/phase_a6_1_sec_poc_a4_summary.md`
+
+SEC POC build:
+- Rows: `1,965`
+- Tickers: `44/44`
+- Filing date range: `2015-01-26` to `2026-04-29`
+- Strong raw coverage: EPS, book value, assets, cash flow, and ticker coverage all passed
+- Weak raw coverage: gross profit covered only `17/44` tickers, so gross-margin interpretation remains fragile
+
+A.4 on SP100 with the SEC PIT file:
+- Best standalone defensive sleeve: `defensive_stability_top_50_equal_weight`, CAGR `16.33%`, Sharpe `0.876`, MaxDD `-38.61%`, realized beta `0.893`
+- Best drawdown-aware blend: `vol_top_10 + defensive_top_50_beta_0_6`, 40/60, CAGR `17.79%`, Sharpe `0.887`, MaxDD `-42.17%`
+- Best vol-defensive full correlation remained high at about `0.70`
+- Crisis correlation remained high at about `0.75`
+
+**Decision:** do not scale directly to full SP500 SEC ingestion yet. The real PIT defensive sleeve is useful on SP100, but it does not solve the orthogonal-alpha problem. Before expanding data engineering, run a smaller defensive-score refinement that removes or downweights price-risk inputs and tests SEC fundamental sub-scores independently.
+
+---
+
+## Phase A.4.1 — Crisis Diversifier v2
+
+**Goal:** build Sleeve 2 as a true crisis diversifier, not a generic quality sleeve.
+
+Rules:
+- Do not use returns, volatility, drawdown, momentum, or beta in the alpha score.
+- Do not reuse the previous `defensive_stability_score`.
+- Use beta only after selection for sleeve construction.
+- Do not tune blend weights unless a standalone diversifier passes the hard gate.
+- Keep RL disabled.
+
+### Implementation
+
+| Item | File | Status |
+|---|---|---|
+| Fundamental-only crisis diversifier runner | `scripts/run_phase_a4_1_crisis_diversifier_v2.py` | Implemented |
+| Main report | `artifacts/reports/defensive_v2_results.md` | Done |
+| Standalone metrics | `artifacts/reports/defensive_v2_metrics.csv` | Done |
+| Full correlation report | `artifacts/reports/correlation_report.csv` | Done |
+| Crisis correlation report | `artifacts/reports/crisis_corr_report.csv` | Done |
+| Gate report | `artifacts/reports/defensive_v2_gate_report.csv` | Done |
+
+Score components:
+- `balance_strength`: low debt/assets, low debt/equity, interest coverage
+- `cashflow_quality`: operating cash flow to net income, low accruals
+- `profitability_stability`: stable ROE, gross margin, and EPS growth; negative-ROE penalty
+- `valuation_buffer`: clipped PE/PB value ranks
+
+### Phase A.4.1 result
+
+Run scope:
+- Universe: `sp100_sample`
+- Fundamentals: SEC PIT POC canonical file
+- No SP500 run because this was a scale/no-scale POC
+
+Best standalone diversifier metrics:
+- `crisis_diversifier_top_30_equal_weight`: CAGR `16.87%`, Sharpe `0.863`, MaxDD `-42.61%`
+- `crisis_diversifier_top_30_beta_0_6`: CAGR `13.64%`, Sharpe `0.843`, MaxDD `-39.48%`, realized beta `0.606`
+- `crisis_diversifier_top_20_beta_0_6`: full corr `0.711`, crisis corr `0.766`
+
+Hard gate:
+- Sharpe `>= 0.7`: passed by most variants
+- Full correlation `<= 0.6`: failed
+- Crisis correlation `<= 0.65`: failed
+
+**Decision:** A.4.1 failed. Removing price-risk inputs improved score purity, but did not create a truly orthogonal sleeve. Even fundamental-only defensive quality remains a long-equity/risk-on exposure in stress. Do not tune blends and do not scale SEC ingestion to SP500 from this result.
+
+**Next implication:** stop trying to solve orthogonality with quality-only refinements. The next Sleeve 2 candidate should be a genuinely different economic exposure, such as explicit crisis hedge/carry, trend-following hedge, sector/cash rotation, or market-neutral long-short research. Keep `volatility_score` as a validated return sleeve, but do not proceed to optimizer/RL until a non-RL diversifier passes stress correlation gates.
+
 ---
 
 ## Feature Families

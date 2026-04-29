@@ -200,9 +200,16 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
 - SEC POC outputs when run:
   `artifacts/reports/phase_a6_1_sec_fundamentals_poc.md` and `artifacts/reports/phase_a6_1_sec_fundamentals_coverage.csv`.
 - SEC POC status:
-  compile and CLI help passed; live SEC download has not been run yet because SEC requires a descriptive User-Agent/contact string. Run with `SEC_USER_AGENT="name email@example.com"` or `--user-agent`.
+  live SP100 sample run completed with `--user-agent "Shivam Gupta nitshivamgupta@gmail.com"`.
+- SEC POC result:
+  `1,965` canonical rows, `44/44` tickers, filing date range `2015-01-26` to `2026-04-29`. Raw gross-profit tag coverage was weak at `17/44`, so gross-margin conclusions remain fragile.
+- SEC PIT A.4 result:
+  best standalone defensive sleeve was `defensive_stability_top_50_equal_weight` with `CAGR=16.33%`, `Sharpe=0.876`, `MaxDD=-38.61%`; best drawdown-aware blend had `CAGR=17.79%`, `Sharpe=0.887`, `MaxDD=-42.17%`; best full vol-defensive corr remained about `0.70` and crisis corr about `0.75`.
+- Added `scripts/run_phase_a4_1_crisis_diversifier_v2.py`, an isolated fundamental-only crisis-diversifier runner. It excludes returns, volatility, drawdown, momentum, and beta from alpha scoring; beta is used only after selection for weighting.
+- A.4.1 result:
+  failed hard gate. Best full corr was about `0.711`, best crisis corr about `0.766`, despite standalone Sharpe above `0.7` for most variants. Blend metrics were skipped by rule because no standalone diversifier passed.
 - SEC POC decision rule:
-  run SP100 real-PIT A.5 and A.4 first. Scale SEC ingestion to sp500/2006+ only if the real-PIT defensive sleeve materially improves correlation, Sharpe, or drawdown versus the simulated-fundamentals plumbing run.
+  do not scale SEC ingestion to sp500/2006+ from this result. Quality/fundamental-only defensive sleeves still behave like long-equity risk in stress. Next Sleeve 2 candidate should be a different economic exposure: explicit crisis hedge/carry, trend-following hedge, sector/cash rotation, or market-neutral long-short research.
 - Future 20-year/RL note:
   current raw backtest starts in 2006, but metrics start after warmup around 2008. Preserve chronological splits for RL, keep 2019-2026 as a candidate final holdout, and require A.5 coverage by period before using fundamentals in RL state features.
 

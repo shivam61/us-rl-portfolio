@@ -10,12 +10,12 @@
 
 | | |
 |---|---|
-| Active phase | **A.6** — canonical local fundamentals contract implemented; next load real PIT data |
+| Active phase | **A.4.1 / A.6.1** — SEC PIT POC completed; crisis-diversifier v2 failed orthogonality gate |
 | Current production alpha candidate | `volatility_score` as component only, not standalone sleeve |
 | Best IC so far | sp100 mean period IC 0.0379; sp500 mean period IC 0.0259; rebalance IC ~0.034 on sp500 |
 | Best IC Sharpe | ~0.13 in Phase A.1 portfolio diagnostics — original 0.30 gate still not met |
-| Phase A status | Conditionally passed for alpha discovery only: high-vol/risk-premium alpha is real, but standalone and defensive-blend expressions failed |
-| Blocking gate | Do not continue optimizer/RL; run A.5/A.4 on `canonical_local` real PIT fundamentals before alpha decisions |
+| Phase A status | Conditionally passed for alpha discovery only: high-vol/risk-premium alpha is real, but standalone, defensive-blend, and quality-only diversifier expressions failed |
+| Blocking gate | Do not continue optimizer/RL; find a non-RL diversifier with full corr <= 0.6 and crisis corr <= 0.65 versus `volatility_score` |
 | sp500 baselines | Locked validation/system baseline — see table below, do not redefine |
 
 ## Baseline Convention

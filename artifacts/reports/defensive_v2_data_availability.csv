@@ -1,0 +1,11 @@
+universe,feature,coverage_pct,ticker_coverage_pct
+sp100_sample,debt_to_assets,0.9653552554315913,1.0
+sp100_sample,debt_to_equity,0.9653552554315913,1.0
+sp100_sample,interest_coverage,0.9653552554315913,1.0
+sp100_sample,ocf_to_net_income,0.9653552554315913,1.0
+sp100_sample,accruals_proxy,0.9653552554315913,1.0
+sp100_sample,roe,0.9653552554315913,1.0
+sp100_sample,gross_margin,0.9653552554315913,1.0
+sp100_sample,eps_growth_yoy,0.916030534351145,1.0
+sp100_sample,pe_ratio,0.9653552554315913,1.0
+sp100_sample,pb_ratio,0.9653552554315913,1.0
