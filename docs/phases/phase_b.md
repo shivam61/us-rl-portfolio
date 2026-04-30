@@ -34,6 +34,21 @@
 
 ---
 
+## Phase B Non-Negotiable Gates
+
+| Gate | Target |
+|---|---|
+| sp500 MaxDD | `<40%` |
+| sp500 Sharpe | `>1.0` preferred, must beat equal-weight |
+| max gross | `<=1.5` |
+| portfolio beta | initially `0.5-0.8` |
+| 50 bps cost-adjusted Sharpe | still competitive versus baseline |
+| min selected names | `20` |
+| alpha changes | none; `volatility_score` unchanged |
+| RL | disabled |
+
+---
+
 ## Phase B.0 — Baseline Guard
 
 **Goal:** lock the Phase A baseline and cleanly define the usable validation window before changing portfolio construction.
@@ -66,9 +81,20 @@ Use A.7.3 as the Phase A baseline for Phase B comparisons. Before production-sty
 
 ---
 
+## Measurement Definitions
+
+- **B.1 drift tolerance:** production-style runner must keep Sharpe within `10-15%` of the A.7.3 baseline, MaxDD `<40%`, max gross `<=1.5`, and explain any CAGR/Sharpe drift from simulator costs, execution timing, cash handling, or rebalance-date differences.
+- **Portfolio beta:** primary control is rebalance-date ex-ante beta using latest available `beta_to_spy_63d`; report rolling realized beta separately.
+- **Execution realism:** use configured liquidity constraints as first defaults: `max_participation_rate=5%`, ADV/min-liquidity checks, max single-name weight, turnover controls, and minimum trade thresholds where implemented.
+- **Risk engine integration:** start from the A.7.1/A.7.2 stress signal; do not add independent VIX/SPY brakes unless attribution proves incremental benefit.
+- **Optimizer role:** shape exposure, beta, sector concentration, liquidity, and turnover; do not use it as return maximization over noisy alpha estimates.
+
+---
+
 ## Current Open Risks
 
 - Current A.7.x blend runner is return/weight-matrix based, not the main simulator path.
+- A.7.x candidate currently blends sleeve returns/weights daily; production implementation may change rebalance timing and cost realization.
 - sp500 PIT mask has three trailing zero-active dates in late April 2026; this is a data-window artifact to clean or clip.
 - Regime Sharpe remains weak in 2008 and 2022 even though regime MaxDD passes.
 - Results validated on configured ticker universe with PIT liquidity mask, not true historical index membership.
