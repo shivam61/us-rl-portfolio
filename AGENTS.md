@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-30T20:00:59+00:00
+## Current State — 2026-04-30T20:01:39+00:00
 - Branch: `main`
-- Working tree: 13 changed path(s)
-- Dirty paths sample: `M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_b.md`, `?? artifacts/reports/phase_b1_runner_detail.csv`, `?? artifacts/reports/phase_b1_simulator_reproduction.csv`
-- Latest commit: `40ec7b59 2026-04-30 tighten phase b reproduction gates`
+- Working tree: 0 changed path(s)
+- Dirty paths sample: none
+- Latest commit: `f562bd75 2026-04-30 run phase b1 simulator reproduction`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
