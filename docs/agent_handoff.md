@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-30T07:28:25+00:00
+Last updated: 2026-04-30T20:00:59+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -169,8 +169,29 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   sp500 CAGR `23.51%`, Sharpe `1.538`, MaxDD `-26.36%`, max gross `1.375`, min candidates `128`, min selected `20`.
 - B.0 data-window guard:
   sp500 raw prices run through `2026-04-29`, but the last nonzero active PIT-mask date is `2026-04-24`; production validation should clip to `2026-04-24` or refresh/rebuild the mask before using trailing dates.
+- B.0 handed off to B.1 to reproduce the A.7.3 candidate in a production-style portfolio runner and measure drift versus the matrix-return baseline before adding turnover smoothing, optimizer, or risk overlays.
+- Phase B.1 simulator reproduction was implemented in `scripts/run_phase_b1_simulator_reproduction.py`.
+- B.1 artifacts were saved to:
+  `artifacts/reports/phase_b1_simulator_reproduction.md`,
+  `artifacts/reports/phase_b1_simulator_reproduction.csv`,
+  `artifacts/reports/phase_b1_runner_detail.csv`,
+  plus per-universe history, trade, and target-diagnostic CSVs.
+- B.1 found that the unlagged A.7.3 matrix headline used same-day signal/return alignment: date-t stress-scaled target weights were applied to date-t returns.
+- Diagnostic rows isolated execution timing and price mode. Even adjusted-close/same-day simulator accounting did not reproduce the unlagged A.7.3 headline, while a one-day-lagged matrix reference matched the production simulator within tolerance.
+- B.1 sp500 clipped validation through `2026-04-24`:
+  unlagged A.7.3 matrix reference `23.53% / 1.539 / -26.36%`;
+  lagged matrix reference `17.65% / 1.147 / -29.44%`;
+  production open/next-day simulator `17.56% / 1.116 / -26.98%`;
+  equal-weight simulator Sharpe `0.619`;
+  max gross `1.375`; min selected `21`.
+- B.1 sp100:
+  lagged matrix reference `14.78% / 1.394 / -20.32%`;
+  production open/next-day simulator `14.54% / 1.381 / -18.70%`;
+  equal-weight simulator Sharpe `0.864`.
+- Decision:
+  original B.1 drift versus the unlagged A.7.3 matrix headline fails and should not be ignored, but it is reconciled by the lagged matrix reference. Reset Phase B promotion baseline to the production open/next-day simulator row. Do not optimize future Phase B work against the unlagged A.7.3 headline.
 - Next Phase B step:
-  B.1 reproduce the A.7.3 candidate in a production-style portfolio runner, then measure drift versus the matrix-return baseline before adding turnover smoothing, optimizer, or risk overlays.
+  B.2 turnover smoothing / rebalance hysteresis on the production-realistic baseline. Preserve the B.1 sp500 MaxDD `<40%`, max gross `<=1.5`, Sharpe `>1.0` preferred, and same-universe equal-weight outperformance. Keep `volatility_score` unchanged, add no alpha, and keep RL disabled.
 
 ### 2026-04-29
 

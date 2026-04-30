@@ -11,13 +11,13 @@
 | | |
 |---|---|
 | Active phase | **Phase B** — portfolio stabilization |
-| Current step | **B.1** — reproduce A.7.3 candidate in production-style portfolio runner |
-| Best system so far | volatility + stress-scaled trend blend (A.7.3 artifact-checked candidate) |
-| Current headline metrics (sp500) | A.7.3 baseline CAGR `23.5%`, Sharpe `1.54`, MaxDD `-26.4%`, max gross `1.375` |
+| Current step | **B.2** — turnover smoothing / rebalance hysteresis on production-realistic baseline |
+| Best system so far | volatility + stress-scaled trend blend, lagged and reproduced in production simulator |
+| Current headline metrics (sp500) | B.1 production baseline CAGR `17.6%`, Sharpe `1.12`, MaxDD `-27.0%`, max gross `1.375` |
 | Current production alpha candidate | `volatility_score` as component only, not standalone sleeve |
-| Phase A status | A.7.3 current-setup membership/coverage artifact validation did not show strategy fragility; do not import historical membership now; fix trailing PIT-mask/date artifact before production validation |
-| Blocking gate | Production validation must clip `sp500_dynamic` to `2026-04-24` or refresh PIT mask before using trailing dates; preserve A.7.2/A.7.3 MaxDD/cost/gross profile |
-| sp500 baselines | Locked validation/system baseline — see table below, do not redefine |
+| Phase A status | A.7.3 current-setup membership/coverage artifact validation did not show strategy fragility, but B.1 found same-day signal/return alignment in the unlagged matrix headline; do not use it as a promotion baseline |
+| Blocking gate | Production validation must clip `sp500_dynamic` to `2026-04-24` or refresh PIT mask before using trailing dates; preserve B.1 production MaxDD/cost/gross profile |
+| sp500 baselines | Locked validation/system baseline plus B.1 production baseline — do not redefine without full diagnostics |
 
 ## Baseline Convention
 
@@ -34,6 +34,7 @@
 | Alpha + Optimizer (no risk) | 11.2% | 0.55 | -55% |
 | Full System (opt + risk) | 8.7% | 0.59 | -34% |
 | Optimizer to=0.5 sensitivity | 11.9% | 0.68 | -40% |
+| B.1 production stress blend | 17.6% | 1.12 | -27% |
 
 ---
 
@@ -42,7 +43,7 @@
 | Phase | Goal | Status | Detail |
 |---|---|---|---|
 | **A** | Alpha discovery + alpha expression (A.1–A.7.3) | ✅ Candidate validated; hand off to Phase B | [phases/phase_a.md](phases/phase_a.md) |
-| **B** | Portfolio stabilization: optimizer integration, risk engine redesign, exposure shaping | 🔄 Ready to start | [phases/phase_b.md](phases/phase_b.md) |
+| **B** | Portfolio stabilization: optimizer integration, risk engine redesign, exposure shaping | 🔄 In progress | [phases/phase_b.md](phases/phase_b.md) |
 | **C** | Model refinement (deferred): LightGBM tuning + feature improvements | ⏳ Deferred until Phase B stabilizes | [phases/phase_c.md](phases/phase_c.md) |
 | **D** | RL overlay (stricter gate): sector RL policy | ⏳ Pending Phase C gate | [phases/phase_d.md](phases/phase_d.md) |
 

@@ -4,16 +4,26 @@
 
 **Objective:** turn the A.7.3 stress-scaled volatility/trend expression into a stable portfolio construction path with explicit data-window guards, turnover controls, execution realism, and optimizer/risk integration.
 
-**Entry baseline:** Phase A locked candidate:
+**Entry research candidate:** Phase A locked candidate:
 `vol_top_20` + `trend_3m_6m_long_cash`, `50/50 + k=0.30 + 50/50 stress`, 10 bps cost.
 
-**Entry metrics on `sp500_dynamic`:**
+**Phase A matrix headline on `sp500_dynamic`:**
 - CAGR `23.51%`
 - Sharpe `1.538`
 - MaxDD `-26.36%`
 - max gross `1.375`
 - min candidate count `128`
 - min selected count `20`
+
+**Production baseline after B.1 on `sp500_dynamic` clipped to `2026-04-24`:**
+- CAGR `17.56%`
+- Sharpe `1.116`
+- MaxDD `-26.98%`
+- max gross `1.375`
+- min selected count `21`
+- equal-weight simulator Sharpe `0.619`
+
+Do not use the unlagged Phase A matrix headline as a Phase B promotion baseline. B.1 found same-day signal/return alignment in the unlagged A.7.3 matrix path; the production baseline is the open/next-day simulator result, reconciled to a one-day-lagged matrix reference.
 
 **Important scope:** do not modify `volatility_score`, add a new alpha, import historical index membership, or enable RL in Phase B.
 
@@ -24,7 +34,7 @@
 | Goal | Target |
 |---|---|
 | Preserve Phase A drawdown profile | sp500 MaxDD stays `<40%` |
-| Preserve risk-adjusted return | sp500 Sharpe stays above equal-weight baseline and preferably `>1.0` |
+| Preserve risk-adjusted return | sp500 Sharpe stays above equal-weight baseline and preferably `>1.0` under production-style simulation |
 | Control exposure | max gross `<=1.5` unless explicitly testing rejected variants |
 | Control market exposure | portfolio beta remains within defined band, e.g. `0.5-0.8` |
 | Control turnover/cost | turnover controlled via rebalance frequency, trade thresholds, and persistence; 25-50 bps Sharpe remains competitive |
@@ -83,8 +93,9 @@ Use A.7.3 as the Phase A baseline for Phase B comparisons. Before production-sty
 
 ## Measurement Definitions
 
-- **B.1 drift tolerance:** production-style runner must keep Sharpe within `10-15%` of the A.7.3 baseline, MaxDD `<40%`, max gross `<=1.5`, and explain any CAGR/Sharpe drift from simulator costs, execution timing, cash handling, or rebalance-date differences.
+- **B.1 drift tolerance:** production-style runner must keep Sharpe within `10-15%` of the lagged A.7.3 matrix reference, MaxDD `<40%`, max gross `<=1.5`, and explain any CAGR/Sharpe drift from simulator costs, execution timing, cash handling, or rebalance-date differences.
 - **B.1 failure condition:** if reproduction falls outside tolerance, do not proceed to B.2. Identify and reconcile differences in signal alignment, timing, cost model, and cash handling; then update baseline or simulator assumptions before continuing.
+- **B.1 baseline reset:** the unlagged A.7.3 matrix headline is retained only as research history. Phase B promotion comparisons should use `phase_b1_production_open_next_day` from `artifacts/reports/phase_b1_runner_detail.csv`.
 - **Portfolio beta:** primary control is rebalance-date ex-ante beta using latest available `beta_to_spy_63d`; report rolling realized beta separately.
 - **Execution realism:** use configured liquidity constraints as first defaults: `max_participation_rate=5%`, ADV/min-liquidity checks, max single-name weight, turnover controls, and minimum trade thresholds where implemented.
 - **Turnover:** measured as sum of absolute weight changes per rebalance period; report both average and peak turnover across the backtest.
@@ -108,8 +119,8 @@ Proceed to Phase C only if:
 
 ## Current Open Risks
 
-- Current A.7.x blend runner is return/weight-matrix based, not the main simulator path.
-- A.7.x candidate currently blends sleeve returns/weights daily; production implementation may change rebalance timing and cost realization.
+- A.7.x unlagged matrix headline used same-day target weights against same-day returns; B.1 reconciled this by introducing a one-day-lagged matrix reference and resetting the Phase B baseline to the production simulator row.
+- The production baseline has lower Sharpe/CAGR than the Phase A headline but preserves the drawdown/gross profile and beats equal-weight on the same clipped universe.
 - sp500 PIT mask has three trailing zero-active dates in late April 2026; this is a data-window artifact to clean or clip.
 - Regime Sharpe remains weak in 2008 and 2022 even though regime MaxDD passes.
 - Results validated on configured ticker universe with PIT liquidity mask, not true historical index membership.
@@ -122,3 +133,4 @@ Proceed to Phase C only if:
 | Date | Step | Result | Notes |
 |---|---|---|---|
 | 2026-04-30 | B.0 baseline guard | Done | A.7.3 baseline locked; sp500 recommended validation end is `2026-04-24` unless PIT mask is refreshed |
+| 2026-04-30 | B.1 simulator reproduction | Reconciled | Production open/next-day sp500 baseline: CAGR `17.56%`, Sharpe `1.116`, MaxDD `-26.98%`; within tolerance versus lagged matrix reference, not versus unlagged A.7.3 headline |

@@ -5,11 +5,11 @@ All repo rules, workflow rules, save rules, file lookup order, roadmap-first beh
 Do not treat this file as an independent source of repo instructions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-30T07:28:25+00:00
+## Current State — 2026-04-30T20:00:59+00:00
 - Branch: `main`
-- Working tree: 1 changed path(s)
-- Dirty paths sample: `M docs/phases/phase_b.md`
-- Latest commit: `6866066f 2026-04-30 add phase b stabilization gates`
+- Working tree: 13 changed path(s)
+- Dirty paths sample: `M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_b.md`, `?? artifacts/reports/phase_b1_runner_detail.csv`, `?? artifacts/reports/phase_b1_simulator_reproduction.csv`
+- Latest commit: `40ec7b59 2026-04-30 tighten phase b reproduction gates`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
