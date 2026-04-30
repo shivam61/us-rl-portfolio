@@ -672,6 +672,55 @@ Result:
 
 ---
 
+## Phase A.7.2 — Robustness Validation
+
+**Goal:** validate that the A.7.1 stress-scaled volatility/trend candidate is not overfit, without modifying `volatility_score`, adding alpha, or enabling RL.
+
+### Implementation
+
+| Item | File | Status |
+|---|---|---|
+| A.7.2 robustness runner | `scripts/run_phase_a7_2_robustness.py` | Implemented |
+| Main report | `artifacts/reports/phase_a7_2_robustness.md` | Done |
+| Regime breakdown | `artifacts/reports/regime_breakdown.csv` | Done |
+| Parameter sensitivity | `artifacts/reports/parameter_sensitivity.csv` | Done |
+| Cost impact | `artifacts/reports/cost_impact.csv` | Done |
+
+Tests:
+- Universes: `sp100_sample`, `sp500_dynamic`
+- Base weights: `60/40`, `50/50`, `40/60`
+- Stress scaling: `k = 0.2`, `0.3`, `0.4`
+- Stress variants: VIX-only, drawdown-only, `50/50`, `70/30`, `30/70`
+- Transaction costs: `10`, `25`, `50` bps all-in turnover cost
+- Exposure rejection: `max_gross > 1.5`
+- Regimes: 2008 crisis, 2010-2019, 2020, 2022, 2023-2026
+
+### Phase A.7.2 result
+
+Run scope:
+- Research universe: `sp100_sample`
+- Validation universe: `sp500_dynamic`
+- Base alpha: unchanged `vol_top_20`
+- Hedge sleeve: unchanged `trend_3m_6m_long_cash`
+
+Candidate check:
+- `sp500_dynamic` `50/50 + k=0.30 + 50/50 stress`: CAGR `23.51%`, Sharpe `1.538`, MaxDD `-26.36%`, max gross `1.375`.
+- Same candidate on `sp100_sample`: CAGR `18.22%`, Sharpe `1.739`, MaxDD `-17.00%`, max gross `1.375`.
+
+Robustness:
+- All tested full-period sp500 configurations passed MaxDD `<40%`, Sharpe `>0.8`, and max gross `<=1.5`.
+- Best sp500 Sharpe row was `vix_only_60_40_k_40`: CAGR `26.48%`, Sharpe `1.704`, MaxDD `-25.27%`, max gross `1.375`.
+- Cost-adjusted sp500 performance stayed competitive: average Sharpe `1.446` at 10 bps, `1.307` at 25 bps, `1.080` at 50 bps.
+- Parameter sensitivity was acceptable: sp500 k variants stayed above Sharpe `1.13` and below MaxDD `-37.71%` at 10 bps.
+- Regime MaxDD passed across every tested regime; worst sp500 regime MaxDD was `-37.71%` in 2020.
+- Regime Sharpe `>0.8` did not pass in 2008 crisis or 2022. These periods are capital-preservation regimes for this expression, not high-Sharpe regimes.
+
+**Decision:** A.7.2 supports the simple stress-scaled volatility/trend blend as the Phase A non-RL production alpha expression. The recommended expression remains `vol_top_20` plus `trend_3m_6m_long_cash`, with `50/50 + k=0.30 + 50/50 stress` as the conservative default. Do not promote beta-hedged variants yet because the simpler expression clears drawdown and gross exposure without SPY short leverage.
+
+**Next implication:** Phase A alpha expression is ready to hand to Phase B portfolio stabilization. Phase B should focus on execution realism, turnover control, optimizer/risk integration, and preserving the A.7.2 drawdown profile. Keep RL disabled.
+
+---
+
 ## Feature Families
 
 ### Baseline (17 features — already existed)

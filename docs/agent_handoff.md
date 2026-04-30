@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-29T18:15:01+00:00
+Last updated: 2026-04-30T06:38:43+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -117,6 +117,27 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   `.venv/bin/python scripts/run_backtest.py --config config/base.yaml --universe config/universes/sp500.yaml`
 
 ## Session Notes
+
+### 2026-04-30
+
+- Phase A.7.2 robustness validation was implemented in `scripts/run_phase_a7_2_robustness.py`.
+- A.7.2 preserved the constraints: `volatility_score` unchanged, no new alpha, RL disabled.
+- Outputs were saved to:
+  `artifacts/reports/phase_a7_2_robustness.md`,
+  `artifacts/reports/regime_breakdown.csv`,
+  `artifacts/reports/parameter_sensitivity.csv`,
+  `artifacts/reports/cost_impact.csv`.
+- Tested both `sp100_sample` and `sp500_dynamic` across base weights `60/40`, `50/50`, `40/60`; k values `0.2`, `0.3`, `0.4`; VIX-only, drawdown-only, and weighted stress functions; costs of `10`, `25`, and `50` bps.
+- Recommended conservative candidate remains `vol_top_20` + `trend_3m_6m_long_cash`, `50/50 + k=0.30 + 50/50 stress`.
+- Candidate metrics:
+  sp500 CAGR `23.51%`, Sharpe `1.538`, MaxDD `-26.36%`, max gross `1.375`;
+  sp100 CAGR `18.22%`, Sharpe `1.739`, MaxDD `-17.00%`, max gross `1.375`.
+- All tested sp500 full-period rows passed MaxDD `<40%`, Sharpe `>0.8`, and max gross `<=1.5`.
+- Cost-adjusted sp500 performance remained competitive:
+  average Sharpe `1.446` at 10 bps, `1.307` at 25 bps, `1.080` at 50 bps.
+- Regime MaxDD passed across all tested regimes; worst sp500 regime MaxDD was `-37.71%` in 2020.
+- Regime Sharpe `>0.8` failed in 2008 and 2022 for all tested rows. Treat those as capital-preservation regimes, not high-Sharpe regimes.
+- Phase A can hand off to Phase B portfolio stabilization. Next work should focus on execution realism, turnover control, optimizer/risk integration, and preserving the A.7.2 drawdown/gross/cost profile. Keep RL disabled.
 
 ### 2026-04-29
 

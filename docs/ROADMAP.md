@@ -6,17 +6,17 @@
 
 ---
 
-## Current State — 2026-04-29
+## Current State — 2026-04-30
 
 | | |
 |---|---|
-| Active phase | **Phase A** — alpha discovery + alpha expression |
-| Current step | **A.7.2** — robustness (costs, leverage caps, periods, regimes) |
-| Best system so far | volatility + trend blend (A.7.1 candidate) |
-| Current headline metrics (sp500) | CAGR ~24%, Sharpe ~1.0+, MaxDD ~30–40% |
+| Active phase | **Phase B** — portfolio stabilization |
+| Current step | **Phase B prep** — portfolio stabilization around A.7.2 candidate |
+| Best system so far | volatility + stress-scaled trend blend (A.7.2 validated candidate) |
+| Current headline metrics (sp500) | A.7.2 candidate CAGR `23.5%`, Sharpe `1.54`, MaxDD `-26.4%`, max gross `1.375` |
 | Current production alpha candidate | `volatility_score` as component only, not standalone sleeve |
-| Phase A status | Candidate investable non-RL expression found: `vol_top_20` + stress-scaled trend overlay passed sp500 drawdown/Sharpe gates; validating robustness in A.7.2 |
-| Blocking gate | Do not proceed to Phase B until A.7.2 confirms MaxDD < 40% and Sharpe beats equal-weight under realistic costs/constraints |
+| Phase A status | A.7.2 robustness supports `vol_top_20` + `trend_3m_6m_long_cash` stress-scaled blend; all tested sp500 full-period rows passed drawdown/Sharpe/gross gates, with 2008/2022 regime-Sharpe caveat |
+| Blocking gate | Phase B may begin, but must preserve A.7.2 MaxDD/cost/gross profile under execution realism |
 | sp500 baselines | Locked validation/system baseline — see table below, do not redefine |
 
 ## Baseline Convention
@@ -41,8 +41,8 @@
 
 | Phase | Goal | Status | Detail |
 |---|---|---|---|
-| **A** | Alpha discovery + alpha expression (A.1–A.7.2) | 🔄 In progress (A.7.2) | [phases/phase_a.md](phases/phase_a.md) |
-| **B** | Portfolio stabilization: optimizer integration, risk engine redesign, exposure shaping | ⏳ Pending Phase A gate | [phases/phase_b.md](phases/phase_b.md) |
+| **A** | Alpha discovery + alpha expression (A.1–A.7.2) | ✅ Candidate validated; hand off to Phase B | [phases/phase_a.md](phases/phase_a.md) |
+| **B** | Portfolio stabilization: optimizer integration, risk engine redesign, exposure shaping | 🔄 Ready to start | [phases/phase_b.md](phases/phase_b.md) |
 | **C** | Model refinement (deferred): LightGBM tuning + feature improvements | ⏳ Deferred until Phase B stabilizes | [phases/phase_c.md](phases/phase_c.md) |
 | **D** | RL overlay (stricter gate): sector RL policy | ⏳ Pending Phase C gate | [phases/phase_d.md](phases/phase_d.md) |
 
