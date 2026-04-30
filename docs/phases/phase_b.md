@@ -39,7 +39,7 @@
 | Gate | Target |
 |---|---|
 | sp500 MaxDD | `<40%` |
-| sp500 Sharpe | `>1.0` preferred, must beat equal-weight |
+| sp500 Sharpe | `>1.0` preferred, must beat equal-weight baseline on the same universe and cost assumptions |
 | max gross | `<=1.5` |
 | portfolio beta | initially `0.5-0.8` |
 | 50 bps cost-adjusted Sharpe | still competitive versus baseline |
@@ -73,7 +73,7 @@ Use A.7.3 as the Phase A baseline for Phase B comparisons. Before production-sty
 | Step | Purpose | Output |
 |---|---|---|
 | B.0 | Lock A.7.3 baseline and define valid data window | baseline guard report |
-| B.1 | Reproduce A.7.3 candidate in a production-style portfolio runner | simulator-compatible baseline |
+| B.1 | Reproduce A.7.3 candidate in the main simulator with identical signal construction, sleeve weights, stress-scaling logic, rebalance timing, and cost assumptions | simulator-compatible baseline |
 | B.2 | Turnover smoothing / rebalance hysteresis | turnover-cost frontier |
 | B.3 | Exposure-constrained portfolio shaping (not return maximization) | optimizer attribution report |
 | B.4 | Risk engine formalization and integration (stress-based) | risk attribution report |
@@ -84,10 +84,25 @@ Use A.7.3 as the Phase A baseline for Phase B comparisons. Before production-sty
 ## Measurement Definitions
 
 - **B.1 drift tolerance:** production-style runner must keep Sharpe within `10-15%` of the A.7.3 baseline, MaxDD `<40%`, max gross `<=1.5`, and explain any CAGR/Sharpe drift from simulator costs, execution timing, cash handling, or rebalance-date differences.
+- **B.1 failure condition:** if reproduction falls outside tolerance, do not proceed to B.2. Identify and reconcile differences in signal alignment, timing, cost model, and cash handling; then update baseline or simulator assumptions before continuing.
 - **Portfolio beta:** primary control is rebalance-date ex-ante beta using latest available `beta_to_spy_63d`; report rolling realized beta separately.
 - **Execution realism:** use configured liquidity constraints as first defaults: `max_participation_rate=5%`, ADV/min-liquidity checks, max single-name weight, turnover controls, and minimum trade thresholds where implemented.
+- **Turnover:** measured as sum of absolute weight changes per rebalance period; report both average and peak turnover across the backtest.
+- **Gross exposure rejection:** any configuration exceeding max gross `1.5` is rejected unless explicitly tagged as exploratory and excluded from Phase B promotion.
 - **Risk engine integration:** start from the A.7.1/A.7.2 stress signal; do not add independent VIX/SPY brakes unless attribution proves incremental benefit.
 - **Optimizer role:** shape exposure, beta, sector concentration, liquidity, and turnover; do not use it as return maximization over noisy alpha estimates.
+
+---
+
+## Phase B Exit Criteria
+
+Proceed to Phase C only if:
+
+- sp500 MaxDD remains `<40%` under production-style simulation.
+- Cost-adjusted Sharpe remains `>0.9-1.0`.
+- Portfolio beta remains within the defined band.
+- Turnover is stable and explainable.
+- Differences versus A.7.3 baseline are understood and attributable.
 
 ---
 
