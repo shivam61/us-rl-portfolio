@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-30T06:38:43+00:00
+Last updated: 2026-04-30T06:57:00+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -138,6 +138,26 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
 - Regime MaxDD passed across all tested regimes; worst sp500 regime MaxDD was `-37.71%` in 2020.
 - Regime Sharpe `>0.8` failed in 2008 and 2022 for all tested rows. Treat those as capital-preservation regimes, not high-Sharpe regimes.
 - Phase A can hand off to Phase B portfolio stabilization. Next work should focus on execution realism, turnover control, optimizer/risk integration, and preserving the A.7.2 drawdown/gross/cost profile. Keep RL disabled.
+- Phase A.7.3 membership/coverage artifact validation was implemented in `scripts/run_phase_a7_3_membership_coverage_artifacts.py`.
+- A.7.3 wording is intentional: this is not true PIT historical index-membership validation. It validates current configured universes plus current ADV/PIT liquidity masks. Do not import historical membership unless current-setup checks fail or become fragile.
+- A.7.3 outputs were saved to:
+  `artifacts/reports/phase_a7_3_membership_coverage_artifacts.md`,
+  `artifacts/reports/universe_membership_audit.csv`,
+  `artifacts/reports/feature_coverage_by_regime.csv`,
+  `artifacts/reports/artifact_sensitivity.csv`.
+- sp500 A.7.3 baseline current-mask candidate:
+  CAGR `23.51%`, Sharpe `1.538`, MaxDD `-26.36%`, min candidates `128`, min selected `20`.
+- sp500 artifact cohorts all passed drawdown, Sharpe, and selection-depth checks:
+  no PIT mask `27.15% / 1.691 / -26.94%`,
+  early-active-by-2010 `20.95% / 1.486 / -24.61%`,
+  pre-2020 active-only `22.71% / 1.531 / -26.36%`,
+  all-regime score coverage `21.05% / 1.495 / -24.61%`.
+- Coverage/data flags:
+  sp500 active `volatility_score` coverage is strong across regimes (`~99.8%+` average);
+  sp100 2008 feature coverage is thinner at `92.3%` but sensitivity still passed;
+  sp500 has three trailing zero-active PIT-mask days from `2026-04-27` to `2026-04-29`, likely a mask/date refresh artifact.
+- A.7.3 decision:
+  no current-setup membership/coverage artifact fragility detected in the strategy result. Do not import historical constituents now. Before Phase B production validation, clean/rebuild the trailing PIT mask or clip validation to the last nonzero active-mask date.
 
 ### 2026-04-29
 

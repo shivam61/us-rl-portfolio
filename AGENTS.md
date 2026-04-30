@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-04-30T06:38:43+00:00
+## Current State — 2026-04-30T06:57:00+00:00
 - Branch: `main`
-- Working tree: 10 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_a.md`
-- Latest commit: `d49dd0b9 2026-04-29 update roadmap for portfolio-first phases`
+- Working tree: 8 changed path(s)
+- Dirty paths sample: `M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_a.md`, `?? artifacts/reports/artifact_sensitivity.csv`, `?? artifacts/reports/feature_coverage_by_regime.csv`
+- Latest commit: `76906781 2026-04-30 run phase a7.2 robustness validation`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

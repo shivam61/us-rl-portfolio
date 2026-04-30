@@ -717,7 +717,52 @@ Robustness:
 
 **Decision:** A.7.2 supports the simple stress-scaled volatility/trend blend as the Phase A non-RL production alpha expression. The recommended expression remains `vol_top_20` plus `trend_3m_6m_long_cash`, with `50/50 + k=0.30 + 50/50 stress` as the conservative default. Do not promote beta-hedged variants yet because the simpler expression clears drawdown and gross exposure without SPY short leverage.
 
-**Next implication:** Phase A alpha expression is ready to hand to Phase B portfolio stabilization. Phase B should focus on execution realism, turnover control, optimizer/risk integration, and preserving the A.7.2 drawdown profile. Keep RL disabled.
+**Next implication:** run A.7.3 membership/coverage artifact validation with the current configured universes before Phase B implementation. Do not import historical constituent data unless the current-setup artifact tests fail or look fragile. Keep RL disabled.
+
+---
+
+## Phase A.7.3 — Membership/Coverage Artifact Validation
+
+**Goal:** validate that the A.7.2 candidate is not inflated by current-universe, PIT-mask, or missing-data artifacts before portfolio stabilization.
+
+This is not true historical S&P 500/S&P 100 membership validation. No external historical constituent data is imported in A.7.3. Historical membership should only be added if the current setup fails or looks fragile.
+
+### Implementation
+
+| Item | File | Status |
+|---|---|---|
+| A.7.3 artifact validation runner | `scripts/run_phase_a7_3_membership_coverage_artifacts.py` | Implemented |
+| Main report | `artifacts/reports/phase_a7_3_membership_coverage_artifacts.md` | Done |
+| Universe audit | `artifacts/reports/universe_membership_audit.csv` | Done |
+| Feature coverage by regime | `artifacts/reports/feature_coverage_by_regime.csv` | Done |
+| Artifact sensitivity | `artifacts/reports/artifact_sensitivity.csv` | Done |
+
+Tests:
+- Current configured universes only: `sp100_sample`, `sp500_dynamic`
+- Current ADV/PIT liquidity masks only; no real historical index membership import
+- Candidate: `vol_top_20` + `trend_3m_6m_long_cash`, `50/50 + k=0.30 + 50/50 stress`, 10 bps cost
+- Coverage by regime for `volatility_score` and its input features
+- Artifact cohorts: baseline current mask, no PIT mask, early-active-by-2010, pre-2020 active only, all-regime score coverage `>=75%`, full configured list with current mask
+
+### Phase A.7.3 result
+
+sp500 current-setup artifact sensitivity:
+- Baseline current mask: CAGR `23.51%`, Sharpe `1.538`, MaxDD `-26.36%`, min candidates `128`, min selected `20`.
+- No PIT mask: CAGR `27.15%`, Sharpe `1.691`, MaxDD `-26.94%`.
+- Early-active-by-2010 cohort: CAGR `20.95%`, Sharpe `1.486`, MaxDD `-24.61%`.
+- Pre-2020 active-only cohort: CAGR `22.71%`, Sharpe `1.531`, MaxDD `-26.36%`.
+- All-regime score coverage cohort: CAGR `21.05%`, Sharpe `1.495`, MaxDD `-24.61%`.
+- All sp500 cohorts passed drawdown, Sharpe, and selection-depth checks.
+
+Coverage/data flags:
+- sp500 feature coverage is strong across audited regimes: `volatility_score` active coverage averages about `99.8%+`.
+- sp500 2008 crisis has enough active names: active mean `160`, active min `127`, min score non-null count `128` at rebalances.
+- sp100 2008 coverage is thinner: active feature coverage `92.3%`, but all sp100 sensitivity cohorts still passed.
+- sp500 has three trailing zero-active PIT-mask days in the broad 2023-2026 bucket (`2026-04-27` to `2026-04-29`), likely a mask/date refresh artifact after the last populated raw-data window. It did not affect rebalance selection depth in this run, but Phase B should clean this before production runs.
+
+**Decision:** A.7.3 does not show current-setup membership/coverage artifact fragility in the A.7.2 candidate. Do not import historical index-membership data now. Phase B can proceed after cleaning the trailing PIT-mask/date artifact or clipping production validation to the last nonzero active-mask date.
+
+**Next implication:** Phase B should preserve the A.7.2/A.7.3 candidate while adding execution realism, turnover controls, optimizer/risk integration, and explicit data-window checks. Keep RL disabled.
 
 ---
 

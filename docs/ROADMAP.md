@@ -11,12 +11,12 @@
 | | |
 |---|---|
 | Active phase | **Phase B** — portfolio stabilization |
-| Current step | **Phase B prep** — portfolio stabilization around A.7.2 candidate |
-| Best system so far | volatility + stress-scaled trend blend (A.7.2 validated candidate) |
-| Current headline metrics (sp500) | A.7.2 candidate CAGR `23.5%`, Sharpe `1.54`, MaxDD `-26.4%`, max gross `1.375` |
+| Current step | **Phase B prep** — clean A.7.3 data-window flags, then stabilize portfolio construction |
+| Best system so far | volatility + stress-scaled trend blend (A.7.3 artifact-checked candidate) |
+| Current headline metrics (sp500) | A.7.3 baseline CAGR `23.5%`, Sharpe `1.54`, MaxDD `-26.4%`, max gross `1.375` |
 | Current production alpha candidate | `volatility_score` as component only, not standalone sleeve |
-| Phase A status | A.7.2 robustness supports `vol_top_20` + `trend_3m_6m_long_cash` stress-scaled blend; all tested sp500 full-period rows passed drawdown/Sharpe/gross gates, with 2008/2022 regime-Sharpe caveat |
-| Blocking gate | Phase B may begin, but must preserve A.7.2 MaxDD/cost/gross profile under execution realism |
+| Phase A status | A.7.3 current-setup membership/coverage artifact validation did not show strategy fragility; do not import historical membership now; fix trailing PIT-mask/date artifact before production validation |
+| Blocking gate | Phase B may begin after cleaning/clipping the trailing zero-active PIT-mask dates; preserve A.7.2/A.7.3 MaxDD/cost/gross profile |
 | sp500 baselines | Locked validation/system baseline — see table below, do not redefine |
 
 ## Baseline Convention
@@ -41,7 +41,7 @@
 
 | Phase | Goal | Status | Detail |
 |---|---|---|---|
-| **A** | Alpha discovery + alpha expression (A.1–A.7.2) | ✅ Candidate validated; hand off to Phase B | [phases/phase_a.md](phases/phase_a.md) |
+| **A** | Alpha discovery + alpha expression (A.1–A.7.3) | ✅ Candidate validated; hand off to Phase B | [phases/phase_a.md](phases/phase_a.md) |
 | **B** | Portfolio stabilization: optimizer integration, risk engine redesign, exposure shaping | 🔄 Ready to start | [phases/phase_b.md](phases/phase_b.md) |
 | **C** | Model refinement (deferred): LightGBM tuning + feature improvements | ⏳ Deferred until Phase B stabilizes | [phases/phase_c.md](phases/phase_c.md) |
 | **D** | RL overlay (stricter gate): sector RL policy | ⏳ Pending Phase C gate | [phases/phase_d.md](phases/phase_d.md) |
