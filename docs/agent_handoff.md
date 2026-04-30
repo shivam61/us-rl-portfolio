@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-30T06:57:00+00:00
+Last updated: 2026-04-30T07:15:28+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -158,6 +158,19 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   sp500 has three trailing zero-active PIT-mask days from `2026-04-27` to `2026-04-29`, likely a mask/date refresh artifact.
 - A.7.3 decision:
   no current-setup membership/coverage artifact fragility detected in the strategy result. Do not import historical constituents now. Before Phase B production validation, clean/rebuild the trailing PIT mask or clip validation to the last nonzero active-mask date.
+- Phase A baseline is locked for Phase B:
+  `vol_top_20` + `trend_3m_6m_long_cash`, `50/50 + k=0.30 + 50/50 stress`, 10 bps cost.
+- Phase B.0 baseline guard was implemented in `scripts/run_phase_b0_baseline_guard.py`.
+- B.0 artifacts were saved to:
+  `artifacts/reports/phase_b0_baseline_guard.md`,
+  `artifacts/reports/phase_b0_data_window_guard.csv`,
+  `artifacts/reports/phase_b0_baseline_lock.csv`.
+- B.0 baseline lock:
+  sp500 CAGR `23.51%`, Sharpe `1.538`, MaxDD `-26.36%`, max gross `1.375`, min candidates `128`, min selected `20`.
+- B.0 data-window guard:
+  sp500 raw prices run through `2026-04-29`, but the last nonzero active PIT-mask date is `2026-04-24`; production validation should clip to `2026-04-24` or refresh/rebuild the mask before using trailing dates.
+- Next Phase B step:
+  B.1 reproduce the A.7.3 candidate in a production-style portfolio runner, then measure drift versus the matrix-return baseline before adding turnover smoothing, optimizer, or risk overlays.
 
 ### 2026-04-29
 

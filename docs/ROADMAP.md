@@ -11,12 +11,12 @@
 | | |
 |---|---|
 | Active phase | **Phase B** — portfolio stabilization |
-| Current step | **Phase B prep** — clean A.7.3 data-window flags, then stabilize portfolio construction |
+| Current step | **B.1** — reproduce A.7.3 candidate in production-style portfolio runner |
 | Best system so far | volatility + stress-scaled trend blend (A.7.3 artifact-checked candidate) |
 | Current headline metrics (sp500) | A.7.3 baseline CAGR `23.5%`, Sharpe `1.54`, MaxDD `-26.4%`, max gross `1.375` |
 | Current production alpha candidate | `volatility_score` as component only, not standalone sleeve |
 | Phase A status | A.7.3 current-setup membership/coverage artifact validation did not show strategy fragility; do not import historical membership now; fix trailing PIT-mask/date artifact before production validation |
-| Blocking gate | Phase B may begin after cleaning/clipping the trailing zero-active PIT-mask dates; preserve A.7.2/A.7.3 MaxDD/cost/gross profile |
+| Blocking gate | Production validation must clip `sp500_dynamic` to `2026-04-24` or refresh PIT mask before using trailing dates; preserve A.7.2/A.7.3 MaxDD/cost/gross profile |
 | sp500 baselines | Locked validation/system baseline — see table below, do not redefine |
 
 ## Baseline Convention

@@ -1,0 +1,3 @@
+universe_path,universe,configured_tickers,first_price_date,last_price_date,first_mask_date,last_mask_eval_date,last_nonzero_active_date,recommended_validation_end,zero_active_days,trailing_zero_active_days,active_min_nonzero,active_median,active_latest,needs_clip_or_mask_refresh
+config/universes/sp100.yaml,sp100_sample,44,2006-01-03,2026-04-29,2008-01-02,2026-04-29,2026-04-29,2026-04-29,0,0,39,41.0,39,False
+config/universes/sp500.yaml,sp500_dynamic,503,2006-01-03,2026-04-29,2008-01-02,2026-04-29,2026-04-24,2026-04-24,3,3,127,270.0,0,True
