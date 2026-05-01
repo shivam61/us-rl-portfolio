@@ -2,30 +2,34 @@
 
 > **Navigation:** [← Phase C](phase_c.md) | [← ROADMAP](../ROADMAP.md)
 
-**Objective:** Add a reinforcement-learning overlay that adjusts sector allocation and stock-sleeve aggressiveness around the locked Phase B.5 construction. RL learns regime-dependent tilts that the static heuristic cannot express, while the B.5 system retains full control over stock selection, trend exposure, and risk limits.
+**Locked baseline:** B.5 promoted system = `b4_stress_cap_trend_boost`
+— vol_score signal, dynamic beta cap `0.90 − 0.20 × stress`, floor 0.50, trend sleeve, stress blend.
+— sp500, 10 bps: CAGR `16.04%`, Sharpe `1.078`, MaxDD `−32.98%`, turnover `84.12`, 50 bps Sharpe `0.934`.
 
-**Entry state (Phase C complete — 2026-05-01):**
-- Production signal: `vol_score` (unchanged, locked)
-- Construction: `b4_stress_cap_trend_boost` — locked
-- B.5 metrics (sp500, 2008–2026, 10 bps): CAGR `16.04%`, Sharpe `1.078`, MaxDD `−32.98%`, turnover `84.12`
+**Objective:** Add a reinforcement-learning overlay that adjusts sector allocation and stock-sleeve
+aggressiveness around the locked B.5 system. RL learns regime-dependent tilts that the static
+heuristic cannot express. The B.5 system retains full control over stock selection, trend exposure,
+and risk limits.
 
 ---
 
 ## What RL Can and Cannot Do
 
-### RL CAN adjust (overlay only, bounded)
-| Lever | Allowed range | Effect |
-|---|---|---|
-| Sector tilts | ±15% of stock sleeve per sector | Reallocate weight among GICS sectors within the stock sleeve |
-| Stock-sleeve aggressiveness | [0.75, 1.0] | Scale stock sleeve down to 75% (remainder to cash); cannot lever up |
+### RL CAN adjust (bounded overlay on stock sleeve only)
 
-### RL CANNOT touch (locked)
+| Lever | Applied range | Effect |
+|---|---|---|
+| Sector tilts | ±15% per sector; Σ\|tilt\| ≤ 35% total | Reallocate weight among GICS sectors within the stock sleeve; zero-sum |
+| Stock-sleeve aggressiveness | [0.75, 1.0] | Scale stock sleeve; remainder to cash. Cannot lever above 1.0. |
+
+### RL CANNOT touch (all locked)
+
 | Component | Why it is locked |
 |---|---|
-| `volatility_score` signal | Stock selection and initial weights are set by vol_score; RL cannot change which stocks are held |
-| Trend sleeve (TLT / GLD / UUP) | Trend exposure and sizing remain fixed by the B.5 stress-blend formula |
-| Stress blend formula | CANDIDATE_BASE_TREND_WEIGHT + CANDIDATE_STRESS_K × stress, clipped at CANDIDATE_TREND_CAP |
-| Beta cap | 0.90 − 0.20 × stress, floor 0.50 — runs as a hard circuit-breaker AFTER RL adjustments |
+| `volatility_score` signal | Stock selection and initial weights set by vol_score; RL does not change which stocks are held |
+| Trend sleeve (TLT / GLD / UUP) | Exposure and sizing fixed by B.5 stress-blend formula; passes through RL unchanged |
+| Stress blend formula | `CANDIDATE_BASE_TREND_WEIGHT + CANDIDATE_STRESS_K × stress`, clipped at `CANDIDATE_TREND_CAP` |
+| Beta cap | `0.90 − 0.20 × stress`, floor 0.50 — re-applied as hard circuit-breaker **after** every RL step |
 | Gross cap | 1.50 — hard floor, unchanged |
 | Rebalance cadence | every_2_rebalances — unchanged |
 
@@ -40,40 +44,49 @@ vol_score signal
 B.5 construction (locked)
   ├── stress blend: vol sleeve + trend sleeve
   ├── every_2_rebalances execution filter
-  └── apply_b4_constraints (beta cap 0.90−0.20×stress, floor 0.50)
+  └── apply_b4_constraints (beta cap + gross cap)
        │
        ▼
-B.5 base weights (W_base)       ← RL reads these as part of state
+W_base = B.5 constrained weights          ← RL reads these as part of state
        │
        ▼
-RL overlay (sector tilts + aggressiveness)
-  └── applied to stock sleeve only; trend sleeve frozen
-       │
-       ▼
-apply_b4_constraints (re-run as hard floor after RL)
+RL overlay (stock sleeve only; trend sleeve frozen)
+  └── Tilt application — 10-step sequence:
+        1.  base_sector_weight[i]  = Σ B.5 stock-sleeve weights for tickers in sector i
+        2.  raw_tilt[i]            = action[i] mapped to [−0.15, +0.15]  (per-sector cap)
+        3.  budget enforcement:     if Σ|raw_tilt| > 0.35 → rescale: raw_tilt *= 0.35 / Σ|raw_tilt|
+        4.  zero-sum enforcement:   raw_tilt -= mean(raw_tilt)
+        5.  tilted_sector[i]       = max(0, base_sector_weight[i] + raw_tilt[i])
+        6.  re-normalise:           tilted_sector *= sum(base_sector_weights) / sum(tilted_sector)
+        7.  within-sector:          each ticker's weight ∝ original B.5 weight within that sector
+        8.  aggressiveness:         W_stock_final = W_tilted × aggressiveness
+                                    W_cash        = sum(W_tilted) × (1 − aggressiveness)
+        9.  recombine:              W_final = W_stock_final + W_trend (frozen) + W_cash
+       10.  hard floor:             apply_b4_constraints (beta cap, gross cap) — non-negotiable
        │
        ▼
 Execution Simulator
 ```
 
-The trend sleeve passes through RL untouched. RL adjustments happen inside the stock sleeve only.
+Steps 3, 4, and 6 together ensure RL is purely redistributive: it cannot increase gross exposure
+through sector manipulation or tilt magnitudes.
 
 ---
 
 ## State Vector
 
 ```
-obs_dim = 3 (macro) + 1 (stress) + 11 (sector vol_score signals) + 11 (current sector weights) + 2 (portfolio state)
+obs_dim = 3 (macro) + 1 (stress) + 11 (sector vol_score signals) + 11 (sector weights) + 2 (portfolio state)
         = 28 dimensions
 ```
 
 | Component | Dim | Features | Source |
 |---|---|---|---|
-| Macro | 3 | VIX 252d percentile, SPY 252d drawdown from peak, yield-curve slope proxy (TLT vs SPY 63d momentum) | prices + ^VIX |
-| Stress | 1 | Current stress score (weighted_50_50 from B.5) | `build_stress_series` |
-| Sector vol_score signals | 11 | Median vol_score rank within each GICS sector (11 sectors) | `vol_scores` at rebalance date |
-| Current sector weights | 11 | Stock-sleeve weight allocated per sector from B.5 output | B.5 weights at rebalance date |
-| Portfolio state | 2 | Current drawdown from peak NAV, weeks since last rebalance | simulator |
+| Macro | 3 | VIX 252d percentile, SPY 252d drawdown from peak, yield-curve proxy (TLT vs SPY 63d momentum) | prices + ^VIX |
+| Stress | 1 | Current stress score (weighted_50_50 from B.5 `build_stress_series`) | `build_stress_series` |
+| Sector vol_score signals | 11 | Median vol_score rank within each GICS sector at rebalance date | `vol_scores` |
+| Current sector weights | 11 | Stock-sleeve weight allocated per sector from B.5 output | B.5 weights |
+| Portfolio state | 2 | Current drawdown from peak NAV; weeks since last rebalance | simulator |
 
 ---
 
@@ -81,32 +94,35 @@ obs_dim = 3 (macro) + 1 (stress) + 11 (sector vol_score signals) + 11 (current s
 
 ```
 action_dim = 11 (sector tilts) + 1 (aggressiveness)
-           = 12 dimensions, all ∈ [−1, 1] raw (clipped to valid ranges below)
+           = 12 dimensions, raw ∈ [−1, +1] (mapped to valid ranges via tilt application steps above)
 ```
 
-| Component | Raw range | Applied range | Applied as |
+| Component | Raw | Applied | Constraint |
 |---|---|---|---|
-| `sector_tilt[i]` | [−1, +1] | [−0.15, +0.15] | Additive to sector's stock-sleeve weight; zero-sum within stock sleeve |
-| `aggressiveness` | [−1, +1] | [0.75, 1.0] | Scales all stock positions; (1 − aggressiveness) goes to cash |
+| `sector_tilt[i]` | [−1, +1] | [−0.15, +0.15] per sector | Σ\|tilt\| ≤ 35% total; zero-sum |
+| `aggressiveness` | [−1, +1] | [0.75, 1.0] | Cannot lever above 1.0 |
 
-**Zero-sum constraint on sector tilts:** tilts are normalised so Σ tilt[i] = 0. RL cannot add aggregate gross exposure; it can only reallocate among sectors.
-
-**Aggressiveness cannot lever up:** 1.0 = exactly B.5 stock sleeve size. 0.75 = 25% cash within the stock sleeve. No values above 1.0.
+**Total tilt budget (Σ|tilt| ≤ 35%):** prevents RL from applying simultaneous large tilts
+across multiple sectors (e.g. +15% Tech +15% Energy −15% Utilities −15% Staples = 60% gross
+tilt). After per-sector clipping and budget rescaling, zero-sum is enforced so Σ tilt = 0.
 
 ---
 
 ## Reward Function
 
 ```
-reward_t = rolling_sharpe_21d(portfolio_returns)  −  λ × Σ|sector_tilt[i]|
+reward_t = rolling_sharpe_21d(portfolio_returns)
+         − 0.01 × Σ|sector_tilt[i]|
+         − 0.05 × max(0.0, −portfolio_drawdown_from_peak)
 ```
 
-| Term | Value | Rationale |
+| Term | λ | Rationale |
 |---|---|---|
-| `rolling_sharpe_21d` | Annualised Sharpe on last 21 trading days | Risk-adjusted; penalises volatility naturally |
-| `λ × Σ|tilt|` | λ = 0.01 | Discourages unnecessary churn from sector reallocation |
+| `rolling_sharpe_21d` | — | Risk-adjusted; penalises volatility naturally |
+| Σ\|sector_tilt\| | 0.01 | Discourages unnecessary sector churn |
+| `max(0, −drawdown_from_peak)` | 0.05 | Penalises tail risk; at −15% drawdown → 0.0075 penalty ≈ 9% of reward signal. Operates at cumulative timescale vs 21d Sharpe window |
 
-No raw-return reward. This prevents the agent learning to maximise leverage or chase momentum spikes.
+No raw-return reward. Prevents the agent learning to maximise leverage or chase momentum spikes.
 
 ---
 
@@ -114,11 +130,12 @@ No raw-return reward. This prevents the agent learning to maximise leverage or c
 
 | Window | Purpose |
 |---|---|
-| 2008–2015 | RL training episodes |
-| 2016–2018 | Validation / early stopping |
-| 2019–2026-04-24 | **Holdout** — compare RL vs B.5 (never seen during training) |
+| 2008–2016 | RL training episodes |
+| 2017–2018 | Validation / early stopping |
+| 2019–2026-04-24 | **Holdout** — compare RL vs B.5 baseline (same window as Phase B.5 and C evaluation; never seen during training) |
 
-Training on 2008–2018 is deliberately the same window used to build B.5 signal weights. Holdout is disjoint and matches the Phase B.5 holdout exactly.
+The holdout window is fixed at 2019–2026-04-24 to match Phase B.5 and C evaluation windows.
+Any B.5 comparison number used as the promotion benchmark must come from this same window.
 
 ---
 
@@ -126,64 +143,77 @@ Training on 2008–2018 is deliberately the same window used to build B.5 signal
 
 | Step | Purpose | Output |
 |---|---|---|
-| D.0 | Measure B.5 baseline on holdout window (2019–2026) separately | IC and portfolio metrics on holdout only |
+| D.0 | Measure B.5 baseline on holdout window 2019–2026-04-24 (Sharpe, MaxDD, 50 bps Sharpe, regime breakdown) | `artifacts/reports/phase_d0_holdout_baseline.md` |
 | D.1 | Build state vector | `src/rl/state_builder.py` |
-| D.2 | Build sector tilt application | `src/rl/tilts.py` |
-| D.3 | Flesh out RL environment | `src/rl/environment.py` |
-| D.4 | Reward function | `src/rl/reward.py` |
-| D.5 | PPO training script | `scripts/train_rl.py` |
-| D.6 | RL vs B.5 evaluation | `scripts/run_rl_backtest.py` |
+| D.2 | Build sector tilt application (10-step sequence above) | `src/rl/tilts.py` |
+| D.3 | Flesh out RL environment (step/reset/reward wired) | `src/rl/environment.py` |
+| D.4 | Reward function (wired into env step) | `src/rl/reward.py` |
+| D.5 | PPO training script + early stopping on validation Sharpe | `scripts/train_rl.py` |
+| D.6 | RL vs B.5 evaluation — four-way comparison | `scripts/run_rl_backtest.py` |
 
 ---
 
-## Phase D Non-Negotiable Gates
+## D.6 Four-Way Comparison (mandatory)
 
-| Gate | Target | Notes |
-|---|---|---|
-| Holdout Sharpe ≥ B.5 | ≥ 1.078 (preferred) | Measured on 2019–2026 holdout |
-| Holdout Sharpe floor | ≥ 1.00 | Hard floor; below this: reject RL and keep B.5 |
-| MaxDD not worse | ≥ −35% | RL must not increase drawdown by more than 2 pp vs B.5 |
-| No beta cap violations | 0 on rebalance dates | B.4 constraints re-applied after RL; must still hold |
-| No gross cap violations | Max gross ≤ 1.50 | Aggressiveness cannot increase gross above B.5 |
-| No new alpha sleeve | — | RL is an overlay; vol_score remains the only stock-selection signal |
+| Policy | Description |
+|---|---|
+| **B.5 locked** | No RL; vol_score + B.5 harness only |
+| **RL no-op** | Trained RL policy replaced by zero tilts + aggressiveness=1.0 |
+| **Random bounded** | Uniform random tilts in [−0.15,+0.15] subject to budget + random aggressiveness in [0.75,1.0]; average over 50 seeds |
+| **Trained RL** | PPO policy trained on 2008–2016 |
 
-If RL does not clear the Sharpe floor (≥ 1.00): reject, keep B.5 as final production system.
+No RL improvement is valid unless it beats both the no-op and random bounded baselines.
+
+---
+
+## Phase D Promotion Gate
+
+Promote trained RL only if **all** of the following hold on the 2019–2026-04-24 holdout:
+
+| Condition | Target |
+|---|---|
+| Sharpe (Path A — clear win) | ≥ 1.078 (matches or beats B.5) AND MaxDD ≥ −32.98% |
+| Sharpe (Path B — tail improvement) | ≥ 1.048 (= B.5 − 0.03) AND MaxDD materially better (≥ B.5 MaxDD + 1.5pp, i.e. ≥ −31.48%) |
+| **Either path** also requires | 50 bps Sharpe ≥ 0.90 |
+| **Either path** also requires | Beats RL no-op AND random bounded policy on holdout Sharpe |
+| **Hard rejections** | Sharpe < 1.048, OR MaxDD < −35%, OR any beta violation, OR max gross > 1.50 |
+
+If RL does not meet either promotion path: reject, keep B.5 as final production system.
 
 ---
 
 ## Implementation Notes
 
-### D.1 State builder
-- VIX 252d percentile: rolling rank of daily VIX closes, clipped [0, 1]
-- SPY drawdown: (SPY − rolling 252d max) / rolling 252d max, clipped [−1, 0]
-- Yield curve proxy: (TLT 63d return) − (SPY 63d return), normalised
-- Sector vol_score signals: for each of 11 GICS sectors, median `vol_score` rank across tickers in that sector at the rebalance date
-- Current sector weights: from B.5 constrained weights, sum by sector (stock tickers only, excluding trend assets)
+### D.1 State builder (`src/rl/state_builder.py`)
+- VIX percentile: rolling 252d rank of daily VIX closes, clipped [0,1]
+- SPY drawdown: `(SPY − rolling_252d_max) / rolling_252d_max`, clipped [−1, 0]
+- Yield-curve proxy: 63d momentum of TLT minus 63d momentum of SPY, z-scored
+- Sector vol_score signals: for each of 11 GICS sectors, median `vol_score` rank across active
+  tickers in that sector at the rebalance date (from `inputs["vol_scores"]`)
+- Current sector weights: from B.5 constrained weights, sum by sector (stock tickers only,
+  excluding trend assets TLT/GLD/UUP/SPY)
 
-### D.2 Sector tilt application (`src/rl/tilts.py`)
-```
-1. Start with B.5 stock-sleeve weights (W_stock)
-2. Map each stock to its GICS sector
-3. Apply sector_tilt[i] additively to each sector's weight proportion
-4. Normalise so Σ tilted_sector_weights = Σ original_sector_weights (zero-sum)
-5. Redistribute within sector proportionally (equal within sector)
-6. Apply aggressiveness: W_stock_tilted × aggressiveness + cash × (1 − aggressiveness)
-7. Recombine with trend sleeve (frozen)
-8. Re-apply B.4 constraints as hard circuit breaker
-```
+### D.2 Tilt application (`src/rl/tilts.py`)
+Implement the 10-step sequence from the Architecture section exactly.
+Key invariants to unit-test:
+- After step 4: `sum(tilts) == 0` (zero-sum)
+- After step 6: `sum(tilted_sector) == sum(base_sector_weights)` (stock-sleeve total preserved)
+- After step 8: gross does not exceed B.5 gross (aggressiveness ≤ 1.0)
+- After step 10: beta ≤ dynamic cap; gross ≤ 1.50 (B.4 hard floor holds)
 
-### D.3 Environment
-- Episode = one training epoch (2008-01-01 to 2015-12-31, ~2000 trading days)
-- Step = one rebalance date (every_2_rebalances cadence, ~125 steps per episode)
-- State computed fresh at each rebalance date; carried between rebalances using last-rebalance state
-- Reward accumulated daily but only on rebalance dates the RL decision is applied
+### D.3 Environment (`src/rl/environment.py`)
+- Existing skeleton already has correct obs_dim=28, action_dim=13 (update to 12)
+- Episode = 2008-01-01 to 2016-12-31; step = one every_2_rebalances date (~200 steps/episode)
+- State computed via `state_builder.py` at each rebalance date
+- Reward computed via `reward.py` using daily portfolio returns since last rebalance
 
-### D.5 Training
-- Algorithm: PPO (`stable-baselines3`)
-- Policy: MlpPolicy (2 × 64 hidden layers)
-- Episodes: 500 minimum; early stop if validation Sharpe does not improve for 50 episodes
-- Seed: 42 (reproducibility)
-- Parallelism: vec_env with 4 parallel environments (training only)
+### D.5 Training (`scripts/train_rl.py`)
+- Algorithm: PPO (`stable-baselines3`, already installed)
+- Policy: MlpPolicy, 2 × 64 hidden layers
+- Early stopping: track validation Sharpe (2017–2018); stop if no improvement for 50 episodes
+- Minimum: 500 episodes; checkpoint every 100
+- Parallelism: 4 parallel envs (training only; SB3 SubprocVecEnv)
+- Seed: 42
 
 ---
 
@@ -191,13 +221,18 @@ If RL does not clear the Sharpe floor (≥ 1.00): reject, keep B.5 as final prod
 
 | Decision | What was rejected | Rationale |
 |---|---|---|
-| RL as overlay, not replacement | RL replacing vol_score or B.4 | Phase B.5 is proven. RL should add regime-level adaptation on top, not undo what works |
-| Sector tilts only (no stock picking) | Direct stock weight changes | 11-dim action space vs 503-dim; stable credit assignment; vol_score handles stock selection |
-| Aggressiveness floor at 0.75 (no levering up) | Aggressiveness in [0.5, 1.5] | Prevents RL from leveraging to boost reward; upper bound 1.0 preserves B.5 gross control |
-| B.4 re-applied as hard floor after RL | RL allowed to override beta cap | Beta cap is non-negotiable; RL learns within the constrained space |
-| Trend sleeve frozen | RL adjusts trend/stock split | Trend sleeve provides genuine regime diversification; RL cannot degrade it |
+| RL as overlay, not replacement | RL replacing vol_score or B.4 | B.5 is proven (Sharpe 1.078). RL adds regime adaptation on top |
+| Sector tilts only | Direct stock weight changes | 11-dim action vs 503-dim; stable credit assignment; vol_score handles stock selection |
+| Total tilt budget Σ\|tilt\| ≤ 35% | Per-sector cap only | Per-sector ±15% without total cap allows 60% gross tilt across 4 sectors |
+| Zero-sum tilt enforcement | RL sets absolute sector weights | RL adjusts B.5 weights; it cannot set them independently |
+| Aggressiveness floor 0.75, no levering | Aggressiveness in [0.5, 1.5] | Prevents RL leveraging to boost reward; preserves B.5 gross control |
+| B.4 re-applied after RL as hard floor | RL can override beta cap | Beta cap is non-negotiable |
+| Trend sleeve frozen | RL adjusts trend/stock split | Trend sleeve provides proven regime diversification |
+| Drawdown penalty (λ=0.05) in reward | Sharpe-only reward | 21d Sharpe window misses cumulative tail risk; drawdown penalty operates at a longer timescale |
 | Rolling 21d Sharpe reward | Raw return | Raw return leads to max-leverage or momentum-chasing policies |
-| Sector tilts zero-sum | Tilts add gross | Prevents RL from circumventing aggressiveness control through sector manipulation |
+| Four-way D.6 comparison | Single RL vs baseline | No-op and random baselines are necessary to detect spurious improvement |
+| Holdout fixed at 2019–2026-04-24 | Holdout starting 2020 | Must match Phase B.5 / C evaluation window for apples-to-apples Sharpe comparison |
+| Train 2008–2016 | Train 2008–2015 | 8 training years vs 7; sparse cadence (~200 steps/episode) benefits from more data |
 
 ---
 
@@ -205,8 +240,9 @@ If RL does not clear the Sharpe floor (≥ 1.00): reject, keep B.5 as final prod
 
 | Date | Step | Result | Notes |
 |---|---|---|---|
-| 2026-05-01 | Phase C complete | Entry gate cleared | `vol_score` carries to Phase D. B.5: Sharpe `1.078`, MaxDD `−32.98%`. |
-| — | D.0 baseline | Not started | Measure B.5 on 2019–2026 holdout only |
+| 2026-05-01 | Phase C complete | Entry gate cleared | `vol_score` locked, B.5 construction locked. Sharpe `1.078`, MaxDD `−32.98%`. |
+| 2026-05-01 | Phase D spec | Refined + agreed | Drawdown penalty, total tilt budget, zero-sum enforcement, four-way D.6, tightened gate, 2019 holdout. |
+| — | D.0 baseline | Not started | Measure B.5 on 2019–2026-04-24 holdout only |
 | — | D.1–D.4 build | Not started | State builder, tilts, env, reward |
-| — | D.5 training | Not started | PPO on 2008–2015 training window |
-| — | D.6 evaluation | Not started | RL vs B.5 on 2019–2026 holdout |
+| — | D.5 training | Not started | PPO on 2008–2016 training window |
+| — | D.6 evaluation | Not started | Four-way: B.5 locked / no-op / random / trained RL |

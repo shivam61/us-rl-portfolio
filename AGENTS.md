@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-01T16:06:52+00:00
+## Current State — 2026-05-01T16:28:30+00:00
 - Branch: `main`
-- Working tree: 9 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_c.md`
-- Latest commit: `5af82b88 2026-05-01 complete Phase C.3 portfolio validation — REJECT simple_mean_rank, vol_score carries to Phase D`
+- Working tree: 8 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_d.md`, `?? artifacts/reports/phase_c1_run.log`
+- Latest commit: `08c57d14 2026-05-01 plan Phase D — RL overlay on locked B.5 system; close Phase C`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
