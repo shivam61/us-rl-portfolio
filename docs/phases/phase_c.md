@@ -82,10 +82,10 @@ C.3: run Phase B harness (b4_stress_cap_trend_boost) with C.1/C.2 signal
 
 | File | Status | Notes |
 |---|---|---|
-| `scripts/run_phase_c0_signal_baseline.py` | ⏳ TODO | Measure current IC Sharpe on sp500 holdout |
-| `scripts/run_phase_c1_lgbm_search.py` | ⏳ TODO | Grid search runner |
+| `scripts/run_phase_c0_signal_baseline.py` | ✅ Merged into C.1 | Baseline IC measured inside `run_phase_c1_lgbm_tuning.py` |
+| `scripts/run_phase_c1_lgbm_tuning.py` | ✅ Built | Grid search + IC baseline + portfolio validation in one runner |
 | `scripts/run_phase_c2_feature_attribution.py` | ⏳ TODO | Feature importance / pruning |
-| `scripts/run_phase_c3_portfolio_validation.py` | ⏳ TODO | Phase B harness with C signal |
+| `scripts/run_phase_c3_portfolio_validation.py` | ⏳ TODO | Phase B harness with C signal (if C.2 needed) |
 
 ---
 
@@ -106,7 +106,7 @@ C.3: run Phase B harness (b4_stress_cap_trend_boost) with C.1/C.2 signal
 | Date | Step | Result | Notes |
 |---|---|---|---|
 | 2026-05-01 | Phase B gate cleared | Entry baseline locked | `b4_stress_cap_trend_boost`: CAGR `16.04%`, Sharpe `1.078`, MaxDD `-32.98%` |
-| — | C.0 signal baseline | Not started | Measure IC Sharpe on sp500 holdout 2019–2026-04-24 |
-| — | C.1 LightGBM grid | Not started | — |
+| 2026-05-01 | C.1 script written | Ready to run | `scripts/run_phase_c1_lgbm_tuning.py` — 216-combo grid, IC baseline, portfolio validation; run on n2dhighcpu-32 |
+| — | C.1 grid run | Pending | Run: `.venv/bin/python scripts/run_phase_c1_lgbm_tuning.py --config config/base.yaml --universe config/universes/sp500.yaml` |
 | — | C.2 feature attribution | Not started | — |
-| — | C.3 portfolio validation | Not started | — |
+| — | C.3 portfolio validation | Not started | Only needed if C.2 pruning changes the signal |
