@@ -43,14 +43,19 @@ B2_SHARPE = 1.143805
 B2_MAX_DD = -0.336869
 B2_TURNOVER = 89.621518
 B2_MAX_GROSS = 1.3462
-BETA_MIN = 0.50
-BETA_MAX = 0.80
 
 
 @dataclass(frozen=True)
 class ExposureVariant:
     name: str
-    project_beta: bool
+    beta_min: float | None = None
+    beta_max: float | None = None
+    beta_tolerance: float = 0.0
+    allow_spy_floor: bool = False
+
+    @property
+    def project_beta(self) -> bool:
+        return self.beta_min is not None or self.beta_max is not None
 
 
 def rolling_beta_matrix(prices: pd.DataFrame, benchmark: str, window: int = 63) -> pd.DataFrame:
@@ -74,7 +79,7 @@ def portfolio_beta(weights: pd.Series, betas: pd.Series) -> float:
     return float((weights[valid] * aligned[valid]).sum())
 
 
-def projection_scale(beta: float, gross: float, project_beta: bool) -> tuple[float, str]:
+def projection_scale(beta: float, gross: float, variant: ExposureVariant) -> tuple[float, str]:
     if gross <= 1e-12:
         return 1.0, "empty"
     scale = min(1.0, MAX_GROSS_LIMIT / gross)
@@ -82,15 +87,17 @@ def projection_scale(beta: float, gross: float, project_beta: bool) -> tuple[flo
     scaled_beta = beta * scale if np.isfinite(beta) else np.nan
     scaled_gross = gross * scale
 
-    if not project_beta or not np.isfinite(scaled_beta):
+    if not variant.project_beta or not np.isfinite(scaled_beta):
         return scale, reason
 
-    if scaled_beta > BETA_MAX and scaled_beta > 0:
-        beta_scale = BETA_MAX / scaled_beta
+    beta_max_trigger = None if variant.beta_max is None else variant.beta_max + variant.beta_tolerance
+    beta_min_trigger = None if variant.beta_min is None else variant.beta_min - variant.beta_tolerance
+    if beta_max_trigger is not None and scaled_beta > beta_max_trigger and scaled_beta > 0:
+        beta_scale = variant.beta_max / scaled_beta
         scale *= beta_scale
         reason = "beta_down" if reason == "none" else f"{reason}+beta_down"
-    elif 0 < scaled_beta < BETA_MIN:
-        beta_scale = BETA_MIN / scaled_beta
+    elif beta_min_trigger is not None and 0 < scaled_beta < beta_min_trigger:
+        beta_scale = variant.beta_min / scaled_beta
         max_scale = MAX_GROSS_LIMIT / scaled_gross if scaled_gross > 0 else 1.0
         applied = min(beta_scale, max_scale)
         if applied > 1.0:
@@ -103,31 +110,31 @@ def project_weights(
     weights: pd.Series,
     beta_row: pd.Series,
     benchmark: str,
-    project_beta: bool,
+    variant: ExposureVariant,
 ) -> tuple[pd.Series, float, float, str]:
     gross = float(weights.abs().sum())
     beta = portfolio_beta(weights, beta_row)
-    scale, reason = projection_scale(beta, gross, project_beta)
+    scale, reason = projection_scale(beta, gross, variant)
     projected = weights * scale
     overlay = 0.0
-    if not project_beta:
+    if not variant.project_beta or variant.beta_min is None or not variant.allow_spy_floor:
         return projected, scale, overlay, reason
 
     beta_after = portfolio_beta(projected, beta_row)
     gross_after = float(projected.abs().sum())
-    if gross_after <= 1e-12 or not np.isfinite(beta_after) or beta_after >= BETA_MIN - 1e-6:
+    if gross_after <= 1e-12 or not np.isfinite(beta_after) or beta_after >= variant.beta_min - 1e-6:
         return projected, scale, overlay, reason
 
-    beta_gap = BETA_MIN - beta_after
+    beta_gap = variant.beta_min - beta_after
     if gross_after + beta_gap <= MAX_GROSS_LIMIT + 1e-9:
         overlay = beta_gap
     else:
         denominator = gross_after - beta_after
-        preserve_scale = min(1.0, (MAX_GROSS_LIMIT - BETA_MIN) / denominator) if denominator > 1e-12 else 1.0
+        preserve_scale = min(1.0, (MAX_GROSS_LIMIT - variant.beta_min) / denominator) if denominator > 1e-12 else 1.0
         projected = projected * preserve_scale
         scale *= preserve_scale
         beta_after = portfolio_beta(projected, beta_row)
-        overlay = max(0.0, BETA_MIN - beta_after)
+        overlay = max(0.0, variant.beta_min - beta_after)
     if overlay > 0:
         projected = projected.copy()
         projected.loc[benchmark] = projected.get(benchmark, 0.0) + overlay
@@ -135,10 +142,16 @@ def project_weights(
     return projected, float(scale), float(overlay), reason
 
 
-def beta_out_of_band(beta: float, gross: float, tolerance: float = 1e-6) -> bool:
+def beta_out_of_band(beta: float, gross: float, variant: ExposureVariant, tolerance: float = 1e-6) -> bool:
     if gross <= 1e-12:
         return False
-    return (not np.isfinite(beta)) or beta < BETA_MIN - tolerance or beta > BETA_MAX + tolerance
+    if not variant.project_beta:
+        return False
+    if not np.isfinite(beta):
+        return True
+    low = variant.beta_min - tolerance if variant.beta_min is not None else None
+    high = variant.beta_max + tolerance if variant.beta_max is not None else None
+    return (low is not None and beta < low) or (high is not None and beta > high)
 
 
 def apply_exposure_constraints(
@@ -162,7 +175,7 @@ def apply_exposure_constraints(
                 weights,
                 beta_frame.loc[date],
                 benchmark=benchmark,
-                project_beta=variant.project_beta,
+                variant=variant,
             )
         else:
             scale, overlay, reason = 1.0, 0.0, "held"
@@ -183,12 +196,16 @@ def apply_exposure_constraints(
                 "projection_reason": reason,
                 "gross_violation_before": gross_before > MAX_GROSS_LIMIT + 1e-9,
                 "gross_violation_after": gross_after > MAX_GROSS_LIMIT + 1e-9,
-                "beta_violation_before": beta_out_of_band(beta_before, gross_before),
-                "beta_violation_after": beta_out_of_band(beta_after, gross_after),
+                "beta_min": variant.beta_min,
+                "beta_max": variant.beta_max,
+                "beta_tolerance": variant.beta_tolerance,
+                "allow_spy_floor": variant.allow_spy_floor,
+                "beta_violation_before": beta_out_of_band(beta_before, gross_before, variant),
+                "beta_violation_after": beta_out_of_band(beta_after, gross_after, variant),
                 "gate_violation_after": is_control_date
                 and (
                     gross_after > MAX_GROSS_LIMIT + 1e-9
-                    or beta_out_of_band(beta_after, gross_after)
+                    or beta_out_of_band(beta_after, gross_after, variant)
                 ),
             }
         )
@@ -264,6 +281,10 @@ def evaluate_exposure_variant(
         {
             "variant": variant.name,
             "project_beta": variant.project_beta,
+            "beta_min": variant.beta_min,
+            "beta_max": variant.beta_max,
+            "beta_tolerance": variant.beta_tolerance,
+            "allow_spy_floor": variant.allow_spy_floor,
             "avg_beta_before": float(diagnostics["beta_before"].mean()),
             "avg_beta_after": float(diagnostics["beta_after"].mean()),
             "min_beta_after": float(diagnostics["beta_after"].min()),
@@ -283,7 +304,8 @@ def evaluate_exposure_variant(
             "cagr_vs_b2_delta": metrics["cagr"] - B2_CAGR,
             "max_dd_vs_b2_delta": metrics["max_dd"] - B2_MAX_DD,
             "passes_b3": bool(
-                metrics["max_target_gross"] <= MAX_GROSS_LIMIT
+                variant.project_beta
+                and metrics["max_target_gross"] <= MAX_GROSS_LIMIT + 1e-9
                 and diagnostics["gate_violation_after"].sum() == 0
                 and metrics["sharpe"] >= B2_SHARPE - 0.10
                 and metrics["cagr"] >= B2_CAGR - 0.02
@@ -295,20 +317,27 @@ def evaluate_exposure_variant(
 
 
 def render_report(summary: pd.DataFrame, violations: pd.DataFrame) -> str:
+    eligible = summary[summary["passes_b3"]].copy()
     lines = [
-        "# Phase B.3 Exposure-Constrained Portfolio Shaping",
+        "# Phase B.3.1 Soft Exposure Policy Design",
         "",
         f"- Run date: {pd.Timestamp.now('UTC').strftime('%Y-%m-%d %H:%M:%S %Z')}",
         "- Baseline: B.2 `every_2_rebalances` turnover-control candidate.",
         "- Scope: no `volatility_score` changes, no trend-signal changes, no stress-formula changes, no new alpha, RL disabled.",
-        "- Method: constraint-based scalar shaping of the existing B.2 target book; when scalar scaling cannot meet the beta floor inside gross `1.5`, apply a minimal SPY beta-floor projection. No return-maximizing optimizer is used.",
+        "- Method: policy-only constraint shaping of the existing B.2 target book. Test one-sided beta caps and wider soft bands before any optimizer work.",
         "",
         "## Gates",
         "",
         "- Gross exposure must stay `<=1.5`.",
-        "- Ex-ante portfolio beta must stay in `[0.5, 0.8]` using 63-day rolling beta to SPY.",
+        "- Ex-ante portfolio beta must satisfy each tested policy on rebalance dates using 63-day rolling beta to SPY.",
         "- B.2 turnover improvement should be maintained.",
         "- Sharpe and CAGR should remain within B.2 tolerance: Sharpe no worse than `B.2 - 0.10`, CAGR drop no worse than `2` percentage points.",
+        "",
+        "## Passing Policy Rows",
+        "",
+        eligible.sort_values(["cagr", "sharpe"], ascending=[False, False]).to_markdown(index=False, floatfmt=".4f")
+        if not eligible.empty
+        else "No soft policy row passed all B.3 gates.",
         "",
         "## Summary",
         "",
@@ -317,26 +346,19 @@ def render_report(summary: pd.DataFrame, violations: pd.DataFrame) -> str:
         "## Interpretation",
         "",
     ]
-    projected = summary[summary["project_beta"]].copy()
-    if projected.empty:
-        lines.append("No projected row was produced.")
+    projected = summary[(summary["project_beta"]) & (summary["variant"] != "b3_hard_band_50_80")].copy()
+    if eligible.empty:
+        lines.append("- No soft policy cleared all gates. Stay in B.3 and revise the policy before optimizer work.")
     else:
-        row = projected.iloc[0]
-        if row["control_beta_violations_after"] == 0 and row["control_gross_violations_after"] == 0:
-            lines.append(
-                f"- Projection satisfies rebalance-date gross and beta constraints, with Sharpe drift `{row['sharpe_vs_b2_delta']:.3f}` and CAGR drift `{row['cagr_vs_b2_delta']:.2%}` versus B.2."
-            )
-        if not row["passes_b3"]:
-            reasons = []
-            if row["sharpe"] < B2_SHARPE - 0.10:
-                reasons.append("Sharpe drift exceeds tolerance")
-            if row["cagr"] < B2_CAGR - 0.02:
-                reasons.append("CAGR drop exceeds 2 percentage points")
-            if row["turnover_sum"] > B2_TURNOVER * 1.05:
-                reasons.append("turnover exceeds B.2 tolerance")
-            if row["control_beta_violations_after"] > 0 or row["control_gross_violations_after"] > 0:
-                reasons.append("rebalance-date constraints still violate")
-            lines.append("- B.3 gate status: FAIL/WATCH because " + "; ".join(reasons) + ".")
+        best = eligible.sort_values(["cagr", "sharpe"], ascending=[False, False]).iloc[0]
+        lines.append(
+            f"- Best passing policy is `{best['variant']}`: CAGR `{best['cagr']:.2%}`, Sharpe `{best['sharpe']:.3f}`, MaxDD `{best['max_dd']:.2%}`, turnover `{best['turnover_sum']:.2f}`."
+        )
+    if not projected.empty:
+        lightest = projected.sort_values(["turnover_sum", "cagr"], ascending=[True, False]).iloc[0]
+        lines.append(
+            f"- Lowest-turnover projected policy is `{lightest['variant']}` with turnover `{lightest['turnover_sum']:.2f}` and CAGR `{lightest['cagr']:.2%}`."
+        )
     lines.extend(
         [
             "",
@@ -389,6 +411,7 @@ def render_report(summary: pd.DataFrame, violations: pd.DataFrame) -> str:
             "- `artifacts/reports/constraint_violations.csv`",
             "- `artifacts/reports/beta_tracking.csv`",
             "- `artifacts/reports/gross_exposure.csv`",
+            "- `artifacts/reports/phase_b3_summary.csv`",
         ]
     )
     return "\n".join(lines) + "\n"
@@ -407,8 +430,14 @@ def run_universe(config_path: str, universe_path: str, trend_assets: list[str]) 
     control_dates = list(target_turnover[target_turnover > 1e-12].index)
     beta_frame = rolling_beta_matrix(inputs["prices"], inputs["universe_config"].benchmark)
     variants = [
-        ExposureVariant("b2_every_2_no_projection", project_beta=False),
-        ExposureVariant("b3_every_2_beta_projection", project_beta=True),
+        ExposureVariant("b2_every_2_no_projection"),
+        ExposureVariant("b3_hard_band_50_80", beta_min=0.50, beta_max=0.80, allow_spy_floor=True),
+        ExposureVariant("b3_cap_80", beta_max=0.80),
+        ExposureVariant("b3_cap_85", beta_max=0.85),
+        ExposureVariant("b3_cap_90", beta_max=0.90),
+        ExposureVariant("b3_soft_cap_80_tol_5bps", beta_max=0.80, beta_tolerance=0.05),
+        ExposureVariant("b3_band_40_90", beta_min=0.40, beta_max=0.90),
+        ExposureVariant("b3_band_50_90", beta_min=0.50, beta_max=0.90, allow_spy_floor=True),
     ]
     summaries = []
     violation_frames = []

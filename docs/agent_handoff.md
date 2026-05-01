@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-01T04:09:27+00:00
+Last updated: 2026-05-01T05:14:49+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -233,6 +233,23 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   B.3 is FAIL/WATCH. The hard `0.5-0.8` beta band is mechanically feasible, but it drops CAGR by `2.83` percentage points versus B.2, exceeding the `2` pp tolerance. Do not promote the projected B.3 row as-is.
 - Recommended next step:
   stay in B.3 and test less punitive exposure policy before B.4, specifically a one-sided beta cap such as beta `<=0.8` and/or a wider beta band such as `0.4-0.9` or `0.5-0.9`. Keep B.2 `every_2_rebalances` as the active construction until B.3 clears both constraint and performance gates.
+- Phase B.3.1 soft exposure policy design was run through the same `scripts/run_phase_b3_exposure_control.py` runner.
+- B.3.1 tested:
+  no-projection reference,
+  hard band `0.5-0.8`,
+  one-sided caps `<=0.8`, `<=0.85`, `<=0.9`,
+  cap `<=0.8` with `0.05` action tolerance,
+  wider bands `0.4-0.9` and `0.5-0.9`.
+- B.3.1 decision:
+  promote `b3_band_50_90` as the current B.3 exposure-policy candidate. It has CAGR `16.49%`, Sharpe `1.075`, MaxDD `-33.69%`, turnover `85.36`, max gross `1.500`, and zero rebalance-date beta/gross violations. CAGR drop is `1.84` pp vs B.2, inside the `2` pp tolerance; Sharpe drop is `0.069`, inside the `0.10` tolerance.
+- Cap-only policies reduced turnover more but failed CAGR tolerance:
+  cap `<=0.80` CAGR `15.11%`,
+  cap `<=0.85` CAGR `15.62%`,
+  cap `<=0.90` CAGR `16.10%`.
+- B.3.1 caveat:
+  gates are rebalance-date ex-ante beta/gross controls. Daily beta drift remains visible in `beta_tracking.csv` but should not be corrected daily unless B.4 proves the need; daily beta-chasing would undo B.2 turnover improvements.
+- Next Phase B step:
+  proceed to B.4 risk engine formalization from the B.3.1 `0.5-0.9` soft beta-band candidate. Do not reintroduce the hard `0.5-0.8` band without a new tolerance rationale.
 
 ### 2026-04-29
 

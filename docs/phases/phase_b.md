@@ -185,6 +185,22 @@ Recommended next B.3 iteration:
 - Test a slightly wider band such as `0.4-0.9` or `0.5-0.9` before introducing a full optimizer.
 - Keep B.2 `every_2_rebalances` as the active promoted construction until a B.3 exposure-control variant clears both constraint and performance gates.
 
+### B.3.1 Soft Policy Result
+
+B.3.1 treated exposure shaping as policy design, not optimizer work. It tested one-sided beta caps and wider bands against the B.2 `every_2_rebalances` baseline.
+
+| Policy | CAGR | Sharpe | MaxDD | Turnover | Rebalance beta violations | Max gross | Decision |
+|---|---:|---:|---:|---:|---:|---:|---|
+| B.2 no projection | `18.33%` | `1.144` | `-33.69%` | `89.62` | reference only | `1.346` | Reference |
+| Cap `<=0.80` | `15.11%` | `1.081` | `-31.28%` | `78.36` | `0` | `1.341` | Fails CAGR tolerance |
+| Cap `<=0.90` | `16.10%` | `1.085` | `-33.69%` | `82.24` | `0` | `1.346` | Fails CAGR tolerance |
+| Band `0.4-0.9` | `16.17%` | `1.080` | `-33.69%` | `83.27` | `0` | `1.377` | Fails CAGR tolerance |
+| Band `0.5-0.9` | `16.49%` | `1.075` | `-33.69%` | `85.36` | `0` | `1.500` | Pass |
+
+Decision: promote `b3_band_50_90` as the current B.3 exposure policy candidate. It satisfies rebalance-date beta/gross constraints, keeps Sharpe within tolerance, keeps CAGR drop within `2` percentage points, and preserves most of the B.2 turnover improvement. Do not promote the hard `0.5-0.8` policy.
+
+Residual caveat: B.3.1 gates are rebalance-date ex-ante controls. Daily beta can drift between rebalances; this should be tracked but not corrected daily unless B.4 risk-engine integration shows regime-specific need.
+
 ---
 
 ## Phase B Exit Criteria
@@ -206,7 +222,7 @@ Proceed to Phase C only if:
 - sp500 PIT mask has three trailing zero-active dates in late April 2026; this is a data-window artifact to clean or clip.
 - Regime Sharpe remains weak in 2008 and 2022 even though regime MaxDD passes.
 - B.2 every-2-rebalances reduces turnover materially but moves MaxDD to `-33.69%`; B.3 should focus on beta/exposure shaping without chasing return.
-- B.3 hard beta band `0.5-0.8` is mechanically feasible with projection, but currently costs too much CAGR; do not promote until the band/projection policy is revised.
+- B.3 hard beta band `0.5-0.8` is mechanically feasible with projection, but costs too much CAGR. B.3.1 soft band `0.5-0.9` passes the current policy gate; daily beta drift remains a monitoring item.
 - Results validated on configured ticker universe with PIT liquidity mask, not true historical index membership.
 - Historical index-membership data remains intentionally deferred; do not import it unless current-setup artifact checks become fragile.
 
@@ -220,3 +236,4 @@ Proceed to Phase C only if:
 | 2026-04-30 | B.1 simulator reproduction | Reconciled | Production open/next-day sp500 baseline: CAGR `17.56%`, Sharpe `1.116`, MaxDD `-26.98%`; within tolerance versus lagged matrix reference, not versus unlagged A.7.3 headline |
 | 2026-05-01 | B.2 turnover control | Passed | Primary candidate `every_2_rebalances`: CAGR `18.33%`, Sharpe `1.144`, MaxDD `-33.69%`, turnover reduction `61.2%`; 50 bps Sharpe `0.999` versus same-cost baseline `0.765` |
 | 2026-05-01 | B.3 exposure control | Fail/watch | Projection satisfies gross/beta constraints but CAGR drops to `15.50%`, `2.83` pp below B.2; keep B.2 active and iterate beta policy |
+| 2026-05-01 | B.3.1 soft exposure policy | Passed | Promote `0.5-0.9` rebalance-date beta band: CAGR `16.49%`, Sharpe `1.075`, MaxDD `-33.69%`, turnover `85.36`, max gross `1.500` |
