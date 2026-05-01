@@ -11,9 +11,9 @@
 | | |
 |---|---|
 | Active phase | **Phase B** — portfolio stabilization |
-| Current step | **B.4** — risk engine formalization, starting from B.3.1 soft exposure policy |
-| Best system so far | **B.4 baseline:** volatility + stress-scaled trend blend with B.2 every-2-rebalances turnover control and B.3.1 `0.5-0.9` beta band (`b3_band_50_90`) |
-| Current headline metrics (sp500) | B.3.1 soft exposure policy CAGR `16.5%`, Sharpe `1.08`, MaxDD `-33.7%`, max gross `1.500`; B.1 production simulator anchor remains `17.6% / 1.12 / -27.0%` |
+| Current step | **B.5** — final Phase B gate run, starting from B.4 promoted candidate |
+| Best system so far | **B.4 candidate:** `b4_stress_cap_trend_boost` — dynamic beta cap `0.90 − 0.20 × stress`, floor 0.50, small high-stress trend boost |
+| Current headline metrics (sp500) | B.4 candidate CAGR `16.04%`, Sharpe `1.078`, MaxDD `-32.98%`, turnover `84.12`, max gross `1.500`; B.1 production simulator anchor remains `17.6% / 1.12 / -27.0%` |
 | Current production alpha candidate | `volatility_score` as component only, not standalone sleeve |
 | Phase A status | A.7.3 current-setup membership/coverage artifact validation did not show strategy fragility, but B.1 found same-day signal/return alignment in the unlagged matrix headline; do not use it as a promotion baseline |
 | Blocking gate | Production validation must clip `sp500_dynamic` to `2026-04-24` or refresh PIT mask before using trailing dates; B.4 must preserve B.3.1 turnover/exposure gates and avoid daily beta-chasing |
@@ -38,6 +38,7 @@
 | B.2 every-2-rebalances frontier | 18.3% | 1.14 | -34% |
 | B.3 hard beta-band projection | 15.5% | 1.07 | -31% |
 | B.3.1 soft beta-band projection | 16.5% | 1.08 | -34% |
+| B.4 stress-aware beta cap + trend | 16.0% | 1.08 | -33% |
 
 ---
 

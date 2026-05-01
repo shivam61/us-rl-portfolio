@@ -238,6 +238,56 @@ Proceed to Phase C only if:
 
 ---
 
+## Phase B.4 — Risk Engine Formalization
+
+**Goal:** replace the static B.3.1 beta cap (0.90) with a stress-aware dynamic cap to tighten market exposure during high-stress regimes without adding alpha or changing signal construction.
+
+### Implementation
+
+| Item | File | Status |
+|---|---|---|
+| B.4 risk engine runner | `scripts/run_phase_b4_risk_engine.py` | Implemented |
+| Main report | `artifacts/reports/phase_b4_risk_engine.md` | Done |
+| Beta cap tracking | `artifacts/reports/beta_cap_tracking.csv` | Done |
+| Stress vs exposure | `artifacts/reports/stress_vs_exposure.csv` | Done |
+| Performance vs B.3.1 | `artifacts/reports/performance_vs_b3_1.csv` | Done |
+
+### B.4 Formula
+
+Dynamic beta cap applied at every rebalance:
+
+```
+beta_cap = 0.90 − 0.20 × stress_score   (clamped to [0.51, 0.90])
+```
+
+Beta floor held at 0.50 (same as B.3.1). Gross ≤ 1.5 preserved. `volatility_score`, trend signal, and stress-scaling formula unchanged.
+
+### B.4 Result
+
+| Variant | CAGR | Sharpe | MaxDD | Turnover | Gate violations | Avg cap | Decision |
+|---|---:|---:|---:|---:|---:|---:|---|
+| B.3.1 reference | `16.49%` | `1.075` | `-33.69%` | `85.36` | 0 | `0.900` | Reference |
+| B.4 stress beta cap | `15.95%` | `1.073` | `-32.98%` | `83.49` | 0 | `0.829` | Pass |
+| B.4 stress cap + trend boost | `16.04%` | `1.078` | `-32.98%` | `84.12` | 0 | `0.829` | Pass — promoted |
+
+Dynamic cap ranged from `0.70` (peak stress) to `0.90` (zero stress), averaging `0.829` across 120 rebalance dates.
+
+### B.4 Decision
+
+PASS. Promote `b4_stress_cap_trend_boost` as the Phase B.4 candidate:
+
+- **Sharpe:** `1.078` (`+0.003` vs B.3.1) — improved.
+- **CAGR:** `16.04%` (`−0.45 pp` vs B.3.1) — within the `1 pp` tolerance.
+- **MaxDD:** `−32.98%` — improved by `0.71 pp` from B.3.1.
+- **Turnover:** `84.12` — reduced by `1.24` from B.3.1; no new turnover pressure.
+- Zero rebalance-date gate violations; max gross `1.500`.
+
+The small trend boost during high-stress periods adds marginal incremental benefit over pure dynamic beta capping, preserving the existing B.3.1 vol-sleeve scaling approach.
+
+Carry `b4_stress_cap_trend_boost` into B.5 for the final Phase B gate run.
+
+---
+
 ## Iteration Log
 
 | Date | Step | Result | Notes |
@@ -247,3 +297,4 @@ Proceed to Phase C only if:
 | 2026-05-01 | B.2 turnover control | Passed | Primary candidate `every_2_rebalances`: CAGR `18.33%`, Sharpe `1.144`, MaxDD `-33.69%`, turnover reduction `61.2%`; 50 bps Sharpe `0.999` versus same-cost baseline `0.765` |
 | 2026-05-01 | B.3 exposure control | Fail/watch | Projection satisfies gross/beta constraints but CAGR drops to `15.50%`, `2.83` pp below B.2; keep B.2 active and iterate beta policy |
 | 2026-05-01 | B.3.1 soft exposure policy | Passed | Promote `0.5-0.9` rebalance-date beta band: CAGR `16.49%`, Sharpe `1.075`, MaxDD `-33.69%`, turnover `85.36`, max gross `1.500` |
+| 2026-05-01 | B.4 risk engine formalization | Passed | Promote `b4_stress_cap_trend_boost`: CAGR `16.04%`, Sharpe `1.078`, MaxDD `-32.98%`, turnover `84.12`; dynamic beta cap `0.829` avg, `0.70` min |

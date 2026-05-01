@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-01T05:22:38+00:00
+Last updated: 2026-05-01T05:40:47+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -252,6 +252,26 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   gates are rebalance-date ex-ante beta/gross controls. Daily beta drift remains visible in `beta_tracking.csv` but should not be corrected daily unless B.4 proves the need; daily beta-chasing would undo B.2 turnover improvements.
 - Next Phase B step:
   proceed to B.4 risk engine formalization from the B.3.1 `0.5-0.9` soft beta-band candidate. Do not reintroduce the hard `0.5-0.8` band without a new tolerance rationale.
+- Phase B.4 risk engine formalization was implemented in `scripts/run_phase_b4_risk_engine.py`.
+- B.4 replaced the static B.3.1 beta cap (0.90) with a stress-aware dynamic cap: `beta_cap = 0.90 - 0.20 * stress_score`, clamped to [0.51, 0.90]. Beta floor held at 0.50; gross ≤ 1.5 preserved. No change to `volatility_score`, trend signal, or stress-scaling formula.
+- B.4 artifacts saved to:
+  `artifacts/reports/phase_b4_risk_engine.md`,
+  `artifacts/reports/beta_cap_tracking.csv`,
+  `artifacts/reports/stress_vs_exposure.csv`,
+  `artifacts/reports/performance_vs_b3_1.csv`.
+- B.4 tested:
+  B.3.1 reference (`b3_band_50_90` static cap 0.90),
+  `b4_stress_beta_cap` (dynamic cap only),
+  `b4_stress_cap_trend_boost` (dynamic cap + small trend boost when stress > 0.50).
+- B.4 result:
+  both B.4 variants passed all gates.
+  `b4_stress_beta_cap`: CAGR `15.95%`, Sharpe `1.073`, MaxDD `-32.98%`, turnover `83.49`, violations `0`.
+  `b4_stress_cap_trend_boost`: CAGR `16.04%`, Sharpe `1.078`, MaxDD `-32.98%`, turnover `84.12`, violations `0`.
+- Dynamic cap dynamics: averaged `0.829` across 120 rebalance dates, ranged from `0.70` (peak stress) to `0.90` (zero stress).
+- B.4 decision:
+  promote `b4_stress_cap_trend_boost` as the Phase B.4 candidate. Sharpe improved (+0.003), MaxDD improved by 0.71 pp, CAGR drop only 0.45 pp — all within gates. Turnover reduced slightly.
+- Next Phase B step:
+  proceed to B.5 final Phase B gate run using `b4_stress_cap_trend_boost` as the promoted candidate. Validate sp500 results, check cost-adjusted Sharpe at 25/50 bps, and confirm the construction clears all Phase B exit criteria.
 
 ### 2026-04-29
 
