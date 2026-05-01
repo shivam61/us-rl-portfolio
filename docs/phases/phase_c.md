@@ -11,6 +11,12 @@
 
 **Scope constraint:** do not modify `volatility_score` signal logic in a way that changes the Phase B construction without re-running Phase B gates. LightGBM model changes are signal-layer only — the Phase B portfolio harness remains fixed until Phase C validates improvement.
 
+**Phase C outcome (2026-05-01): COMPLETE — `vol_score` unchanged.**
+- C.1: LightGBM HPO REJECTED — negative IC across all configs; HPO cannot fix structural anti-predictiveness.
+- C.2: Feature attribution found positive IC; best signal `simple_mean_rank_14` (IC Sharpe=1.8559 vs vol_score 1.6682).
+- C.3: Portfolio validation REJECTED — `simple_mean_rank` Sharpe=1.050 fails gate; high-vol/high-beta selection collapses in 2008 crisis (Sharpe=−0.27 vs vol_score +0.54).
+- Decision: `volatility_score` locked as production alpha. Proceed to Phase D with B.5 system unchanged.
+
 ---
 
 ## Phase C Goals

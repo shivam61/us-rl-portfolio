@@ -5,11 +5,11 @@ All repo rules, workflow rules, save rules, file lookup order, roadmap-first beh
 Do not treat this file as an independent source of repo instructions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-01T16:01:44+00:00
+## Current State — 2026-05-01T16:06:52+00:00
 - Branch: `main`
-- Working tree: 13 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_c.md`, `?? artifacts/reports/c3_cost_sensitivity.csv`
-- Latest commit: `381c6b6a 2026-05-01 complete Phase C.2 feature attribution — POSITIVE IC FOUND`
+- Working tree: 9 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_c.md`
+- Latest commit: `5af82b88 2026-05-01 complete Phase C.3 portfolio validation — REJECT simple_mean_rank, vol_score carries to Phase D`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
