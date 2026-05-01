@@ -1,0 +1,6 @@
+step,cagr,sharpe,max_dd,turnover,note
+A.7.3 unlagged (research headline),0.2351,1.538,-0.2636,,same-day signal/return alignment; not a valid backtest baseline
+B.1 production open/next-day (10 bps),0.1756,1.116,-0.2698,230.72,execution lag + realistic simulator costs
+B.2 every_2_rebalances (10 bps),0.1833,1.144,-0.3369,89.62,turnover reduction −61.2% vs B.1
+B.3.1 band_50_90 (10 bps),0.1649,1.075,-0.3369,85.36,"beta compliance [0.50, 0.90] at rebalance dates"
+B.4 stress_cap_trend_boost (10 bps) — promoted,0.1604,1.078,-0.3298,84.12,dynamic beta_cap = 0.90 − 0.20 × stress + trend boost

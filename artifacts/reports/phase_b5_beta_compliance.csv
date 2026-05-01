@@ -1,0 +1,2 @@
+n_rebalance_dates,n_gate_violations,avg_beta_after,min_beta_after,max_beta_after,avg_dynamic_cap,min_dynamic_cap,compliance_rate
+120,0,0.770066255423457,0.49999999999999994,0.8992062548189024,0.8294211777254463,0.700595238095238,1.0

@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-01T05:40:47+00:00
+Last updated: 2026-05-01T06:10:56+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -272,6 +272,20 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   promote `b4_stress_cap_trend_boost` as the Phase B.4 candidate. Sharpe improved (+0.003), MaxDD improved by 0.71 pp, CAGR drop only 0.45 pp — all within gates. Turnover reduced slightly.
 - Next Phase B step:
   proceed to B.5 final Phase B gate run using `b4_stress_cap_trend_boost` as the promoted candidate. Validate sp500 results, check cost-adjusted Sharpe at 25/50 bps, and confirm the construction clears all Phase B exit criteria.
+- Phase B.5 final gate run was implemented in `scripts/run_phase_b5_final_gate.py`.
+- B.5 artifacts saved to:
+  `artifacts/reports/phase_b5_final_gate.md`,
+  `artifacts/reports/phase_b5_cost_sensitivity.csv`,
+  `artifacts/reports/phase_b5_regime_breakdown.csv`,
+  `artifacts/reports/phase_b5_attribution.csv`,
+  `artifacts/reports/phase_b5_beta_compliance.csv`.
+- B.5 validated `b4_stress_cap_trend_boost` against all 8 Phase B exit criteria — all passed:
+  MaxDD `-32.98%` (gate `<40%`); 50 bps Sharpe `0.934` (gate `>0.90`); 25 bps Sharpe `1.024`; 10 bps Sharpe `1.078`; beats equal-weight `0.619`; max gross `1.500`; zero beta violations; turnover `84.12` (gate `<=90`).
+- Cost sensitivity: Sharpe at 10 bps `1.078`, 25 bps `1.024`, 50 bps `0.934` — competitive at all cost levels.
+- Regime breakdown: 2008 Sharpe `0.54`, 2022 Sharpe `-0.73` (expected capital-preservation regimes); 2023–2026 recovery Sharpe `2.47`, full-period Sharpe `1.08`.
+- Beta compliance: 120 rebalance dates, 0 violations, compliance rate 100%; avg beta `0.770`, range `[0.500, 0.899]`; avg dynamic cap `0.829`, min `0.701`.
+- Phase B decision: COMPLETE. `b4_stress_cap_trend_boost` is the Phase B promoted construction.
+- Next step: proceed to Phase C — model refinement: LightGBM tuning and feature improvements. Phase C entry point is `docs/phases/phase_c.md`. The Phase B baseline for Phase C is B.5 (`b4_stress_cap_trend_boost`, sp500, CAGR `16.04%`, Sharpe `1.078`, MaxDD `-32.98%`).
 
 ### 2026-04-29
 

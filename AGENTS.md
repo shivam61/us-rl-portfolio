@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-01T05:40:47+00:00
+## Current State — 2026-05-01T06:10:56+00:00
 - Branch: `main`
-- Working tree: 8 changed path(s)
-- Dirty paths sample: `M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_b.md`, `?? artifacts/reports/beta_cap_tracking.csv`, `?? artifacts/reports/performance_vs_b3_1.csv`
-- Latest commit: `2aac7e8d 2026-05-01 refresh shared session state`
+- Working tree: 11 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_b.md`
+- Latest commit: `2e257e25 2026-05-01 implement Phase B.4 stress-aware risk engine formalization`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

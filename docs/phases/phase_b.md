@@ -288,6 +288,67 @@ Carry `b4_stress_cap_trend_boost` into B.5 for the final Phase B gate run.
 
 ---
 
+## Phase B.5 — Final Phase B Gate Run
+
+**Goal:** validate the B.4 promoted candidate against all Phase B exit criteria and determine Phase C readiness.
+
+### Implementation
+
+| Item | File | Status |
+|---|---|---|
+| B.5 final gate runner | `scripts/run_phase_b5_final_gate.py` | Implemented |
+| Main report | `artifacts/reports/phase_b5_final_gate.md` | Done |
+| Cost sensitivity | `artifacts/reports/phase_b5_cost_sensitivity.csv` | Done |
+| Regime breakdown | `artifacts/reports/phase_b5_regime_breakdown.csv` | Done |
+| Attribution chain | `artifacts/reports/phase_b5_attribution.csv` | Done |
+| Beta compliance | `artifacts/reports/phase_b5_beta_compliance.csv` | Done |
+
+### B.5 Gate Results
+
+| Gate | Value | Target | Pass |
+|---|---|---|---|
+| MaxDD < 40% | `-32.98%` | `< −40%` | ✅ |
+| Sharpe > 0.9 at 50 bps | `0.934` | `>= 0.90` | ✅ |
+| Sharpe > 0.9 at 25 bps | `1.024` | `>= 0.90` | ✅ |
+| Sharpe > 0.9 at 10 bps | `1.078` | `>= 0.90` | ✅ |
+| Beats equal-weight Sharpe (EW = 0.619) | `1.078` | `>= 0.619` | ✅ |
+| Max gross <= 1.5 | `1.500` | `<= 1.500` | ✅ |
+| Zero rebalance-date beta violations | `0` | `0` | ✅ |
+| Turnover stable (sum <= 90) | `84.12` | `<= 90.0` | ✅ |
+
+### Cost Sensitivity
+
+| Cost | CAGR | Sharpe | MaxDD |
+|---|---:|---:|---:|
+| 10 bps | `16.04%` | `1.078` | `-32.98%` |
+| 25 bps | `15.24%` | `1.024` | `-32.98%` |
+| 50 bps | `13.92%` | `0.934` | `-32.98%` |
+
+### Regime Breakdown (10 bps)
+
+| Regime | CAGR | Sharpe | MaxDD |
+|---|---:|---:|---:|
+| 2008 financial crisis | `11.0%` | `0.54` | `-18.0%` |
+| 2015–16 vol stress | `7.6%` | `0.57` | `-16.3%` |
+| 2020 COVID | `12.4%` | `0.44` | `-32.98%` |
+| 2022 bear market | `−13.75%` | `−0.73` | `-17.1%` |
+| 2023–2026 recovery | `30.9%` | `2.47` | `-10.6%` |
+| Full 2008–2026 | `16.0%` | `1.08` | `-33.0%` |
+
+2008 and 2022 Sharpe are below 1.0 as expected (confirmed from B.3.1/B.4 history); treat as capital-preservation regimes. MaxDD gate applies full-period only.
+
+### Beta Compliance Summary
+
+- 120 rebalance dates, 0 gate violations, compliance rate 100%.
+- Avg realized beta `0.770`, range `[0.500, 0.899]`.
+- Avg dynamic cap `0.829`, min `0.701`.
+
+### B.5 Decision
+
+PASS. All Phase B exit criteria met. Proceed to Phase C — LightGBM tuning and feature improvements.
+
+---
+
 ## Iteration Log
 
 | Date | Step | Result | Notes |
@@ -298,3 +359,4 @@ Carry `b4_stress_cap_trend_boost` into B.5 for the final Phase B gate run.
 | 2026-05-01 | B.3 exposure control | Fail/watch | Projection satisfies gross/beta constraints but CAGR drops to `15.50%`, `2.83` pp below B.2; keep B.2 active and iterate beta policy |
 | 2026-05-01 | B.3.1 soft exposure policy | Passed | Promote `0.5-0.9` rebalance-date beta band: CAGR `16.49%`, Sharpe `1.075`, MaxDD `-33.69%`, turnover `85.36`, max gross `1.500` |
 | 2026-05-01 | B.4 risk engine formalization | Passed | Promote `b4_stress_cap_trend_boost`: CAGR `16.04%`, Sharpe `1.078`, MaxDD `-32.98%`, turnover `84.12`; dynamic beta cap `0.829` avg, `0.70` min |
+| 2026-05-01 | B.5 final Phase B gate run | Passed | All 8 exit criteria pass; 50 bps Sharpe `0.934`; 100% beta compliance; proceed to Phase C |

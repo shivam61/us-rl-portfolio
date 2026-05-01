@@ -10,13 +10,14 @@
 
 | | |
 |---|---|
-| Active phase | **Phase B** — portfolio stabilization |
-| Current step | **B.5** — final Phase B gate run, starting from B.4 promoted candidate |
-| Best system so far | **B.4 candidate:** `b4_stress_cap_trend_boost` — dynamic beta cap `0.90 − 0.20 × stress`, floor 0.50, small high-stress trend boost |
-| Current headline metrics (sp500) | B.4 candidate CAGR `16.04%`, Sharpe `1.078`, MaxDD `-32.98%`, turnover `84.12`, max gross `1.500`; B.1 production simulator anchor remains `17.6% / 1.12 / -27.0%` |
+| Active phase | **Phase C** — model refinement (LightGBM tuning + feature improvements) |
+| Current step | **C.1** — Phase C entry; Phase B fully closed |
+| Best system so far | **B.5 promoted:** `b4_stress_cap_trend_boost` — dynamic beta cap `0.90 − 0.20 × stress`, floor 0.50, high-stress trend boost |
+| Current headline metrics (sp500) | CAGR `16.04%`, Sharpe `1.078`, MaxDD `-32.98%`, turnover `84.12`, max gross `1.500`; 50 bps Sharpe `0.934` |
 | Current production alpha candidate | `volatility_score` as component only, not standalone sleeve |
-| Phase A status | A.7.3 current-setup membership/coverage artifact validation did not show strategy fragility, but B.1 found same-day signal/return alignment in the unlagged matrix headline; do not use it as a promotion baseline |
-| Blocking gate | Production validation must clip `sp500_dynamic` to `2026-04-24` or refresh PIT mask before using trailing dates; B.4 must preserve B.3.1 turnover/exposure gates and avoid daily beta-chasing |
+| Phase A status | A.7.3 validated; B.1 found same-day signal/return alignment in unlagged headline; do not use unlagged A.7.3 as promotion baseline |
+| Phase B status | **Complete** — B.5 passed all 8 exit criteria (2026-05-01) |
+| Blocking gate | None; Phase B gate cleared. Phase C may modify LightGBM/features but must validate stability vs B.5 baseline before Phase D |
 | sp500 baselines | Locked validation/system baseline plus B.1 production baseline — do not redefine without full diagnostics |
 
 ## Baseline Convention
@@ -39,6 +40,7 @@
 | B.3 hard beta-band projection | 15.5% | 1.07 | -31% |
 | B.3.1 soft beta-band projection | 16.5% | 1.08 | -34% |
 | B.4 stress-aware beta cap + trend | 16.0% | 1.08 | -33% |
+| B.5 final gate (promoted = B.4) | 16.0% | 1.08 | -33% |
 
 ---
 
@@ -47,7 +49,7 @@
 | Phase | Goal | Status | Detail |
 |---|---|---|---|
 | **A** | Alpha discovery + alpha expression (A.1–A.7.3) | ✅ Candidate validated; hand off to Phase B | [phases/phase_a.md](phases/phase_a.md) |
-| **B** | Portfolio stabilization: optimizer integration, risk engine redesign, exposure shaping | 🔄 In progress | [phases/phase_b.md](phases/phase_b.md) |
+| **B** | Portfolio stabilization: optimizer integration, risk engine redesign, exposure shaping | ✅ Complete — B.5 gate passed 2026-05-01 | [phases/phase_b.md](phases/phase_b.md) |
 | **C** | Model refinement (deferred): LightGBM tuning + feature improvements | ⏳ Deferred until Phase B stabilizes | [phases/phase_c.md](phases/phase_c.md) |
 | **D** | RL overlay (stricter gate): sector RL policy | ⏳ Pending Phase C gate | [phases/phase_d.md](phases/phase_d.md) |
 
