@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-01T05:15:19+00:00
+Last updated: 2026-05-01T05:22:07+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -242,6 +242,8 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   wider bands `0.4-0.9` and `0.5-0.9`.
 - B.3.1 decision:
   promote `b3_band_50_90` as the current B.3 exposure-policy candidate. It has CAGR `16.49%`, Sharpe `1.075`, MaxDD `-33.69%`, turnover `85.36`, max gross `1.500`, and zero rebalance-date beta/gross violations. CAGR drop is `1.84` pp vs B.2, inside the `2` pp tolerance; Sharpe drop is `0.069`, inside the `0.10` tolerance.
+- Explicit promotion:
+  `b3_band_50_90` is the Phase B baseline for B.4. Treat it as the deployable compromise: B.1 made the system production-realistic, B.2 made it turnover-efficient, and B.3.1 made it rebalance-date exposure-compliant without over-constraining the economics.
 - Cap-only policies reduced turnover more but failed CAGR tolerance:
   cap `<=0.80` CAGR `15.11%`,
   cap `<=0.85` CAGR `15.62%`,

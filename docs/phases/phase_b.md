@@ -199,6 +199,16 @@ B.3.1 treated exposure shaping as policy design, not optimizer work. It tested o
 
 Decision: promote `b3_band_50_90` as the current B.3 exposure policy candidate. It satisfies rebalance-date beta/gross constraints, keeps Sharpe within tolerance, keeps CAGR drop within `2` percentage points, and preserves most of the B.2 turnover improvement. Do not promote the hard `0.5-0.8` policy.
 
+### Promoted Phase B Baseline For B.4
+
+Use `b3_band_50_90` as the active Phase B baseline for B.4 risk-engine formalization:
+
+- B.1 made the Phase A expression production-realistic by resetting the baseline to open/next-day simulation.
+- B.2 made the construction efficient by reducing turnover with `every_2_rebalances`.
+- B.3.1 made the construction compliant by enforcing rebalance-date beta `0.5-0.9` and gross `<=1.5` without killing the economics.
+
+This is the current deployable compromise for Phase B. B.4 should test incremental risk-engine value against this baseline, not re-optimize alpha or replace the exposure policy.
+
 Residual caveat: B.3.1 gates are rebalance-date ex-ante controls. Daily beta can drift between rebalances; this should be tracked but not corrected daily unless B.4 risk-engine integration shows regime-specific need.
 
 ---
