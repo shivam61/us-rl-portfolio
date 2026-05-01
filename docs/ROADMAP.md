@@ -50,7 +50,7 @@
 |---|---|---|---|
 | **A** | Alpha discovery + alpha expression (A.1–A.7.3) | ✅ Candidate validated; hand off to Phase B | [phases/phase_a.md](phases/phase_a.md) |
 | **B** | Portfolio stabilization: optimizer integration, risk engine redesign, exposure shaping | ✅ Complete — B.5 gate passed 2026-05-01 | [phases/phase_b.md](phases/phase_b.md) |
-| **C** | Model refinement (deferred): LightGBM tuning + feature improvements | ⏳ Deferred until Phase B stabilizes | [phases/phase_c.md](phases/phase_c.md) |
+| **C** | Model refinement: LightGBM tuning + feature improvements | 🔄 In progress — Phase B gate cleared 2026-05-01 | [phases/phase_c.md](phases/phase_c.md) |
 | **D** | RL overlay (stricter gate): sector RL policy | ⏳ Pending Phase C gate | [phases/phase_d.md](phases/phase_d.md) |
 
 ### Phase Gates
