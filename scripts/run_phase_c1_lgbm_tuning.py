@@ -11,6 +11,7 @@ Tune: LightGBM model params only.
 
 import argparse
 import logging
+import os
 import sys
 import time
 from itertools import product
@@ -177,9 +178,10 @@ def _active_tickers_at(inputs: dict, date: pd.Timestamp) -> list[str]:
     return [t for t in base if bool(active.get(t, False))]
 
 
-def _make_lgbm_params(overrides: dict) -> dict:
+def _make_lgbm_params(overrides: dict, n_jobs: int = 1) -> dict:
     params = dict(BASELINE_LGBM_PARAMS)
     params.update(overrides)
+    params["n_jobs"] = n_jobs
     # bagging requires bagging_freq > 0
     if params.get("bagging_fraction", 1.0) < 1.0 and params.get("bagging_freq", 0) == 0:
         params["bagging_freq"] = 1
@@ -280,7 +282,8 @@ def _grid_worker(
     holdout_dates: list[pd.Timestamp],
     inputs: dict,
 ) -> dict:
-    params = _make_lgbm_params(combo)
+    # n_jobs=1 per worker — outer Parallel already saturates all cores
+    params = _make_lgbm_params(combo, n_jobs=1)
     ic_recs = _ic_for_params(params, stock_features, fwd_ret_matrix, holdout_dates, inputs)
     result = _summarise_ic(ic_recs)
     result.update(combo)
@@ -328,12 +331,13 @@ def run_ic_baseline(
     inputs: dict,
     fwd_ret_matrix: pd.DataFrame,
     validation_end: pd.Timestamp,
+    lgbm_threads: int = 1,
 ) -> tuple[dict, list[dict]]:
     """Measure IC for the baseline LGBM config on all rebalance dates."""
     stock_features = inputs["stock_features"]
     all_dates = rebalance_dates(inputs["base_config"], inputs["prices"])
     valid_dates = [d for d in all_dates if d <= validation_end]
-    params = _make_lgbm_params({})
+    params = _make_lgbm_params({}, n_jobs=lgbm_threads)
     ic_recs = _ic_for_params(params, stock_features, fwd_ret_matrix, valid_dates, inputs)
     summary = _summarise_ic(ic_recs)
     logger.info(
@@ -350,18 +354,25 @@ def run_ic_by_regime(
     fwd_ret_matrix: pd.DataFrame,
     validation_end: pd.Timestamp,
     best_params_override: dict,
+    lgbm_threads: int = 1,
 ) -> pd.DataFrame:
     """IC breakdown by regime for both baseline and best tuned config."""
     stock_features = inputs["stock_features"]
     all_dates = rebalance_dates(inputs["base_config"], inputs["prices"])
     valid_dates = [d for d in all_dates if d <= validation_end]
 
-    baseline_params = _make_lgbm_params({})
-    best_params = _make_lgbm_params(best_params_override)
+    # Each config runs sequentially; give each half the available cores
+    per_config_threads = max(1, lgbm_threads // 2)
+    baseline_params = _make_lgbm_params({}, n_jobs=per_config_threads)
+    best_params = _make_lgbm_params(best_params_override, n_jobs=per_config_threads)
 
-    logger.info("Computing IC by regime for baseline and best config...")
-    baseline_recs = _ic_for_params(baseline_params, stock_features, fwd_ret_matrix, valid_dates, inputs)
-    best_recs = _ic_for_params(best_params, stock_features, fwd_ret_matrix, valid_dates, inputs)
+    logger.info("Computing IC by regime — %d threads per config...", per_config_threads)
+    # Parallelise the two sequential evaluations so both use the machine at once
+    results_pair = Parallel(n_jobs=2, backend="loky")(
+        delayed(_ic_for_params)(p, stock_features, fwd_ret_matrix, valid_dates, inputs)
+        for p in [baseline_params, best_params]
+    )
+    baseline_recs, best_recs = results_pair
 
     baseline_series = pd.Series(
         {r["date"]: r["ic"] for r in baseline_recs},
@@ -402,6 +413,7 @@ def build_lgbm_vol_path(
     params: dict,
     validation_end: pd.Timestamp,
     n_top: int = 20,
+    lgbm_threads: int = 1,
 ) -> dict:
     """
     Build a weight path using LGBM predictions as the selection signal.
@@ -436,7 +448,10 @@ def build_lgbm_vol_path(
                 y_tr = fwd_ret_matrix.stack().rename("y").reindex(X_tr.index)
                 valid_mask = ~(X_tr.isna().any(axis=1) | y_tr.isna())
                 if valid_mask.sum() >= 50:
-                    m = lgb.LGBMRegressor(**params)
+                    # Apply portfolio-phase thread count to this sequential fit
+                    p = dict(params)
+                    p["n_jobs"] = lgbm_threads
+                    m = lgb.LGBMRegressor(**p)
                     m.fit(X_tr.values[valid_mask], y_tr.values[valid_mask])
                     cached_model = m
             except Exception as e:
@@ -469,6 +484,7 @@ def build_lgbm_b2_candidate(
     inputs: dict,
     params: dict,
     validation_end: pd.Timestamp,
+    lgbm_threads: int = 1,
 ) -> pd.DataFrame:
     """
     B.5 construction with LGBM scores replacing vol_scores.
@@ -483,7 +499,7 @@ def build_lgbm_b2_candidate(
     )
     stress = stress_variant_frame(base_stress, "weighted_50_50", 0.5, 0.5)
 
-    lgbm_path = build_lgbm_vol_path(inputs, params, validation_end, n_top=20)
+    lgbm_path = build_lgbm_vol_path(inputs, params, validation_end, n_top=20, lgbm_threads=lgbm_threads)
     lgbm_weights = weight_frame(lgbm_path, dates)
     trend_weights = weight_frame(trend_path, dates)
 
@@ -508,9 +524,10 @@ def build_promoted_lgbm_weights(
     validation_end: pd.Timestamp,
     beta_frame: pd.DataFrame,
     stress_series: pd.Series,
+    lgbm_threads: int = 1,
 ) -> tuple[pd.DataFrame, pd.DataFrame, list]:
     """Full B.5 construction using LGBM signal."""
-    base_weights = build_lgbm_b2_candidate(inputs, params, validation_end)
+    base_weights = build_lgbm_b2_candidate(inputs, params, validation_end, lgbm_threads=lgbm_threads)
     target_turnover = base_weights.diff().abs().sum(axis=1)
     if not base_weights.empty:
         target_turnover.iloc[0] = base_weights.iloc[0].abs().sum()
@@ -578,6 +595,7 @@ def run_portfolio_validation(
     inputs: dict,
     best_params: dict,
     validation_end: pd.Timestamp,
+    lgbm_threads: int = 1,
 ) -> tuple[dict, dict, pd.DataFrame, pd.DataFrame]:
     """Run LGBM-based portfolio through unchanged B.5 construction and evaluate."""
     capital = inputs["base_config"].portfolio.initial_capital
@@ -587,11 +605,13 @@ def run_portfolio_validation(
     stress_series = build_stress_series(inputs)
     logger.info("Beta/stress frames: %.1fs", time.perf_counter() - t0)
 
+    n_rb = len(rebalance_dates(inputs["base_config"], inputs["prices"]))
+    n_fits = max(1, n_rb // RETRAIN_INTERVAL)
     t1 = time.perf_counter()
-    logger.info("Building LGBM B.5 weight path (this trains ~%d LGBM models)...",
-                len(rebalance_dates(inputs["base_config"], inputs["prices"])))
+    logger.info("Building LGBM B.5 weight path (~%d model fits, %d LGBM threads each)...",
+                n_fits, lgbm_threads)
     constrained, diagnostics, control_dates = build_promoted_lgbm_weights(
-        inputs, best_params, validation_end, beta_frame, stress_series
+        inputs, best_params, validation_end, beta_frame, stress_series, lgbm_threads=lgbm_threads
     )
     logger.info("LGBM weight path built in %.1fs", time.perf_counter() - t1)
 
@@ -799,10 +819,21 @@ def _render_report(
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main() -> None:
+    _n_cpus = os.cpu_count() or 4
     parser = argparse.ArgumentParser(description="Phase C.1 — LightGBM tuning")
     parser.add_argument("--config", default="config/base.yaml")
     parser.add_argument("--universe", default="config/universes/sp500.yaml")
     parser.add_argument("--trend-assets", nargs="+", default=TREND_ASSETS)
+    parser.add_argument(
+        "--lgbm-portfolio-threads",
+        type=int,
+        default=_n_cpus,
+        help=(
+            "LGBM threads for sequential portfolio / IC-by-regime phase "
+            f"(default: all {_n_cpus} CPUs). Grid search always uses 1 thread "
+            "per worker; outer Parallel uses n_jobs=-1."
+        ),
+    )
     args = parser.parse_args()
 
     if not LGBM_AVAILABLE:
@@ -823,12 +854,19 @@ def main() -> None:
 
     fwd_ret_matrix = build_fwd_return_matrix(inputs["prices"])
 
+    lgbm_pt = args.lgbm_portfolio_threads
+    logger.info(
+        "Thread strategy: grid search n_jobs=-1 (1 LGBM thread/worker) | "
+        "sequential phases %d LGBM threads",
+        lgbm_pt,
+    )
+
     # ── C.0: Baseline IC ──────────────────────────────────────────────────────
-    logger.info("=== C.0: Baseline IC measurement ===")
-    baseline_ic, _ = run_ic_baseline(inputs, fwd_ret_matrix, validation_end)
+    logger.info("=== C.0: Baseline IC measurement (%d LGBM threads) ===", lgbm_pt)
+    baseline_ic, _ = run_ic_baseline(inputs, fwd_ret_matrix, validation_end, lgbm_threads=lgbm_pt)
 
     # ── C.1: Grid search ──────────────────────────────────────────────────────
-    logger.info("=== C.1: Grid search (%d combos) ===",
+    logger.info("=== C.1: Grid search (%d combos, n_jobs=-1) ===",
                 len(list(product(*TUNE_GRID.values()))))
     grid_df, best_combo = run_grid_search(inputs, fwd_ret_matrix, validation_end)
     grid_df.to_csv(reports_dir / "phase_c1_grid_results.csv", index=False)
@@ -837,7 +875,7 @@ def main() -> None:
     # IC stats for best config (full window for overfit check)
     all_dates = rebalance_dates(inputs["base_config"], inputs["prices"])
     valid_dates = [d for d in all_dates if d <= validation_end]
-    best_params = _make_lgbm_params(best_combo)
+    best_params = _make_lgbm_params(best_combo, n_jobs=lgbm_pt)
     best_ic_recs = _ic_for_params(best_params, inputs["stock_features"], fwd_ret_matrix, valid_dates, inputs)
     best_ic_all = _summarise_ic(best_ic_recs)
     holdout_recs = [r for r in best_ic_recs if r["date"] >= HOLDOUT_START]
@@ -850,13 +888,13 @@ def main() -> None:
     )
 
     # ── IC by regime ──────────────────────────────────────────────────────────
-    logger.info("=== IC by regime ===")
-    ic_regime_df = run_ic_by_regime(inputs, fwd_ret_matrix, validation_end, best_combo)
+    logger.info("=== IC by regime (%d LGBM threads per config, 2 configs parallel) ===", lgbm_pt // 2)
+    ic_regime_df = run_ic_by_regime(inputs, fwd_ret_matrix, validation_end, best_combo, lgbm_threads=lgbm_pt)
     ic_regime_df.to_csv(reports_dir / "ic_by_regime.csv", index=False)
     logger.info("IC by regime saved.")
 
     # ── Portfolio validation ──────────────────────────────────────────────────
-    logger.info("=== Portfolio validation through B.5 harness ===")
+    logger.info("=== Portfolio validation through B.5 harness (%d LGBM threads) ===", lgbm_pt)
 
     # Baseline portfolio (vol_scores, same B.5 construction — use saved B.5 metrics)
     full_sim_baseline = {
@@ -867,7 +905,7 @@ def main() -> None:
     }
 
     full_sim_lgbm, cost_df, regime_df, _ = run_portfolio_validation(
-        inputs, best_params, validation_end
+        inputs, best_params, validation_end, lgbm_threads=lgbm_pt
     )
 
     # ── Portfolio vs baseline table ───────────────────────────────────────────
