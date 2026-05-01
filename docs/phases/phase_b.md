@@ -105,6 +105,53 @@ Use A.7.3 as the Phase A baseline for Phase B comparisons. Before production-sty
 
 ---
 
+## Phase B.2 — Turnover Control / Rebalance Hysteresis
+
+**Goal:** reduce turnover/cost drag without materially changing the B.1 return profile.
+
+### Implementation
+
+| Item | File | Status |
+|---|---|---|
+| B.2 turnover frontier runner | `scripts/run_phase_b2_turnover_control.py` | Implemented |
+| Main report | `artifacts/reports/phase_b2_turnover_control.md` | Done |
+| Turnover frontier | `artifacts/reports/turnover_frontier.csv` | Done |
+| Cost sensitivity | `artifacts/reports/cost_sensitivity.csv` | Done |
+| Trade threshold slice | `artifacts/reports/trade_threshold_results.csv` | Done |
+| Persistence slice | `artifacts/reports/persistence_results.csv` | Done |
+
+### B.2 Result
+
+B.2 used a fast one-day-lagged target-weight approximation to select turnover controls, anchored to the B.1 production simulator baseline. It did not modify `volatility_score`, the trend signal, stress-scaling logic, or RL settings.
+
+Best promoted B.2 control is `every_2_rebalances`:
+
+- CAGR `18.33%`
+- Sharpe `1.144`
+- MaxDD `-33.69%`
+- turnover sum `89.62`
+- turnover reduction `61.2%`
+- 50 bps Sharpe `0.999` versus same-cost baseline `0.765`
+- max gross `1.346`
+
+Other passing but less aggressive controls:
+
+- 50 bps minimum trade threshold: Sharpe `1.166`, MaxDD `-31.57%`, turnover reduction `25.0%`.
+- 50 bps threshold + top-40 persistence: Sharpe `1.147`, MaxDD `-33.78%`, turnover reduction `34.7%`.
+- 50% partial rebalance: Sharpe `1.176`, MaxDD `-28.43%`, turnover reduction `25.0%`.
+
+Rejected/fragile observations:
+
+- 4-week/monthly cadence reduced turnover `73.3%` but failed the B.2 drawdown gate with MaxDD `-36.65%`.
+- 100 bps trade threshold reduced turnover `31.8%` but failed MaxDD/gross gates.
+- Partial-rebalance plus threshold/persistence combinations can accumulate stale residual positions and exceed max gross; those rows are rejected and excluded from promotion.
+
+### B.2 Decision
+
+PASS. Carry `every_2_rebalances` as the primary B.2 turnover-control candidate into B.3 exposure-constrained portfolio shaping. Keep threshold-only and partial-rebalance rows as secondary references, not the main promoted setting, unless B.3 beta/exposure shaping shows the every-2 cadence is too drawdown-sensitive.
+
+---
+
 ## Phase B Exit Criteria
 
 Proceed to Phase C only if:
@@ -123,6 +170,7 @@ Proceed to Phase C only if:
 - The production baseline has lower Sharpe/CAGR than the Phase A headline but preserves the drawdown/gross profile and beats equal-weight on the same clipped universe.
 - sp500 PIT mask has three trailing zero-active dates in late April 2026; this is a data-window artifact to clean or clip.
 - Regime Sharpe remains weak in 2008 and 2022 even though regime MaxDD passes.
+- B.2 every-2-rebalances reduces turnover materially but moves MaxDD to `-33.69%`; B.3 should focus on beta/exposure shaping without chasing return.
 - Results validated on configured ticker universe with PIT liquidity mask, not true historical index membership.
 - Historical index-membership data remains intentionally deferred; do not import it unless current-setup artifact checks become fragile.
 
@@ -134,3 +182,4 @@ Proceed to Phase C only if:
 |---|---|---|---|
 | 2026-04-30 | B.0 baseline guard | Done | A.7.3 baseline locked; sp500 recommended validation end is `2026-04-24` unless PIT mask is refreshed |
 | 2026-04-30 | B.1 simulator reproduction | Reconciled | Production open/next-day sp500 baseline: CAGR `17.56%`, Sharpe `1.116`, MaxDD `-26.98%`; within tolerance versus lagged matrix reference, not versus unlagged A.7.3 headline |
+| 2026-05-01 | B.2 turnover control | Passed | Primary candidate `every_2_rebalances`: CAGR `18.33%`, Sharpe `1.144`, MaxDD `-33.69%`, turnover reduction `61.2%`; 50 bps Sharpe `0.999` versus same-cost baseline `0.765` |

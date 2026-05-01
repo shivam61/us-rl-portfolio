@@ -6,17 +6,17 @@
 
 ---
 
-## Current State — 2026-04-30
+## Current State — 2026-05-01
 
 | | |
 |---|---|
 | Active phase | **Phase B** — portfolio stabilization |
-| Current step | **B.2** — turnover smoothing / rebalance hysteresis on production-realistic baseline |
-| Best system so far | volatility + stress-scaled trend blend, lagged and reproduced in production simulator |
-| Current headline metrics (sp500) | B.1 production baseline CAGR `17.6%`, Sharpe `1.12`, MaxDD `-27.0%`, max gross `1.375` |
+| Current step | **B.3** — exposure-constrained portfolio shaping, starting from B.2 turnover-control candidate |
+| Best system so far | volatility + stress-scaled trend blend with B.2 every-2-rebalances turnover control |
+| Current headline metrics (sp500) | B.2 fast lagged frontier candidate CAGR `18.3%`, Sharpe `1.14`, MaxDD `-33.7%`, max gross `1.346`; B.1 production simulator anchor remains `17.6% / 1.12 / -27.0%` |
 | Current production alpha candidate | `volatility_score` as component only, not standalone sleeve |
 | Phase A status | A.7.3 current-setup membership/coverage artifact validation did not show strategy fragility, but B.1 found same-day signal/return alignment in the unlagged matrix headline; do not use it as a promotion baseline |
-| Blocking gate | Production validation must clip `sp500_dynamic` to `2026-04-24` or refresh PIT mask before using trailing dates; preserve B.1 production MaxDD/cost/gross profile |
+| Blocking gate | Production validation must clip `sp500_dynamic` to `2026-04-24` or refresh PIT mask before using trailing dates; B.3 must preserve B.1/B.2 drawdown, cost, and gross-exposure profile |
 | sp500 baselines | Locked validation/system baseline plus B.1 production baseline — do not redefine without full diagnostics |
 
 ## Baseline Convention
@@ -35,6 +35,7 @@
 | Full System (opt + risk) | 8.7% | 0.59 | -34% |
 | Optimizer to=0.5 sensitivity | 11.9% | 0.68 | -40% |
 | B.1 production stress blend | 17.6% | 1.12 | -27% |
+| B.2 every-2-rebalances frontier | 18.3% | 1.14 | -34% |
 
 ---
 

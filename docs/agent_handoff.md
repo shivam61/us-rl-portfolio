@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-04-30T20:01:39+00:00
+Last updated: 2026-05-01T03:37:13+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -190,8 +190,32 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   equal-weight simulator Sharpe `0.864`.
 - Decision:
   original B.1 drift versus the unlagged A.7.3 matrix headline fails and should not be ignored, but it is reconciled by the lagged matrix reference. Reset Phase B promotion baseline to the production open/next-day simulator row. Do not optimize future Phase B work against the unlagged A.7.3 headline.
+- B.1 handed off to B.2:
+  turnover smoothing / rebalance hysteresis on the production-realistic baseline, preserving the B.1 sp500 MaxDD `<40%`, max gross `<=1.5`, Sharpe `>1.0` preferred, and same-universe equal-weight outperformance. Keep `volatility_score` unchanged, add no alpha, and keep RL disabled.
+- Phase B.2 turnover control / rebalance hysteresis was implemented in `scripts/run_phase_b2_turnover_control.py`.
+- B.2 artifacts were saved to:
+  `artifacts/reports/phase_b2_turnover_control.md`,
+  `artifacts/reports/turnover_frontier.csv`,
+  `artifacts/reports/cost_sensitivity.csv`,
+  `artifacts/reports/trade_threshold_results.csv`,
+  `artifacts/reports/persistence_results.csv`.
+- B.2 used a fast one-day-lagged target-weight approximation for frontier selection. The B.1 exact open/next-day simulator remains the Phase B promotion anchor.
+- B.2 did not change `volatility_score`, trend signal construction, stress-scaling formula, or RL settings.
+- B.2 primary promoted turnover-control candidate:
+  `every_2_rebalances` on `sp500_dynamic` clipped to `2026-04-24`;
+  CAGR `18.33%`, Sharpe `1.144`, MaxDD `-33.69%`, max gross `1.346`, turnover sum `89.62`, turnover reduction `61.2%`.
+- B.2 cost sensitivity:
+  every-2-rebalances Sharpe was `1.089` at 25 bps and `0.999` at 50 bps, versus baseline same-cost Sharpe `0.999` and `0.765`, respectively.
+- Other passing reference rows:
+  50 bps trade threshold `18.16% / 1.166 / -31.57%` with `25.0%` turnover reduction;
+  50 bps threshold + top-40 persistence `18.06% / 1.147 / -33.78%` with `34.7%` turnover reduction;
+  50% partial rebalance `18.07% / 1.176 / -28.43%` with `25.0%` turnover reduction.
+- Fragile/rejected B.2 rows:
+  4-week cadence reduced turnover `73.3%` but failed MaxDD at `-36.65%`;
+  100 bps threshold failed MaxDD/gross gates;
+  partial-rebalance plus threshold/persistence combinations can accumulate stale residual positions and exceed max gross.
 - Next Phase B step:
-  B.2 turnover smoothing / rebalance hysteresis on the production-realistic baseline. Preserve the B.1 sp500 MaxDD `<40%`, max gross `<=1.5`, Sharpe `>1.0` preferred, and same-universe equal-weight outperformance. Keep `volatility_score` unchanged, add no alpha, and keep RL disabled.
+  B.3 exposure-constrained portfolio shaping, using B.2 every-2-rebalances as the primary turnover-control candidate and threshold/partial rows as secondary references. Do not use B.3 as return maximization.
 
 ### 2026-04-29
 
