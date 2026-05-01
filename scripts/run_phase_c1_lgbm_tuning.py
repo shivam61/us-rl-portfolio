@@ -178,10 +178,17 @@ def _active_tickers_at(inputs: dict, date: pd.Timestamp) -> list[str]:
     return [t for t in base if bool(active.get(t, False))]
 
 
+_LGBM_INT_PARAMS = frozenset({"n_estimators", "max_depth", "num_leaves", "min_data_in_leaf", "bagging_freq"})
+
+
 def _make_lgbm_params(overrides: dict, n_jobs: int = 1) -> dict:
     params = dict(BASELINE_LGBM_PARAMS)
     params.update(overrides)
     params["n_jobs"] = n_jobs
+    # Grid results come back from DataFrame as np.float64; LightGBM needs int
+    for k in _LGBM_INT_PARAMS:
+        if k in params and params[k] is not None:
+            params[k] = int(params[k])
     # bagging requires bagging_freq > 0
     if params.get("bagging_fraction", 1.0) < 1.0 and params.get("bagging_freq", 0) == 0:
         params["bagging_freq"] = 1
@@ -374,14 +381,16 @@ def run_ic_by_regime(
     )
     baseline_recs, best_recs = results_pair
 
-    baseline_series = pd.Series(
-        {r["date"]: r["ic"] for r in baseline_recs},
-        dtype=float,
-    ).rename_axis("date")
-    best_series = pd.Series(
-        {r["date"]: r["ic"] for r in best_recs},
-        dtype=float,
-    ).rename_axis("date")
+    def _recs_to_series(recs: list[dict]) -> pd.Series:
+        if not recs:
+            return pd.Series([], dtype=float, index=pd.DatetimeIndex([], name="date"))
+        return pd.Series(
+            {r["date"]: r["ic"] for r in recs},
+            dtype=float,
+        ).rename_axis("date")
+
+    baseline_series = _recs_to_series(baseline_recs)
+    best_series = _recs_to_series(best_recs)
 
     rows = []
     for regime, start, end in IC_REGIMES:
@@ -834,6 +843,11 @@ def main() -> None:
             "per worker; outer Parallel uses n_jobs=-1."
         ),
     )
+    parser.add_argument(
+        "--skip-grid",
+        action="store_true",
+        help="Skip grid search and load results from artifacts/reports/phase_c1_grid_results.csv",
+    )
     args = parser.parse_args()
 
     if not LGBM_AVAILABLE:
@@ -866,11 +880,24 @@ def main() -> None:
     baseline_ic, _ = run_ic_baseline(inputs, fwd_ret_matrix, validation_end, lgbm_threads=lgbm_pt)
 
     # ── C.1: Grid search ──────────────────────────────────────────────────────
-    logger.info("=== C.1: Grid search (%d combos, n_jobs=-1) ===",
-                len(list(product(*TUNE_GRID.values()))))
-    grid_df, best_combo = run_grid_search(inputs, fwd_ret_matrix, validation_end)
-    grid_df.to_csv(reports_dir / "phase_c1_grid_results.csv", index=False)
-    logger.info("Grid results saved.")
+    grid_csv = reports_dir / "phase_c1_grid_results.csv"
+    if args.skip_grid:
+        logger.info("=== C.1: Loading saved grid results from %s ===", grid_csv)
+        grid_df = pd.read_csv(grid_csv)
+        keys = list(TUNE_GRID.keys())
+        best_combo = {k: grid_df.iloc[0][k] for k in keys}
+        logger.info(
+            "Best config loaded: %s — IC Sharpe=%.4f, Mean IC=%.4f",
+            best_combo,
+            grid_df.iloc[0]["ic_sharpe"],
+            grid_df.iloc[0]["mean_ic"],
+        )
+    else:
+        logger.info("=== C.1: Grid search (%d combos, n_jobs=-1) ===",
+                    len(list(product(*TUNE_GRID.values()))))
+        grid_df, best_combo = run_grid_search(inputs, fwd_ret_matrix, validation_end)
+        grid_df.to_csv(grid_csv, index=False)
+        logger.info("Grid results saved.")
 
     # IC stats for best config (full window for overfit check)
     all_dates = rebalance_dates(inputs["base_config"], inputs["prices"])

@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-01T08:48:02+00:00
+Last updated: 2026-05-01T11:23:40+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -286,12 +286,17 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
 - Beta compliance: 120 rebalance dates, 0 violations, compliance rate 100%; avg beta `0.770`, range `[0.500, 0.899]`; avg dynamic cap `0.829`, min `0.701`.
 - Phase B decision: COMPLETE. `b4_stress_cap_trend_boost` is the Phase B promoted construction.
 - Next step: proceed to Phase C — model refinement: LightGBM tuning and feature improvements. Phase C entry point is `docs/phases/phase_c.md`. The Phase B baseline for Phase C is B.5 (`b4_stress_cap_trend_boost`, sp500, CAGR `16.04%`, Sharpe `1.078`, MaxDD `-32.98%`).
-- Phase C.1 LightGBM tuning script written: `scripts/run_phase_c1_lgbm_tuning.py`.
-- C.1 design: 216-combination grid (num_leaves ∈ {15,31,63}, min_data_in_leaf ∈ {20,50,100}, feature_fraction ∈ {0.6,0.8,1.0}, bagging_fraction ∈ {0.7,0.9}, lambda_l1/l2 ∈ {0.0,0.5}); n_estimators fixed at 200, learning_rate 0.05; joblib.Parallel(n_jobs=-1) on 32-core n2dhighcpu machine.
-- C.1 evaluation: IC baseline on current config (C.0 combined), grid search on holdout IC Sharpe (2019–2026-04-24), IC by regime, portfolio validation of best config through unchanged B.5 harness (every_2_rebalances, dynamic beta cap, stress blend, trend sleeve).
-- C.1 acceptance gates: Sharpe ≥ B5 baseline − 0.05 (1.028), MaxDD ≤ baseline (−32.98%), 50 bps Sharpe ≥ 0.884, no turnover spike (≤ 100).
-- C.1 outputs: `phase_c1_lgbm_tuning.md`, `ic_by_regime.csv`, `portfolio_vs_baseline.csv`, `phase_c1_grid_results.csv`.
-- Run command: `.venv/bin/python scripts/run_phase_c1_lgbm_tuning.py --config config/base.yaml --universe config/universes/sp500.yaml`
+- **Phase C.1 COMPLETE — Verdict: REJECT** (2026-05-01).
+- C.1 grid search: 216 combos, 95 holdout dates, completed in 38 min on 32-core machine. Grid results saved: `artifacts/reports/phase_c1_grid_results.csv`.
+- Best config found: `num_leaves=15, min_data_in_leaf=100, feature_fraction=0.6, bagging_fraction=0.9, lambda_l1=0.0, lambda_l2=0.0` — holdout IC Sharpe=-0.1389, Mean IC=-0.0021.
+- Root cause of REJECT: LightGBM has negative IC on sp500 across nearly all regimes (baseline IC Sharpe=-1.3831, best holdout IC Sharpe=-0.1389). The model is anti-predictive. HPO cannot fix this.
+- Portfolio despite negative IC: CAGR=14.78%, Sharpe=1.029, MaxDD=-29.68% (B.5 harness is doing the lifting).
+- Gate failures: 50 bps Sharpe=0.819 (gate ≥0.884), Turnover=119.3 (gate ≤100), preferred Sharpe=1.029 (gate ≥1.128). Sharpe floor 1.029 barely passes (≥1.028).
+- IC by regime: only positive IC in 2020 COVID (best IC Sharpe=0.39) and 2023-2026 recovery (0.44). Negative in crisis, train window, and 2015-16 vol stress.
+- Bug fixed in runner: `_make_lgbm_params` now casts integer params (num_leaves, min_data_in_leaf) from np.float64→int; `--skip-grid` flag added to reload saved grid CSV without re-running 38-min search.
+- C.1 artifacts: `phase_c1_lgbm_tuning.md`, `ic_by_regime.csv`, `portfolio_vs_baseline.csv`, `phase_c1_grid_results.csv`.
+- Run command (re-run without grid): `.venv/bin/python scripts/run_phase_c1_lgbm_tuning.py --config config/base.yaml --universe config/universes/sp500.yaml --skip-grid`
+- **Next step: Phase C.2 — feature attribution / importance pruning.** Understand which features drive negative IC, prune anti-predictive ones, and potentially add informative features. Negative IC on sp500 is the key signal quality problem to solve. The B.5 construction harness remains frozen until a signal with positive IC is validated.
 
 ### 2026-04-29
 

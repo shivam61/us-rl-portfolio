@@ -107,6 +107,6 @@ C.3: run Phase B harness (b4_stress_cap_trend_boost) with C.1/C.2 signal
 |---|---|---|---|
 | 2026-05-01 | Phase B gate cleared | Entry baseline locked | `b4_stress_cap_trend_boost`: CAGR `16.04%`, Sharpe `1.078`, MaxDD `-32.98%` |
 | 2026-05-01 | C.1 script written | Ready to run | `scripts/run_phase_c1_lgbm_tuning.py` — 216-combo grid, IC baseline, portfolio validation; run on n2dhighcpu-32 |
-| — | C.1 grid run | Pending | Run: `.venv/bin/python scripts/run_phase_c1_lgbm_tuning.py --config config/base.yaml --universe config/universes/sp500.yaml` |
-| — | C.2 feature attribution | Not started | — |
-| — | C.3 portfolio validation | Not started | Only needed if C.2 pruning changes the signal |
+| 2026-05-01 | C.1 grid run | **REJECT** | Best: `num_leaves=15, min_data_in_leaf=100, ff=0.6, bf=0.9`. Holdout IC Sharpe=-0.1389, Mean IC=-0.0021. Portfolio: Sharpe=1.029, MaxDD=-29.68%, Turnover=119. Gate failures: 50 bps Sharpe 0.819 (gate ≥0.884), turnover 119 (gate ≤100). Root: LightGBM negative IC on sp500; HPO cannot fix. |
+| — | C.2 feature attribution | **Not started** | Prune anti-predictive features; target positive holdout IC Sharpe |
+| — | C.3 portfolio validation | Not started | Only needed if C.2 produces positive IC |

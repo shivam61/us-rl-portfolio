@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-01T06:14:27+00:00
+## Current State — 2026-05-01T11:23:40+00:00
 - Branch: `main`
-- Working tree: 5 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_c.md`
-- Latest commit: `92def7e5 2026-05-01 implement Phase B.5 final gate run — Phase B complete`
+- Working tree: 11 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_c.md`, ` M scripts/run_phase_c1_lgbm_tuning.py`
+- Latest commit: `22ef751a 2026-05-01 optimise Phase C.1 thread allocation for 32-core machine`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
