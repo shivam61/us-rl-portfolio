@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-01T11:44:30+00:00
+## Current State — 2026-05-01T16:01:44+00:00
 - Branch: `main`
-- Working tree: 14 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_c.md`, `?? artifacts/reports/anti_predictive_features.csv`
-- Latest commit: `b2682f82 2026-05-01 complete Phase C.1 LightGBM tuning — verdict REJECT`
+- Working tree: 13 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_c.md`, `?? artifacts/reports/c3_cost_sensitivity.csv`
+- Latest commit: `381c6b6a 2026-05-01 complete Phase C.2 feature attribution — POSITIVE IC FOUND`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
@@ -25,6 +25,15 @@ Quantitative US equity research system with point-in-time data handling, feature
 - Do not auto-load deep history docs into every session.
 - Open additional files only when the current task requires them.
 - Prefer reading smaller summary docs before code or large phase notes.
+
+## Agent Execution Policy
+
+- Work strictly as a single sequential agent by default.
+- Do not spawn subagents, parallel agents, background agents, or `general-purpose` agents unless the user explicitly asks.
+- Do all analysis, file inspection, code edits, test runs, and validation in the main agent context.
+- If the task is large, make a sequential plan and execute it step by step.
+- Before using any subagent, ask the user for explicit approval and explain why it is necessary.
+- Prefer targeted file reads and targeted edits over delegation.
 
 ## File Lookup Order
 

@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-01T11:44:30+00:00
+Last updated: 2026-05-01T16:01:44+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -305,7 +305,18 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
 - 14 positive-IC features: beta_to_spy_63d, downside_vol_63d, volatility_21d, volatility_63d, liquidity_rank, avg_dollar_volume_63d, ret_12m_ex_1m, ret_12m, sector_rel_momentum_6m, trend_consistency, ma_50_200_ratio, above_200dma, ret_6m_adj, ret_6m.
 - Also: max_drawdown_63d is ANTI-PREDICTIVE (IC Sharpe=-1.40) despite being in the vol_score composite — the other 3 vol features dominate.
 - C.2 artifacts: `phase_c2_feature_attribution.md`, `feature_ic_by_regime.csv`, `feature_ic_by_period.csv`, `anti_predictive_features.csv`, `feature_subset_results.csv`, `model_sanity_comparison.csv`.
-- **Next step: Phase C.3 — portfolio validation of `simple_mean_rank` (14 features, IC Sharpe=1.8559) through unchanged B.5 harness. Gate: Sharpe ≥1.078, MaxDD ≤-32.98%, 50 bps Sharpe ≥0.884, turnover ≤100.**
+- **Phase C.3 COMPLETE — Verdict: REJECT** (2026-05-01).
+- Script: `scripts/run_phase_c3_portfolio_validation.py` — ran in 67s on 32-core machine.
+- Candidate: `simple_mean_rank_14` (equal-weight rank percentile of 14 positive-IC features, no model). IC Sharpe=1.8559 vs vol_score 1.6682.
+- Portfolio results (10 bps): CAGR=15.65%, Sharpe=1.050, MaxDD=-33.94%, Turnover=90.5.
+- Gate results: Sharpe floor (≥1.05) FAIL by hairline (1.0498), MaxDD PASS, 50 bps Sharpe PASS (0.895), Turnover PASS (90.5), Beta violations PASS (0).
+- Root cause of REJECT: high-vol/high-beta selection catastrophically underperforms in 2008 financial crisis (SMR Sharpe=-0.270 vs vol_score +0.542, delta=-0.811). SMR wins in all other regimes (2015-16: +0.19, 2020: +0.65, 2022: +0.47) but cannot recover the 2008 crisis gap over full period.
+- Name overlap: only 22.1% of SMR selection shared with vol_score (Jaccard 0.131). These are fundamentally different portfolios: SMR selects high-vol/high-beta/high-momentum, vol_score selects low-vol/low-beta.
+- Sector shifts: SMR overweights XLV (+3.3%), XLC (+2.3%), XLI (+1.3%); underweights XLF (-4.5%), XLE (-2.0%).
+- IC → portfolio disconnect: better IC (1.86 vs 1.67) does not translate to better portfolio Sharpe. High-vol selections carry higher idiosyncratic risk even after beta cap — especially punishing in 2008 crisis.
+- C.3 artifacts: `phase_c3_signal_validation.md`, `c3_portfolio_comparison.csv`, `c3_regime_breakdown.csv`, `c3_selected_overlap.csv`, `c3_cost_sensitivity.csv`.
+- **Phase C COMPLETE. Production signal: `vol_score` (unchanged). All LightGBM and feature-selection work for this alpha family is frozen. Proceed to Phase D with vol_score.**
+- Run command: `.venv/bin/python scripts/run_phase_c3_portfolio_validation.py --config config/base.yaml --universe config/universes/sp500.yaml`
 
 ### 2026-04-29
 
