@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-01T05:14:49+00:00
+## Current State — 2026-05-01T05:15:19+00:00
 - Branch: `main`
-- Working tree: 9 changed path(s)
-- Dirty paths sample: `M artifacts/reports/beta_tracking.csv`, ` M artifacts/reports/constraint_violations.csv`, ` M artifacts/reports/gross_exposure.csv`, ` M artifacts/reports/phase_b3_exposure_control.md`, ` M artifacts/reports/phase_b3_summary.csv`
-- Latest commit: `e1931bf8 2026-05-01 refresh shared session state`
+- Working tree: 0 changed path(s)
+- Dirty paths sample: none
+- Latest commit: `8adce6fe 2026-05-01 run phase b3 soft exposure policies`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
