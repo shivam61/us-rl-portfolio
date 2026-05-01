@@ -152,6 +152,41 @@ PASS. Carry `every_2_rebalances` as the primary B.2 turnover-control candidate i
 
 ---
 
+## Phase B.3 — Exposure-Constrained Portfolio Shaping
+
+**Goal:** enforce gross `<=1.5` and rebalance-date beta band `0.5-0.8` without modifying alpha, trend, stress scaling, or B.2 turnover control.
+
+### Implementation
+
+| Item | File | Status |
+|---|---|---|
+| B.3 exposure-control runner | `scripts/run_phase_b3_exposure_control.py` | Implemented |
+| Main report | `artifacts/reports/phase_b3_exposure_control.md` | Done |
+| Constraint violations | `artifacts/reports/constraint_violations.csv` | Done |
+| Beta tracking | `artifacts/reports/beta_tracking.csv` | Done |
+| Gross exposure tracking | `artifacts/reports/gross_exposure.csv` | Done |
+
+### B.3 Result
+
+B.3 compared the B.2 `every_2_rebalances` candidate with and without projection. The projection uses scalar shaping first; when scalar scaling cannot meet the beta floor inside gross `1.5`, it applies a minimal SPY beta-floor projection. This is a constraint projection, not a new alpha or optimizer return-maximization step.
+
+| Variant | CAGR | Sharpe | MaxDD | Turnover | Rebalance beta violations | Max gross | Decision |
+|---|---:|---:|---:|---:|---:|---:|---|
+| B.2 no projection | `18.33%` | `1.144` | `-33.69%` | `89.62` | `90` | `1.346` | Fails beta band |
+| B.3 beta projection | `15.50%` | `1.069` | `-31.28%` | `81.67` | `0` | `1.500` | Fails CAGR tolerance |
+
+### B.3 Decision
+
+FAIL/WATCH. The projection satisfies rebalance-date gross and beta constraints and preserves turnover improvement, but the hard `0.5-0.8` beta band reduces CAGR by `2.83` percentage points versus B.2, exceeding the `2` percentage-point tolerance. Do not promote this B.3 variant as-is.
+
+Recommended next B.3 iteration:
+
+- Test a one-sided beta cap, e.g. beta `<=0.8`, instead of a hard lower floor.
+- Test a slightly wider band such as `0.4-0.9` or `0.5-0.9` before introducing a full optimizer.
+- Keep B.2 `every_2_rebalances` as the active promoted construction until a B.3 exposure-control variant clears both constraint and performance gates.
+
+---
+
 ## Phase B Exit Criteria
 
 Proceed to Phase C only if:
@@ -171,6 +206,7 @@ Proceed to Phase C only if:
 - sp500 PIT mask has three trailing zero-active dates in late April 2026; this is a data-window artifact to clean or clip.
 - Regime Sharpe remains weak in 2008 and 2022 even though regime MaxDD passes.
 - B.2 every-2-rebalances reduces turnover materially but moves MaxDD to `-33.69%`; B.3 should focus on beta/exposure shaping without chasing return.
+- B.3 hard beta band `0.5-0.8` is mechanically feasible with projection, but currently costs too much CAGR; do not promote until the band/projection policy is revised.
 - Results validated on configured ticker universe with PIT liquidity mask, not true historical index membership.
 - Historical index-membership data remains intentionally deferred; do not import it unless current-setup artifact checks become fragile.
 
@@ -183,3 +219,4 @@ Proceed to Phase C only if:
 | 2026-04-30 | B.0 baseline guard | Done | A.7.3 baseline locked; sp500 recommended validation end is `2026-04-24` unless PIT mask is refreshed |
 | 2026-04-30 | B.1 simulator reproduction | Reconciled | Production open/next-day sp500 baseline: CAGR `17.56%`, Sharpe `1.116`, MaxDD `-26.98%`; within tolerance versus lagged matrix reference, not versus unlagged A.7.3 headline |
 | 2026-05-01 | B.2 turnover control | Passed | Primary candidate `every_2_rebalances`: CAGR `18.33%`, Sharpe `1.144`, MaxDD `-33.69%`, turnover reduction `61.2%`; 50 bps Sharpe `0.999` versus same-cost baseline `0.765` |
+| 2026-05-01 | B.3 exposure control | Fail/watch | Projection satisfies gross/beta constraints but CAGR drops to `15.50%`, `2.83` pp below B.2; keep B.2 active and iterate beta policy |

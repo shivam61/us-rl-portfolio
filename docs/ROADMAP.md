@@ -11,12 +11,12 @@
 | | |
 |---|---|
 | Active phase | **Phase B** — portfolio stabilization |
-| Current step | **B.3** — exposure-constrained portfolio shaping, starting from B.2 turnover-control candidate |
+| Current step | **B.3** — revise exposure constraints after hard beta-band projection failed performance tolerance |
 | Best system so far | volatility + stress-scaled trend blend with B.2 every-2-rebalances turnover control |
 | Current headline metrics (sp500) | B.2 fast lagged frontier candidate CAGR `18.3%`, Sharpe `1.14`, MaxDD `-33.7%`, max gross `1.346`; B.1 production simulator anchor remains `17.6% / 1.12 / -27.0%` |
 | Current production alpha candidate | `volatility_score` as component only, not standalone sleeve |
 | Phase A status | A.7.3 current-setup membership/coverage artifact validation did not show strategy fragility, but B.1 found same-day signal/return alignment in the unlagged matrix headline; do not use it as a promotion baseline |
-| Blocking gate | Production validation must clip `sp500_dynamic` to `2026-04-24` or refresh PIT mask before using trailing dates; B.3 must preserve B.1/B.2 drawdown, cost, and gross-exposure profile |
+| Blocking gate | Production validation must clip `sp500_dynamic` to `2026-04-24` or refresh PIT mask before using trailing dates; hard B.3 beta band `0.5-0.8` satisfies constraints but fails CAGR tolerance |
 | sp500 baselines | Locked validation/system baseline plus B.1 production baseline — do not redefine without full diagnostics |
 
 ## Baseline Convention
@@ -36,6 +36,7 @@
 | Optimizer to=0.5 sensitivity | 11.9% | 0.68 | -40% |
 | B.1 production stress blend | 17.6% | 1.12 | -27% |
 | B.2 every-2-rebalances frontier | 18.3% | 1.14 | -34% |
+| B.3 hard beta-band projection | 15.5% | 1.07 | -31% |
 
 ---
 

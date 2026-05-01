@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-01T03:37:51+00:00
+Last updated: 2026-05-01T04:09:01+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -216,6 +216,23 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   partial-rebalance plus threshold/persistence combinations can accumulate stale residual positions and exceed max gross.
 - Next Phase B step:
   B.3 exposure-constrained portfolio shaping, using B.2 every-2-rebalances as the primary turnover-control candidate and threshold/partial rows as secondary references. Do not use B.3 as return maximization.
+- Phase B.3 exposure-constrained portfolio shaping was implemented in `scripts/run_phase_b3_exposure_control.py`.
+- B.3 artifacts were saved to:
+  `artifacts/reports/phase_b3_exposure_control.md`,
+  `artifacts/reports/constraint_violations.csv`,
+  `artifacts/reports/beta_tracking.csv`,
+  `artifacts/reports/gross_exposure.csv`,
+  plus convenience summary `artifacts/reports/phase_b3_summary.csv`.
+- B.3 preserved the constraints: no `volatility_score` change, no trend-signal change, no stress-formula change, no new alpha, RL disabled.
+- B.3 compared B.2 `every_2_rebalances` with and without projection. Projection uses scalar shaping first; if scalar scaling cannot meet beta floor inside gross `1.5`, it adds a minimal SPY beta-floor projection. This is constraint repair, not alpha.
+- B.3 result:
+  B.2 no projection remains `18.33% / 1.144 / -33.69%`, turnover `89.62`, max gross `1.346`, but has `90` rebalance-date beta-band violations.
+- B.3 projected row:
+  CAGR `15.50%`, Sharpe `1.069`, MaxDD `-31.28%`, turnover `81.67`, max gross `1.500`, rebalance-date beta violations `0`.
+- Decision:
+  B.3 is FAIL/WATCH. The hard `0.5-0.8` beta band is mechanically feasible, but it drops CAGR by `2.83` percentage points versus B.2, exceeding the `2` pp tolerance. Do not promote the projected B.3 row as-is.
+- Recommended next step:
+  stay in B.3 and test less punitive exposure policy before B.4, specifically a one-sided beta cap such as beta `<=0.8` and/or a wider beta band such as `0.4-0.9` or `0.5-0.9`. Keep B.2 `every_2_rebalances` as the active construction until B.3 clears both constraint and performance gates.
 
 ### 2026-04-29
 

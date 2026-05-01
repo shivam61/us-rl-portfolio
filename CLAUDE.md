@@ -5,11 +5,11 @@ All repo rules, workflow rules, save rules, file lookup order, roadmap-first beh
 Do not treat this file as an independent source of repo instructions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-01T03:37:51+00:00
+## Current State — 2026-05-01T04:09:01+00:00
 - Branch: `main`
-- Working tree: 0 changed path(s)
-- Dirty paths sample: none
-- Latest commit: `73f11c6d 2026-05-01 run phase b2 turnover controls`
+- Working tree: 9 changed path(s)
+- Dirty paths sample: `M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_b.md`, `?? artifacts/reports/beta_tracking.csv`, `?? artifacts/reports/constraint_violations.csv`
+- Latest commit: `738215cf 2026-05-01 refresh shared session state`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
