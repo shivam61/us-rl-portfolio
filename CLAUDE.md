@@ -5,11 +5,11 @@ All repo rules, workflow rules, save rules, file lookup order, roadmap-first beh
 Do not treat this file as an independent source of repo instructions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-01T11:23:40+00:00
+## Current State — 2026-05-01T11:44:30+00:00
 - Branch: `main`
-- Working tree: 11 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_c.md`, ` M scripts/run_phase_c1_lgbm_tuning.py`
-- Latest commit: `22ef751a 2026-05-01 optimise Phase C.1 thread allocation for 32-core machine`
+- Working tree: 14 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_c.md`, `?? artifacts/reports/anti_predictive_features.csv`
+- Latest commit: `b2682f82 2026-05-01 complete Phase C.1 LightGBM tuning — verdict REJECT`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

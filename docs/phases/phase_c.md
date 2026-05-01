@@ -84,8 +84,8 @@ C.3: run Phase B harness (b4_stress_cap_trend_boost) with C.1/C.2 signal
 |---|---|---|
 | `scripts/run_phase_c0_signal_baseline.py` | ✅ Merged into C.1 | Baseline IC measured inside `run_phase_c1_lgbm_tuning.py` |
 | `scripts/run_phase_c1_lgbm_tuning.py` | ✅ Built | Grid search + IC baseline + portfolio validation in one runner |
-| `scripts/run_phase_c2_feature_attribution.py` | ⏳ TODO | Feature importance / pruning |
-| `scripts/run_phase_c3_portfolio_validation.py` | ⏳ TODO | Phase B harness with C signal (if C.2 needed) |
+| `scripts/run_phase_c2_feature_attribution.py` | ✅ Built + Run | Feature IC attribution, anti-predictive pruning, subset IC experiments, model comparison |
+| `scripts/run_phase_c3_portfolio_validation.py` | ⏳ TODO | Portfolio validation of best C.2 signal (`simple_mean_rank`, 14 features, IC Sharpe=1.8559) |
 
 ---
 
@@ -108,5 +108,5 @@ C.3: run Phase B harness (b4_stress_cap_trend_boost) with C.1/C.2 signal
 | 2026-05-01 | Phase B gate cleared | Entry baseline locked | `b4_stress_cap_trend_boost`: CAGR `16.04%`, Sharpe `1.078`, MaxDD `-32.98%` |
 | 2026-05-01 | C.1 script written | Ready to run | `scripts/run_phase_c1_lgbm_tuning.py` — 216-combo grid, IC baseline, portfolio validation; run on n2dhighcpu-32 |
 | 2026-05-01 | C.1 grid run | **REJECT** | Best: `num_leaves=15, min_data_in_leaf=100, ff=0.6, bf=0.9`. Holdout IC Sharpe=-0.1389, Mean IC=-0.0021. Portfolio: Sharpe=1.029, MaxDD=-29.68%, Turnover=119. Gate failures: 50 bps Sharpe 0.819 (gate ≥0.884), turnover 119 (gate ≤100). Root: LightGBM negative IC on sp500; HPO cannot fix. |
-| — | C.2 feature attribution | **Not started** | Prune anti-predictive features; target positive holdout IC Sharpe |
-| — | C.3 portfolio validation | Not started | Only needed if C.2 produces positive IC |
+| 2026-05-01 | C.2 feature attribution | **POSITIVE IC FOUND** | 18/32 features anti-predictive. Top: `beta_to_spy_63d` (1.79), `downside_vol_63d` (1.78), `volatility_21d` (1.76). Best model: `simple_mean_rank` (14 features, IC Sharpe=1.8559). Vol_score_standalone=1.6682. LightGBM itself destroys signal regardless of feature selection — max IC with LGBM=1.1960 (4 vol features). |
+| — | C.3 portfolio validation | **Not started** | Validate `simple_mean_rank` (14-feature rank composite, IC Sharpe=1.8559) through B.5 harness. Must beat B.5 Sharpe 1.078. |

@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-01T11:23:40+00:00
+Last updated: 2026-05-01T11:44:30+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -296,7 +296,16 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
 - Bug fixed in runner: `_make_lgbm_params` now casts integer params (num_leaves, min_data_in_leaf) from np.float64→int; `--skip-grid` flag added to reload saved grid CSV without re-running 38-min search.
 - C.1 artifacts: `phase_c1_lgbm_tuning.md`, `ic_by_regime.csv`, `portfolio_vs_baseline.csv`, `phase_c1_grid_results.csv`.
 - Run command (re-run without grid): `.venv/bin/python scripts/run_phase_c1_lgbm_tuning.py --config config/base.yaml --universe config/universes/sp500.yaml --skip-grid`
-- **Next step: Phase C.2 — feature attribution / importance pruning.** Understand which features drive negative IC, prune anti-predictive ones, and potentially add informative features. Negative IC on sp500 is the key signal quality problem to solve. The B.5 construction harness remains frozen until a signal with positive IC is validated.
+- **Phase C.2 COMPLETE — Verdict: POSITIVE IC FOUND** (2026-05-01).
+- Script: `scripts/run_phase_c2_feature_attribution.py` — 33 signals evaluated (32 stock features + vol_score composite), completed in ~7 min on 32 cores.
+- 18/32 features anti-predictive on sp500 holdout; signal concentrated in 4 vol features.
+- Top positive-IC features (holdout IC Sharpe): beta_to_spy_63d=1.79, downside_vol_63d=1.78, volatility_21d=1.76, volatility_63d=1.76, vol_score_composite=1.67.
+- Critical insight: **LightGBM itself destroys the signal.** Vol features alone: direct rank IC Sharpe=1.668, LGBM on same=1.196. All 32 features in LGBM=-0.139. Signal is rank-linear, not tree-based.
+- Best model: **simple_mean_rank** over 14 positive-IC features → holdout IC Sharpe=1.8559 (beats vol_score 1.668).
+- 14 positive-IC features: beta_to_spy_63d, downside_vol_63d, volatility_21d, volatility_63d, liquidity_rank, avg_dollar_volume_63d, ret_12m_ex_1m, ret_12m, sector_rel_momentum_6m, trend_consistency, ma_50_200_ratio, above_200dma, ret_6m_adj, ret_6m.
+- Also: max_drawdown_63d is ANTI-PREDICTIVE (IC Sharpe=-1.40) despite being in the vol_score composite — the other 3 vol features dominate.
+- C.2 artifacts: `phase_c2_feature_attribution.md`, `feature_ic_by_regime.csv`, `feature_ic_by_period.csv`, `anti_predictive_features.csv`, `feature_subset_results.csv`, `model_sanity_comparison.csv`.
+- **Next step: Phase C.3 — portfolio validation of `simple_mean_rank` (14 features, IC Sharpe=1.8559) through unchanged B.5 harness. Gate: Sharpe ≥1.078, MaxDD ≤-32.98%, 50 bps Sharpe ≥0.884, turnover ≤100.**
 
 ### 2026-04-29
 
