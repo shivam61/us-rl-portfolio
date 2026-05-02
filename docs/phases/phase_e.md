@@ -37,20 +37,19 @@ PPO learned to approximate bounded random tilts, not a strategy.
 
 | Lever | Range | Purpose |
 |---|---|---|
-| Equity sleeve multiplier | `[0.25, 1.00]` | Reduce stock exposure in stress; re-risk in recovery |
-| Trend/hedge sleeve multiplier | `[0.00, 1.00]` | Scale up hedge when regime deteriorates |
-| Cash allocation | `[0.00, 0.60]` | Move to cash during severe stress |
-| Sector tilt (optional) | `±10%` total budget | Secondary refinement only; not primary lever |
+| Equity sleeve target proportion | `[0.25, 1.00]` | Reduce stock exposure in stress; re-risk in recovery |
+| Trend/hedge sleeve target proportion | `[0.00, 1.00]` | Scale up hedge when regime deteriorates |
+| Cash allocation target proportion | `[0.00, 0.60]` | Move to cash during severe stress |
+
+The three target proportions always sum to 1.0 via simplex projection. RL sets relative
+exposure levels, not absolute weights.
 
 Portfolio composition after RL action:
 ```
-W_equity  = equity_multiplier  × W_b5_stock_sleeve   (renormalized within-sleeve)
-W_trend   = trend_multiplier   × W_b5_trend_sleeve   (renormalized within-sleeve)
-W_cash    = residual after equity + trend (clipped to [0, 0.60])
+W_equity  = equity_frac  × W_b5_stock_sleeve   (within-sleeve vol_score proportions preserved)
+W_trend   = trend_frac   × W_b5_trend_sleeve   (within-sleeve TLT/GLD/UUP proportions preserved)
+W_cash    = cash_frac    (implicit residual; not held as an instrument)
 ```
-
-Normalization: if `W_equity + W_trend > 1.0`, rescale proportionally to sum to 1.0 then set cash=0.
-The three always sum to 1.0. RL cannot lever above 1.0 (no leverage).
 
 ---
 
@@ -87,18 +86,20 @@ W_b5_trend  = B.5 trend sleeve weights (TLT/GLD/UUP)
        │
        ▼
 RL Regime Controller (Phase E)
-  reads:  macro state + stress + portfolio state + regime features
-  outputs: equity_multiplier, trend_multiplier, cash_target
+  reads:  42-dim state (macro + trend + stress + sector signals + portfolio exposure/risk)
+  outputs: raw_action ∈ [−1,+1]^3 = [raw_equity, raw_trend, raw_cash]
        │
        ▼
-Exposure Mixer
-  W_equity  = equity_multiplier  × W_b5_stock  (renorm sum preserved)
-  W_trend   = trend_multiplier   × W_b5_trend  (renorm sum preserved)
-  W_cash    = max(0, 1.0 − sum(W_equity) − sum(W_trend))  (clipped to [0, 0.60])
-  normalize to sum = 1.0
-       │
-       ▼
-Optional: apply bounded sector tilt on equity sleeve (±10% total budget)
+Exposure Mixer (simplex projection)
+  Step 1: map raw ∈ [−1,+1] → box proportions
+          equity ∈ [0.25, 1.00]
+          trend  ∈ [0.00, 1.00]
+          cash   ∈ [0.00, 0.60]
+  Step 2: project to simplex: equity + trend + cash = 1.0
+  Step 3: scale sleeves (preserve within-sleeve proportions)
+  W_equity  = equity_frac × W_b5_stock_sleeve (renorm sum preserved)
+  W_trend   = trend_frac  × W_b5_trend_sleeve (renorm sum preserved)
+  W_cash    = implicit (1 − sum(W_equity) − sum(W_trend))
        │
        ▼
 Hard constraints (non-negotiable)
@@ -110,62 +111,81 @@ Execution Simulator
 
 ---
 
-## State Vector
+## State Vector (42 dimensions)
 
-```
-obs_dim = 5 (macro) + 1 (stress) + 3 (portfolio exposure state) + 3 (regime momentum) + 2 (portfolio risk state)
-        = 14 dimensions  (expand as needed)
-```
+`obs_dim = 42` — all features filled forward then 0 if NaN; no NaN allowed in obs.
 
-| Component | Dim | Features | Source |
-|---|---|---|---|
-| Macro | 5 | VIX 252d percentile, SPY 252d drawdown from peak, yield-curve proxy (TLT−SPY 63d mom), SPY 21d return, SPY 63d return | prices + ^VIX |
-| Stress | 1 | Current stress score (B.5 `build_stress_series`) | `build_stress_series` |
-| Portfolio exposure state | 3 | Current equity fraction, current trend fraction, current cash fraction | simulator |
-| Regime momentum | 3 | 63d realized vol of portfolio, 21d return rolling z-score, 63d return rolling z-score | simulator |
-| Portfolio risk state | 2 | Current drawdown from peak NAV, weeks since last rebalance | simulator |
+| Idx | Group | Feature | Source | Range |
+|---|---|---|---|---|
+| 0 | Market | vix_percentile_1y | `^VIX` prices, rolling 252d rank | [0,1] |
+| 1 | Market | spy_drawdown_from_peak | SPY expanding max | [−1,0] |
+| 2 | Market | spy_ret_3m | SPY pct_change(63) | float |
+| 3 | Market | spy_ret_6m | SPY pct_change(126) | float |
+| 4 | Market | realized_market_vol_63d | SPY daily ret rolling 63d std × √252 | ≥0 |
+| 5 | Size/Style | iwm_spy_spread_63d | IWM.pct_change(63) − SPY.pct_change(63) | float |
+| 6 | Size/Style | qqq_spy_spread_63d | QQQ.pct_change(63) − SPY.pct_change(63) | float |
+| 7 | Trend | tlt_ret_3m | TLT pct_change(63) | float |
+| 8 | Trend | tlt_ret_6m | TLT pct_change(126) | float |
+| 9 | Trend | gld_ret_3m | GLD pct_change(63) | float |
+| 10 | Trend | gld_ret_6m | GLD pct_change(126) | float |
+| 11 | Trend | uup_ret_3m | UUP pct_change(63); fill 0 if <63d history | float |
+| 12 | Trend | uup_ret_6m | UUP pct_change(126); fill 0 if <126d history | float |
+| 13 | Stress | stress_score | B.5 `build_stress_series`, pre-computed series | [0,1] |
+| 14–24 | Sector Mom | sector_mom_vs_spy[11] | `sector_features.sector_ret_3m[sec]` − SPY ret_3m; sectors: XLK XLF XLV XLY XLP XLE XLI XLU XLB XLRE XLC | float |
+| 25–35 | Sector Vol | sector_vol_63d[11] | `sector_features.sector_volatility_63d[sec]`; each sector (daily scale, not annualized) | ≥0 |
+| 36 | Port Exposure | current_equity_frac | passed from env step state | [0,1] |
+| 37 | Port Exposure | current_trend_frac | passed from env step state | [0,1] |
+| 38 | Port Exposure | current_cash_frac | passed from env step state | [0,1] |
+| 39 | Port Risk | portfolio_drawdown | nav_series expanding max | [−1,0] |
+| 40 | Port Risk | portfolio_vol_63d | nav daily ret rolling 63d std × √252 | ≥0 |
+| 41 | Port Risk | portfolio_ret_21d_zscore | 21d ret z-scored over 252d window, clip [−3,3] | [−3,3] |
 
-Note: sector vol_score signals (11-dim from Phase D) are dropped — they were inputs to sector tilt
-which is now a secondary lever, not the primary action.
-
----
-
-## Action Space
-
-```
-action_dim = 3  (equity_multiplier, trend_multiplier, cash_target)
-raw ∈ [−1, +1] (mapped to valid ranges below)
-```
-
-| Component | Raw | Applied | Constraint |
-|---|---|---|---|
-| `equity_multiplier` | [−1, +1] | [0.25, 1.00] | Cannot lever; floor 0.25 prevents full de-risking in single step |
-| `trend_multiplier` | [−1, +1] | [0.00, 1.00] | Can go to zero hedge or full hedge |
-| `cash_target` | [−1, +1] | [0.00, 0.60] | Max cash 60%; prevents hiding entirely in cash |
-
-After applying all three, the Exposure Mixer normalizes to sum=1.0. The RL action defines
-relative proportions, not absolute weights.
+`sector_features_df` is loaded once at env init from `data/features/sector_features.parquet`
+and passed as an arg — not re-read per step.
 
 ---
 
-## Reward Function
+## Action Space (3 dimensions)
 
 ```
-reward_t = α × sharpe_63d(portfolio_returns)
-         + β × drawdown_recovery_bonus(peak_nav, current_nav)
-         − γ × max(0, drawdown_63d)
-         − δ × |Δ_equity_multiplier|
+action_dim = 3  (raw_equity, raw_trend, raw_cash)
+raw ∈ [−1, +1]^3 → mapped to target proportions via simplex projection
 ```
 
-| Term | Coefficient | Rationale |
+| Component | Raw | Box mapping | Simplex constraint |
+|---|---|---|---|
+| `equity_target` | [−1, +1] | [0.25, 1.00] | equity + trend + cash = 1.0 |
+| `trend_target` | [−1, +1] | [0.00, 1.00] | — |
+| `cash_target` | [−1, +1] | [0.00, 0.60] | — |
+
+**Why simplex projection, not independent normalization:**
+If equity and trend are both mapped high, naive normalization would unpredictably collapse one.
+Simplex projection treats all three proportionally, preserving the ordering of the RL's raw signal.
+See `src/rl/exposure_mix.py` for the full 5-step algorithm.
+
+---
+
+## Reward Function (5 terms)
+
+```
+reward_t = sharpe_63d(daily_returns)
+         + 0.10 × recovery_bonus(portfolio_nav)
+         − 0.15 × max(0.0, −drawdown_from_peak(portfolio_nav))
+         − 0.03 × cash_frac × bull_regime_indicator
+         − 0.02 × |equity_frac − prev_equity_frac|
+```
+
+| Term | Coeff | Rationale |
 |---|---|---|
-| `sharpe_63d` | α = 1.0 | Longer window (63d vs 21d in Phase D) to capture regime transitions |
-| `drawdown_recovery_bonus` | β = 0.10 | Positive reward when portfolio recovers from trough; encourages re-risking |
-| `max(0, drawdown_63d)` | γ = 0.15 | Penalises cumulative losses; stronger than Phase D (0.05) because RL now has real de-risking levers |
-| `|Δ_equity_multiplier|` | δ = 0.02 | Discourages excessive churn in equity exposure; does not penalise drift |
+| `sharpe_63d` | 1.0 | 63d window (vs 21d in Phase D) to capture full regime transitions |
+| `recovery_bonus` | 0.10 | `max(0, (nav_now − trough) / trough)` over last 63 NAV points; rewards rising from recent trough |
+| `drawdown_penalty` | λ_dd=0.15 | `max(0.0, −drawdown_from_peak)` — drawdown stored negative; negation makes penalty positive (CORRECTED sign; Phase D spec had bug `max(0, drawdown_63d)` always returning 0) |
+| `cash_drag` | λ_cash=0.03 | `cash_frac × bull_indicator`; fires ONLY when `spy_trend_positive AND stress < 0.30`; prevents RL hiding in cash to avoid drawdown penalty |
+| `churn_penalty` | λ_churn=0.02 | `|equity_frac − prev_equity_frac|`; discourages excessive equity exposure flipping |
 
-No raw-return reward. Prevents the agent learning to lever or momentum-chase.
-63d window is ~3 months — long enough to see a full regime episode but short enough to give credit signal.
+`spy_trend_positive = SPY 63d return > 0` — precomputed in env, passed as bool per step.
+
+**Guard:** If `portfolio_nav.iloc[−1] ≤ 0`, return `−1.0`.
 
 ---
 
@@ -173,9 +193,12 @@ No raw-return reward. Prevents the agent learning to lever or momentum-chase.
 
 | Window | Purpose |
 |---|---|
-| 2008–2016 | RL training episodes (same as Phase D — includes 2008 crisis, 2010–2013 recovery, 2015–2016 volatility) |
+| 2008–2016 | RL training episodes (includes 2008 crisis, 2010–2013 recovery, 2015–2016 volatility) |
 | 2017–2018 | Validation / early stopping |
 | 2019–2026-04-24 | **Holdout** — fixed; never touched during training; matches Phase B.5/C/D evaluation window |
+
+**No walk-forward retraining in Phase E.** Fixed window only (2008–2016 train).
+Walk-forward RL retrain (expanding window, every 2 years) is deferred to Phase E+ or later.
 
 ---
 
@@ -189,38 +212,79 @@ No raw-return reward. Prevents the agent learning to lever or momentum-chase.
 | E.3 | Build Phase E RL environment | `src/rl/environment_v2.py` |
 | E.4 | Phase E reward function | `src/rl/reward_v2.py` |
 | E.5 | PPO training on Phase E env | `scripts/train_rl_v2.py` |
-| E.6 | E vs B.5 four-way comparison on holdout | `scripts/run_rl_backtest_v2.py` |
+| E.6 | Five-way comparison on holdout | `scripts/run_rl_backtest_v2.py` |
+
+E.1–E.3 are independent and can be developed in parallel. E.4 depends on E.1+E.2+E.3.
+E.5 depends on E.4. E.6 depends on E.4 + trained model from E.5.
 
 ---
 
-## E.6 Four-Way Comparison (mandatory)
+## E.6 Five-Way Comparison (mandatory)
 
 | Policy | Description |
 |---|---|
 | **B.5 locked** | No RL; B.5 harness only |
-| **RL no-op** | Equity=1.0, trend=1.0, cash=0.0 (pass-through; same as B.5) |
-| **Random bounded** | Random equity_mult ∈ [0.25,1.0], trend_mult ∈ [0.0,1.0], cash ∈ [0.0,0.60]; 50 seeds |
-| **Trained Phase E RL** | PPO policy trained on 2008–2016 with Phase E env + reward |
+| **RL no-op** | `raw_action=[1,−1,−1]` → equity≈1, trend≈0, cash≈0; expected to differ slightly from B.5 due to rounding |
+| **Random bounded (50 seeds)** | `rng.uniform(−1,+1,3)` per step; report mean + **median** + p25/p75/p90/p95 |
+| **Rule-based controller** | Hard-coded VIX+SPY regime table (see below) |
+| **Trained Phase E RL** | PPO policy loaded from `artifacts/models/rl_e_ppo_best.zip` |
 
-No RL improvement is valid unless it beats both no-op and random baselines.
+### Rule-Based Controller (VIX + SPY regime table)
+
+Uses three signals from the 42-dim state at each step:
+- `obs[0]` = `vix_percentile_1y`
+- `obs[1]` = `spy_drawdown_from_peak` (negative; e.g. −0.20 = 20% below peak)
+- `obs[2]` = `spy_ret_3m` (SPY 63d return; negative = downtrend)
+
+```python
+# Stress tier 1 — high stress: high VIX OR deep SPY drawdown
+if vix_pct > 0.75 or spy_dd < -0.15:
+    equity, trend, cash = 0.50, 0.40, 0.10
+
+# Stress tier 2 — moderate stress: elevated VIX OR SPY in downtrend
+elif vix_pct > 0.50 or spy_ret_3m < 0.0:
+    equity, trend, cash = 0.70, 0.20, 0.10
+
+# Benign regime
+else:
+    equity, trend, cash = 0.85, 0.10, 0.05
+```
+
+**Why SPY drawdown AND VIX (not VIX-only):** VIX can normalize after the initial shock while
+prices remain depressed (e.g. late 2009, 2023). The `spy_dd < -0.15` tier catches sustained bear
+markets that VIX alone misses. `spy_ret_3m < 0` catches early-stage deterioration before VIX spikes.
+
+Targets are reverse-mapped to raw actions via the inverse of the box-mapping formula,
+then fed through `apply_exposure_mix` normally.
 
 ---
 
 ## Promotion Gate
 
-Promote Phase E RL only if **all** of the following hold on 2019–2026-04-24 holdout.
+Promote Phase E RL only if **all required gates** hold on 2019–2026-04-24 holdout.
 
-**Locked B.5 holdout benchmark:** Sharpe = `1.270`, MaxDD = `−32.98%`, 50 bps Sharpe = `1.135`.
+**Locked B.5 holdout benchmark:** Sharpe `1.270`, MaxDD `−32.98%`, 50 bps Sharpe `1.135`.
 
-| Condition | Target |
-|---|---|
-| Path A — clear Sharpe win | Sharpe ≥ 1.270 AND MaxDD ≥ −32.98% |
-| Path B — tail improvement | Sharpe ≥ 1.240 AND MaxDD ≥ −31.48% (i.e. ≥ B.5 holdout + 1.5pp) |
-| Either path also requires | 50 bps Sharpe ≥ 0.90 |
-| Either path also requires | Beats RL no-op AND random bounded on holdout Sharpe |
-| Hard rejections | MaxDD < −35%, OR any beta violation, OR max gross > 1.50 |
+| # | Gate | Type | Target |
+|---|---|---|---|
+| 1 | Path A: Sharpe ≥ 1.270 AND MaxDD ≥ −32.98% | Required (either path) | Clear Sharpe win |
+| 2 | Path B: Sharpe ≥ 1.240 AND MaxDD ≥ −31.48% | Required (either path) | Tail improvement |
+| 3 | 50 bps Sharpe ≥ 0.90 | Required | Cost robustness |
+| 4 | Beats RL no-op Sharpe | Required | Baseline skill |
+| 5 | Beats random bounded **median** Sharpe | **Hard minimum** | Mandatory floor |
+| 6 | Beats random bounded **p75** Sharpe | **Preferred** | Stronger skill signal |
+| 7 | **Beats rule-based controller Sharpe** | Required | Strategy skill above heuristic |
+| 8 | MaxDD ≥ −35% | Hard rejection | No blowup |
 
-Same gate structure as Phase D. Phase E has more room to pass (wider action space) but the bar is the same.
+**Random gate logic:**
+- Gate 5 (median) is a hard requirement — failing it means the RL is not demonstrably better than random.
+- Gate 6 (p75) is preferred but not blocking. If RL passes median and p75, it is a clean promotion.
+  If RL passes median but not p75, report it as a "conditional pass" and flag in the verdict.
+- p90/p95 are reported for information only; not a gate.
+
+**Why p75 not p95:** p95 may be too harsh if random occasionally gets lucky across 50 seeds on a
+favorable holdout. p75 requires RL to beat three-quarters of random seeds — a meaningful skill test
+without being unreasonably strict.
 
 ---
 
@@ -228,15 +292,20 @@ Same gate structure as Phase D. Phase E has more room to pass (wider action spac
 
 | Decision | What was rejected | Rationale |
 |---|---|---|
-| Exposure control (equity/trend/cash) | Sector tilts as primary lever | Phase D showed sector tilts too small to express regime switching |
+| Target proportions (equity/trend/cash) summing to 1.0 via simplex projection | Multipliers (equity_mult, trend_mult, cash_target) | With multipliers, if equity+trend > 1.0, cash becomes meaningless (absorbed into normalization). Simplex projection treats all three proportionally. |
 | action_dim=3 | action_dim=14 (full sector tilt set) | Simpler action → better credit assignment; sector tilt is secondary |
 | 63d reward window | 21d (Phase D) | 21d too short to see regime transitions; 63d ≈ one quarter |
-| Drawdown recovery bonus | Sharpe-only | Recovery bonus explicitly incentivises re-risking after a drawdown bottom |
-| Stronger drawdown penalty (γ=0.15) | γ=0.05 (Phase D) | RL now has full de-risking levers; must be penalised meaningfully for sitting in drawdown |
+| Cash-drag penalty (bull regimes only) | No cash penalty | Without it, RL can hide in cash to avoid drawdown penalty; fires only when `spy_trend_positive AND stress < 0.30` |
+| Drawdown penalty: `max(0.0, −drawdown_from_peak)` | `max(0, drawdown_63d)` (Phase D spec bug) | drawdown stored negative, so `max(0, drawdown)` always returns 0. Negation corrects the sign. |
+| Recovery bonus (0.10) | Sharpe-only | Explicitly incentivises re-risking after a drawdown bottom |
+| Stronger drawdown penalty (λ_dd=0.15) | λ=0.05 (Phase D) | RL now has full de-risking levers; must be penalised meaningfully for sitting in drawdown |
 | Within-sleeve proportions preserved | RL changes stock weights directly | vol_score selects stocks; RL controls exposure level only |
 | Cash cap 0.60 | Unlimited cash | Prevents RL hiding entirely in cash to avoid drawdown penalty |
 | Equity floor 0.25 | Equity can go to 0 | Prevents catastrophic single-step de-risk; smoother regime transitions |
-| Trend multiplier ∈ [0.0, 1.0] | Trend frozen (Phase D) | Trend sleeve is the primary hedge; RL must be able to scale it to get credit for hedging |
+| 42-dim state (sector features included) | 14-dim state (no sector features) | Sector momentum vs SPY and sector volatility add regime-differentiation signal without lookahead bias; data confirmed available via `sector_features.parquet` |
+| Rule-based controller (VIX+SPY) as required baseline | VIX-only | VIX-only is too naive; SPY drawdown catches sustained bear markets; SPY 3m momentum catches early-stage deterioration |
+| Random gate: median required, p75 preferred | Mean gate (Phase D) | Mean was susceptible to lucky outlier seeds; median is the true central tendency; p75 adds meaningful skill threshold |
+| Fixed training window (2008–2016) | Walk-forward retraining | Walk-forward adds complexity and overfit risk; Phase E focuses on fixed-window correctness first |
 | B.4 hard constraints after RL | RL can override beta cap | Non-negotiable |
 
 ---
@@ -246,4 +315,5 @@ Same gate structure as Phase D. Phase E has more room to pass (wider action spac
 | Date | Step | Result | Notes |
 |---|---|---|---|
 | 2026-05-02 | Phase D closed | Entry gate cleared | Phase D REJECT — sector tilts too constrained; trained RL could not beat random bounded. B.5 holdout Sharpe `1.270`, MaxDD `−32.98%`. |
-| 2026-05-02 | Phase E spec | Agreed | Wider action space: equity/trend/cash exposure control. 63d reward. Recovery bonus. B.5 remains production. |
+| 2026-05-02 | Phase E spec | Agreed (revised) | Wider action space: equity/trend/cash exposure control via simplex projection. 42-dim state. 5-term reward (63d Sharpe + recovery bonus + drawdown penalty + cash drag + churn). Five-way comparison with rule-based (VIX+SPY) baseline. B.5 remains production. |
+| 2026-05-02 | E.1–E.6 implemented | Complete | All 6 files built: `state_builder_v2.py`, `exposure_mix.py`, `reward_v2.py`, `environment_v2.py`, `train_rl_v2.py`, `run_rl_backtest_v2.py`. Pending: smoke test, full training, E.6 evaluation. |

@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-02T09:59:57+00:00
+## Current State — 2026-05-02T10:00:31+00:00
 - Branch: `main`
-- Working tree: 17 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_d.md`
-- Latest commit: `0fd4284c 2026-05-02 fix cost-parity in D.6: RL env tracks turnover, post-hoc cost adjustment in backtest`
+- Working tree: 5 changed path(s)
+- Dirty paths sample: `?? artifacts/reports/phase_c1_run.log`, `?? artifacts/reports/phase_c1_run2.log`, `?? artifacts/reports/phase_c2_run.log`, `?? artifacts/reports/phase_d5_training_log_run.log`, `?? artifacts/reports/phase_d6_run.log`
+- Latest commit: `473a1766 2026-05-02 close Phase D (REJECT) and open Phase E — RL Regime Controller v2`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

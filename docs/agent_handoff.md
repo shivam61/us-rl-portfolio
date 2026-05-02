@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-02T09:59:57+00:00
+Last updated: 2026-05-02T10:00:31+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -650,7 +650,54 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
 #### Phase D — Status and Next Steps
 - Phase D is functionally complete. The RL overlay experiment was run to conclusion.
 - B.5 (`b4_stress_cap_trend_boost`, sp500, 2008–2026) remains the locked production system: CAGR `16.04%`, Sharpe `1.078`, MaxDD `-32.98%`.
-- Potential next directions (not yet prioritized):
-  1. Improve RL reward shaping or state representation and retrain (longer patience, regime-conditioned reward, richer state).
-  2. Accept the tail-protection benefit and promote a drawdown-weighted variant (if that becomes the objective).
-  3. Close Phase D and move to the next research phase (new alpha signal, execution cost model, live-data integration).
+- Phase D CLOSED. Root cause: sector-tilt action space too constrained for genuine regime switching.
+
+### 2026-05-02 — Phase E Implementation (E.1–E.6 complete)
+
+Phase E redesigns the RL action space from sector tilts (12-dim, ±15%) to explicit exposure control
+(3-dim: equity/trend/cash target proportions via simplex projection).
+
+#### Key Design Decisions (Final Agreed Spec)
+
+1. **Action space:** 3-dim raw ∈ [−1,+1] mapped to target proportions (equity ∈ [0.25,1.0],
+   trend ∈ [0.0,1.0], cash ∈ [0.0,0.60]) via simplex projection so all three always sum to 1.0.
+   Simplex projection (not independent normalization) ensures cash is not silently absorbed when
+   equity + trend > 1.0.
+
+2. **State vector:** 42-dim (vs 14-dim in Phase D). New groups added:
+   - Size/style spreads: IWM−SPY and QQQ−SPY 63d momentum (dims 5–6)
+   - Trend asset returns: TLT/GLD/UUP 3m+6m (dims 7–12)
+   - Sector momentum vs SPY for 11 SPDR sectors (dims 14–24) from `sector_features.parquet`
+   - Sector volatility 63d for 11 sectors (dims 25–35) from same parquet
+   - Portfolio exposure fracs (dims 36–38) and portfolio risk (dims 39–41)
+
+3. **Reward (5 terms):**
+   - Term 1: `sharpe_63d` (63d vs 21d in Phase D; longer to capture regime transitions)
+   - Term 2: `+0.10 × recovery_bonus` (incentivises re-risking after trough)
+   - Term 3: `−0.15 × max(0.0, −drawdown_from_peak)` — CORRECTED sign (Phase D bug had `max(0, drawdown)` always 0)
+   - Term 4: `−0.03 × cash_frac × bull_indicator` (fires only when spy_trend_positive AND stress < 0.30)
+   - Term 5: `−0.02 × |equity_frac − prev_equity_frac|` (churn penalty)
+
+4. **Five-way E.6 comparison:** B.5 locked / RL no-op / random bounded (50 seeds) / **rule-based VIX+SPY controller** / trained Phase E RL.
+   - Rule-based: tier-1 (vix_pct > 0.75 OR spy_dd < -0.15) → 50/40/10; tier-2 (vix_pct > 0.50 OR spy_ret_3m < 0) → 70/20/10; benign → 85/10/5.
+   - Why VIX + SPY (not VIX-only): SPY drawdown catches sustained bear markets where VIX has normalized but prices remain depressed.
+
+5. **Random gates:** median = hard minimum (Gate 5), p75 = preferred (Gate 6, conditional pass if failed but median passes). NOT p95.
+
+6. **No walk-forward retraining** in Phase E. Fixed window: 2008–2016 train, 2017–2018 val. Walk-forward deferred.
+
+#### Files Implemented
+
+| File | Phase | Status |
+|---|---|---|
+| `src/rl/state_builder_v2.py` | E.1 | ✅ Complete |
+| `src/rl/exposure_mix.py` | E.2 | ✅ Complete |
+| `src/rl/reward_v2.py` | E.3/E.4 | ✅ Complete |
+| `src/rl/environment_v2.py` | E.3 | ✅ Complete |
+| `scripts/train_rl_v2.py` | E.5 | ✅ Complete |
+| `scripts/run_rl_backtest_v2.py` | E.6 | ✅ Complete |
+
+#### Next Steps
+1. Smoke test: `.venv/bin/python scripts/train_rl_v2.py --total-timesteps 2000 --eval-freq 500 --universe config/universes/sp100.yaml`
+2. Full training: `.venv/bin/python scripts/train_rl_v2.py` (~60–90 min; outputs `artifacts/models/rl_e_ppo_best.zip`)
+3. E.6 evaluation: `.venv/bin/python scripts/run_rl_backtest_v2.py` (after training)
