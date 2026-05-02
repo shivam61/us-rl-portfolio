@@ -119,54 +119,105 @@ def _run_env_policy(
     env: PortfolioEnv,
     action_fn,
     label: str,
-    cost_bps: float = B1_COST_BPS,
-) -> tuple[pd.Series, list, list]:
-    """Run a policy on env, collect daily returns, tilt magnitudes."""
+) -> tuple[pd.Series, pd.Series, list]:
+    """Run a policy on env; return (daily_returns, daily_turnover, tilt_mags).
+
+    The env must be constructed with cost_bps=0 so raw returns are returned.
+    Costs are applied post-hoc via _cost_adjusted_metrics for flexibility.
+    The daily_turnover Series has non-zero values only on the first trading day
+    of each rebalance interval (matching compute_net_returns convention).
+    """
     obs, _ = env.reset()
-    all_tilts = []
-    rebalance_dates = []
     done = False
     ep_tilts_mag = []
-    step_dates = []
+    # Per-step: first trading day after rebalance → turnover
+    step_turnover: dict[pd.Timestamp, float] = {}
 
     while not done:
         action = action_fn(obs)
         obs, _reward, terminated, truncated, info = env.step(action)
         done = terminated or truncated
         ep_tilts_mag.append(float(np.mean(np.abs(info["applied_tilts"]))))
-        step_dates.append(info["date"])
-        all_tilts.append(info["applied_tilts"])
+        # next_date is the start of the next interval; prices are returned from
+        # (current_date, next_date], so the first price day is current_date+1.
+        # We record turnover on that date.
+        current_dt = pd.Timestamp(info["date"])
+        prices_idx = env.prices.index
+        first_day_idx = prices_idx.searchsorted(current_dt, side="right")
+        if first_day_idx < len(prices_idx):
+            step_turnover[prices_idx[first_day_idx]] = info["turnover"]
 
-    # Reconstruct daily returns from the NAV series collected
+    # Raw daily returns from the accumulated NAV series (env was run with cost_bps=0)
     nav = env._nav_series
     daily_returns = nav.pct_change().dropna()
-    return daily_returns, ep_tilts_mag, all_tilts
+
+    # Align turnover to full daily return index
+    daily_turnover = pd.Series(0.0, index=daily_returns.index)
+    for d, to in step_turnover.items():
+        if d in daily_turnover.index:
+            daily_turnover[d] = to
+
+    return daily_returns, daily_turnover, ep_tilts_mag
+
+
+def _cost_adjusted_metrics(
+    raw_returns: pd.Series,
+    daily_turnover: pd.Series,
+    cost_bps: float,
+    start: str,
+    end: str,
+) -> dict:
+    """Apply transaction costs post-hoc and compute holdout metrics."""
+    aligned_turnover = daily_turnover.reindex(raw_returns.index).fillna(0.0)
+    cost_factor = (1.0 - aligned_turnover * cost_bps / 10_000.0).clip(lower=0.0)
+    adj_returns = cost_factor * (1.0 + raw_returns) - 1.0
+    return _metrics_window(adj_returns, start, end)
+
+
+def _cost_sensitivity(
+    raw_returns: pd.Series,
+    daily_turnover: pd.Series,
+    cost_bps_list: list[float] = COST_BPS,
+) -> pd.DataFrame:
+    rows = []
+    for bps in cost_bps_list:
+        m = _cost_adjusted_metrics(raw_returns, daily_turnover, bps, HOLDOUT_START, HOLDOUT_END)
+        rows.append({"cost_bps": bps, "cagr": m["cagr"], "sharpe": m["sharpe"], "max_dd": m["max_dd"]})
+    return pd.DataFrame(rows)
 
 
 def run_noop_policy(
     inputs: dict,
     b5_weights_df: pd.DataFrame,
     rebalance_dates: list | None = None,
+    primary_cost_bps: float = B1_COST_BPS,
 ) -> dict:
-    """RL no-op: zero tilts + max aggressiveness (action[11]=1.0)."""
-    env = PortfolioEnv(inputs, b5_weights_df, start_date=HOLDOUT_START, end_date=HOLDOUT_END, rebalance_dates=rebalance_dates)
-
+    """RL no-op: zero tilts + max aggressiveness (action[11]=1.0).
+    Env runs at cost_bps=0; costs applied post-hoc for cost sensitivity.
+    """
+    env = PortfolioEnv(
+        inputs, b5_weights_df,
+        start_date=HOLDOUT_START, end_date=HOLDOUT_END,
+        rebalance_dates=rebalance_dates, cost_bps=0.0,
+    )
     noop_action = np.zeros(12, dtype=np.float32)
-    noop_action[11] = 1.0  # max aggressiveness → no stock sleeve reduction
+    noop_action[11] = 1.0
 
     def action_fn(_obs):
         return noop_action
 
-    daily_returns, tilt_mags, _ = _run_env_policy(env, action_fn, "RL no-op")
-
-    m = _metrics_window(daily_returns, HOLDOUT_START, HOLDOUT_END)
+    raw_returns, daily_turnover, tilt_mags = _run_env_policy(env, action_fn, "RL no-op")
+    m = _cost_adjusted_metrics(raw_returns, daily_turnover, primary_cost_bps, HOLDOUT_START, HOLDOUT_END)
+    cost_df = _cost_sensitivity(raw_returns, daily_turnover)
     return {
         "policy": "RL no-op",
         "sharpe": m["sharpe"],
         "cagr": m["cagr"],
         "max_dd": m["max_dd"],
         "avg_tilt_magnitude": float(np.mean(tilt_mags)) if tilt_mags else 0.0,
-        "net_returns": daily_returns,
+        "raw_returns": raw_returns,
+        "daily_turnover": daily_turnover,
+        "cost_sensitivity": cost_df,
     }
 
 
@@ -175,34 +226,43 @@ def run_random_policy(
     b5_weights_df: pd.DataFrame,
     n_seeds: int = RANDOM_SEEDS,
     rebalance_dates: list | None = None,
+    primary_cost_bps: float = B1_COST_BPS,
 ) -> dict:
-    """Random bounded: average over n_seeds seeds."""
-    all_sharpes = []
-    all_cagrs = []
-    all_maxdds = []
-    all_tilt_mags = []
+    """Random bounded: average over n_seeds seeds, with post-hoc cost applied."""
+    all_sharpes, all_cagrs, all_maxdds, all_tilt_mags = [], [], [], []
+    all_cost_dfs = []
 
     for seed in range(n_seeds):
         rng = np.random.default_rng(seed)
-        env = PortfolioEnv(inputs, b5_weights_df, start_date=HOLDOUT_START, end_date=HOLDOUT_END, rebalance_dates=rebalance_dates)
+        env = PortfolioEnv(
+            inputs, b5_weights_df,
+            start_date=HOLDOUT_START, end_date=HOLDOUT_END,
+            rebalance_dates=rebalance_dates, cost_bps=0.0,
+        )
 
         def action_fn(_obs, _rng=rng):
             tilts = _rng.uniform(-1, 1, 11).astype(np.float32)
             agg = _rng.uniform(0.75, 1.0)
-            agg_raw = float(2.0 * (agg - 0.75) / 0.25 - 1.0)  # map [0.75,1.0] → [-1,1]
-            action = np.append(tilts, agg_raw).astype(np.float32)
-            return action
+            agg_raw = float(2.0 * (agg - 0.75) / 0.25 - 1.0)
+            return np.append(tilts, agg_raw).astype(np.float32)
 
-        daily_returns, tilt_mags, _ = _run_env_policy(env, action_fn, f"random-{seed}")
-        m = _metrics_window(daily_returns, HOLDOUT_START, HOLDOUT_END)
+        raw_returns, daily_turnover, tilt_mags = _run_env_policy(env, action_fn, f"random-{seed}")
+        m = _cost_adjusted_metrics(raw_returns, daily_turnover, primary_cost_bps, HOLDOUT_START, HOLDOUT_END)
         all_sharpes.append(m["sharpe"])
         all_cagrs.append(m["cagr"])
         all_maxdds.append(m["max_dd"])
         all_tilt_mags.extend(tilt_mags)
+        all_cost_dfs.append(_cost_sensitivity(raw_returns, daily_turnover))
 
     def _safe_mean(vals):
         valid = [v for v in vals if np.isfinite(v)]
         return float(np.mean(valid)) if valid else np.nan
+
+    # Average cost sensitivity across seeds
+    if all_cost_dfs:
+        cost_df = pd.concat(all_cost_dfs).groupby("cost_bps").mean().reset_index()
+    else:
+        cost_df = pd.DataFrame()
 
     return {
         "policy": f"Random bounded ({n_seeds} seeds)",
@@ -211,7 +271,8 @@ def run_random_policy(
         "max_dd": _safe_mean(all_maxdds),
         "avg_tilt_magnitude": _safe_mean(all_tilt_mags),
         "sharpe_std": float(np.nanstd(all_sharpes)),
-        "net_returns": None,
+        "raw_returns": None,
+        "cost_sensitivity": cost_df,
     }
 
 
@@ -220,37 +281,45 @@ def run_trained_rl(
     b5_weights_df: pd.DataFrame,
     model_path: Path,
     rebalance_dates: list | None = None,
+    primary_cost_bps: float = B1_COST_BPS,
 ) -> dict:
-    """Trained RL: load best checkpoint, run on holdout without retraining."""
+    """Trained RL: load best checkpoint, run on holdout without retraining.
+    Env runs at cost_bps=0; costs applied post-hoc.
+    """
     from stable_baselines3 import PPO
 
     if not model_path.exists():
         logger.warning("Model not found at %s — skipping trained RL", model_path)
         return {
             "policy": "Trained RL",
-            "sharpe": np.nan,
-            "cagr": np.nan,
-            "max_dd": np.nan,
-            "avg_tilt_magnitude": np.nan,
-            "net_returns": None,
+            "sharpe": np.nan, "cagr": np.nan, "max_dd": np.nan,
+            "avg_tilt_magnitude": np.nan, "raw_returns": None,
+            "cost_sensitivity": pd.DataFrame(),
         }
 
     model = PPO.load(str(model_path))
-    env = PortfolioEnv(inputs, b5_weights_df, start_date=HOLDOUT_START, end_date=HOLDOUT_END, rebalance_dates=rebalance_dates)
+    env = PortfolioEnv(
+        inputs, b5_weights_df,
+        start_date=HOLDOUT_START, end_date=HOLDOUT_END,
+        rebalance_dates=rebalance_dates, cost_bps=0.0,
+    )
 
     def action_fn(obs):
         action, _ = model.predict(obs, deterministic=True)
         return action
 
-    daily_returns, tilt_mags, _ = _run_env_policy(env, action_fn, "Trained RL")
-    m = _metrics_window(daily_returns, HOLDOUT_START, HOLDOUT_END)
+    raw_returns, daily_turnover, tilt_mags = _run_env_policy(env, action_fn, "Trained RL")
+    m = _cost_adjusted_metrics(raw_returns, daily_turnover, primary_cost_bps, HOLDOUT_START, HOLDOUT_END)
+    cost_df = _cost_sensitivity(raw_returns, daily_turnover)
     return {
         "policy": "Trained RL",
         "sharpe": m["sharpe"],
         "cagr": m["cagr"],
         "max_dd": m["max_dd"],
         "avg_tilt_magnitude": float(np.mean(tilt_mags)) if tilt_mags else np.nan,
-        "net_returns": daily_returns,
+        "raw_returns": raw_returns,
+        "daily_turnover": daily_turnover,
+        "cost_sensitivity": cost_df,
     }
 
 
@@ -264,6 +333,7 @@ def evaluate_promotion_gates(
     random_result: dict,
     b5_locked_result: dict,
     sharpe_50bps: float,
+    cost_bps: float = B1_COST_BPS,
 ) -> pd.DataFrame:
     rl_sharpe = rl_result["sharpe"]
     rl_maxdd = rl_result["max_dd"]
@@ -342,9 +412,17 @@ def render_report(
     trained: dict,
     regime_df: pd.DataFrame,
     gates_df: pd.DataFrame,
+    primary_cost_bps: float = B1_COST_BPS,
 ) -> str:
     promoted = bool(gates_df["promoted"].any())
     verdict = "**PROMOTE trained RL**" if promoted else "**REJECT trained RL — keep B.5 as production system**"
+
+    def _s(v): return f"{v:.3f}" if np.isfinite(v) else "N/A"
+    def _p(v): return f"{v:.2%}" if np.isfinite(v) else "N/A"
+
+    # No-op ≈ B.5 equivalence
+    noop_b5_diff = abs(noop.get("sharpe", np.nan) - b5.get("sharpe", np.nan))
+    noop_check = "PASS" if np.isfinite(noop_b5_diff) and noop_b5_diff < 0.05 else "WARN"
 
     lines = [
         "# Phase D.6 — RL vs B.5 Four-Way Comparison",
@@ -352,27 +430,65 @@ def render_report(
         f"- Run date: {pd.Timestamp.now('UTC').strftime('%Y-%m-%d %H:%M:%S %Z')}",
         f"- Holdout window: {HOLDOUT_START} → {HOLDOUT_END}",
         f"- B.5 holdout benchmark (D.0): Sharpe {D0_HOLDOUT_SHARPE:.3f}, MaxDD {D0_HOLDOUT_MAXDD:.2%}",
+        f"- Primary comparison cost: {primary_cost_bps:.0f} bps (same basis for all policies)",
+        f"- Cost methodology: B.5 locked via compute_net_returns; RL policies via post-hoc",
+        f"  turnover-based deduction. RL env trained at cost_bps=0 (tilt penalty approximates cost).",
         "",
         f"## Verdict: {verdict}",
         "",
-        "## Policy Comparison (10 bps, holdout only)",
+        "## Sanity Check: No-op ≈ B.5 Locked",
+        "",
+        f"| Check | B.5 Sharpe | No-op Sharpe | Diff | Status |",
+        f"|---|---|---|---|---|",
+        f"| No-op should reproduce B.5 at same cost | {_s(b5.get('sharpe', np.nan))} | "
+        f"{_s(noop.get('sharpe', np.nan))} | {noop_b5_diff:.3f} | {noop_check} |",
+        "",
+        "> If diff > 0.05, the env's return simulation diverges from compute_net_returns.",
+        "> Expected small diff due to: daily price differences, B.4 single-date vs full-period",
+        "> application. Diff > 0.10 would indicate a bug.",
+        "",
+        f"## Policy Comparison ({primary_cost_bps:.0f} bps, holdout 2019–2026)",
         "",
     ]
 
     rows = []
     for r in [b5, noop, random, trained]:
-        sharpe_str = f"{r['sharpe']:.3f}" if np.isfinite(r.get("sharpe", np.nan)) else "N/A"
-        cagr_str = f"{r['cagr']:.2%}" if np.isfinite(r.get("cagr", np.nan)) else "N/A"
-        maxdd_str = f"{r['max_dd']:.2%}" if np.isfinite(r.get("max_dd", np.nan)) else "N/A"
-        tilt_str = f"{r['avg_tilt_magnitude']:.4f}" if np.isfinite(r.get("avg_tilt_magnitude", np.nan)) else "—"
         rows.append({
             "Policy": r["policy"],
-            "CAGR": cagr_str,
-            "Sharpe": sharpe_str,
-            "MaxDD": maxdd_str,
-            "Avg |tilt|": tilt_str,
+            "CAGR": _p(r.get("cagr", np.nan)),
+            "Sharpe": _s(r.get("sharpe", np.nan)),
+            "MaxDD": _p(r.get("max_dd", np.nan)),
+            "Avg |tilt|": f"{r['avg_tilt_magnitude']:.4f}" if np.isfinite(r.get("avg_tilt_magnitude", np.nan)) else "—",
         })
     lines.append(pd.DataFrame(rows).to_markdown(index=False))
+    lines.append("")
+
+    # Cost sensitivity tables for each policy
+    lines += ["## Cost Sensitivity (all policies, post-hoc cost adjustment)", ""]
+    lines += [
+        "> B.5 locked: exact costs from compute_net_returns.",
+        "> RL policies: costs applied post-hoc from turnover recorded during episode.",
+        "",
+    ]
+
+    # Build combined cost table
+    b5_cost = b5.get("cost_rows", [])
+    if b5_cost:
+        b5_cost_df = pd.DataFrame(b5_cost)[["cost_bps", "sharpe"]].rename(columns={"sharpe": "B.5 locked"})
+    else:
+        b5_cost_df = pd.DataFrame()
+
+    for name, r in [("No-op", noop), ("Random", random), ("Trained RL", trained)]:
+        cs = r.get("cost_sensitivity")
+        if cs is not None and not cs.empty:
+            col = cs[["cost_bps", "sharpe"]].rename(columns={"sharpe": name})
+            if b5_cost_df.empty:
+                b5_cost_df = col
+            else:
+                b5_cost_df = b5_cost_df.merge(col, on="cost_bps", how="left")
+
+    if not b5_cost_df.empty:
+        lines.append(b5_cost_df.to_markdown(index=False, floatfmt=".4f"))
     lines.append("")
 
     lines += ["## Regime Breakdown", ""]
@@ -388,10 +504,10 @@ def render_report(
         "",
         "- Path A = clear Sharpe win: Sharpe ≥ B.5 holdout AND MaxDD ≥ B.5 holdout MaxDD.",
         "- Path B = tail improvement: Sharpe ≥ B.5 − 0.03 AND MaxDD at least 1.5pp better.",
-        "- Both paths require 50 bps Sharpe ≥ 0.90, beat no-op, beat random (50 seeds).",
+        "- Both paths require 50 bps Sharpe ≥ 0.90, beat no-op (same cost basis), beat random.",
         "- Hard rejections: MaxDD < −35%, or any beta violation, or max gross > 1.50.",
-        "- B.5 holdout Sharpe (1.270) is higher than full-period (1.078) — the 2019+ window",
-        "  is a strong period; RL must add genuine value to beat it.",
+        "- B.5 holdout Sharpe (1.270) is higher than full-period (1.078) — 2019+ is a strong",
+        "  regime; RL must add genuine value beyond the no-op baseline to be promoted.",
         "",
         "## Artifacts",
         "",
@@ -421,6 +537,11 @@ def main():
         "--seeds", type=int, default=RANDOM_SEEDS,
         help=f"Number of seeds for random bounded policy (default {RANDOM_SEEDS}).",
     )
+    parser.add_argument(
+        "--cost-bps", type=float, default=B1_COST_BPS,
+        help=f"Transaction cost in bps for primary comparison (default {B1_COST_BPS}). "
+             "Applied to all policies on the same basis.",
+    )
     args = parser.parse_args()
 
     out_dir = REPO_ROOT / "artifacts" / "reports"
@@ -446,52 +567,70 @@ def main():
     model_path = REPO_ROOT / args.model_path
     run_all = args.policy == "all"
 
+    primary_cost = args.cost_bps
+    logger.info("Primary comparison cost: %.0f bps (same basis for all policies)", primary_cost)
+
     # --- Run policies (skip if not requested) ---
     def _null_result(name: str) -> dict:
         return {"policy": name, "sharpe": np.nan, "cagr": np.nan, "max_dd": np.nan,
-                "avg_tilt_magnitude": np.nan, "net_returns": None}
+                "avg_tilt_magnitude": np.nan, "raw_returns": None,
+                "cost_sensitivity": pd.DataFrame()}
 
     if run_all or args.policy == "b5":
         logger.info("Running B.5 locked …")
         r_b5 = run_b5_locked(inputs, b5_weights_df, validation_end)
-        logger.info("B.5 locked: Sharpe=%.3f MaxDD=%.2f%%", r_b5["sharpe"], r_b5["max_dd"] * 100)
+        # Supplement with cost row for primary cost
+        b5_cost_rows = r_b5.get("cost_rows", [])
+        primary_row = next((row for row in b5_cost_rows if row["cost_bps"] == primary_cost), None)
+        if primary_row:
+            r_b5["sharpe"] = primary_row["sharpe"]
+            r_b5["cagr"] = primary_row.get("cagr", r_b5["cagr"])
+            r_b5["max_dd"] = primary_row.get("max_dd", r_b5["max_dd"])
+        logger.info("B.5 locked: Sharpe=%.3f MaxDD=%.2f%% (@ %.0f bps)", r_b5["sharpe"], r_b5["max_dd"] * 100, primary_cost)
     else:
         r_b5 = _null_result("B.5 locked")
 
     if run_all or args.policy == "no_op":
         logger.info("Running RL no-op …")
-        r_noop = run_noop_policy(inputs, b5_weights_df, rebalance_dates=_ctrl)
-        logger.info("RL no-op: Sharpe=%.3f MaxDD=%.2f%%", r_noop["sharpe"], r_noop["max_dd"] * 100)
+        r_noop = run_noop_policy(inputs, b5_weights_df, rebalance_dates=_ctrl, primary_cost_bps=primary_cost)
+        logger.info("RL no-op: Sharpe=%.3f MaxDD=%.2f%% (@ %.0f bps)", r_noop["sharpe"], r_noop["max_dd"] * 100, primary_cost)
     else:
         r_noop = _null_result("RL no-op")
 
     n_seeds = args.seeds
     if run_all or args.policy == "random":
         logger.info("Running random bounded (%d seeds) …", n_seeds)
-        r_random = run_random_policy(inputs, b5_weights_df, n_seeds=n_seeds, rebalance_dates=_ctrl)
-        logger.info("Random (%d seeds): Sharpe=%.3f MaxDD=%.2f%%", n_seeds, r_random["sharpe"], r_random["max_dd"] * 100)
+        r_random = run_random_policy(inputs, b5_weights_df, n_seeds=n_seeds, rebalance_dates=_ctrl, primary_cost_bps=primary_cost)
+        logger.info("Random (%d seeds): Sharpe=%.3f MaxDD=%.2f%% (@ %.0f bps)", n_seeds, r_random["sharpe"], r_random["max_dd"] * 100, primary_cost)
     else:
         r_random = _null_result(f"Random bounded ({n_seeds} seeds)")
 
     if run_all or args.policy == "trained":
         logger.info("Running trained RL …")
-        r_trained = run_trained_rl(inputs, b5_weights_df, model_path, rebalance_dates=_ctrl)
-        logger.info("Trained RL: Sharpe=%.3f MaxDD=%.2f%%", r_trained["sharpe"], r_trained["max_dd"] * 100)
+        r_trained = run_trained_rl(inputs, b5_weights_df, model_path, rebalance_dates=_ctrl, primary_cost_bps=primary_cost)
+        logger.info("Trained RL: Sharpe=%.3f MaxDD=%.2f%% (@ %.0f bps)", r_trained["sharpe"], r_trained["max_dd"] * 100, primary_cost)
     else:
         r_trained = _null_result("Trained RL")
-    logger.info("Trained RL: Sharpe=%.3f MaxDD=%.2f%%", r_trained["sharpe"], r_trained["max_dd"] * 100)
 
-    # --- Regime breakdown for B.5 locked and trained RL ---
+    # --- Regime breakdown (all policies at primary_cost) ---
     regime_rows = []
     for label, start, end in HOLDOUT_REGIMES:
         row = {"regime": label}
-        for policy_name, net_ret in [
-            ("B.5 locked", r_b5.get("net_returns")),
-            ("RL no-op", r_noop.get("net_returns")),
-            ("Trained RL", r_trained.get("net_returns")),
-        ]:
-            if net_ret is not None:
-                m = _metrics_window(net_ret, start, end)
+        # B.5 locked: use net_returns from compute_net_returns (exact cost)
+        b5_ret = r_b5.get("net_returns")
+        if b5_ret is not None:
+            m = _metrics_window(b5_ret, start, end)
+            row["B.5 locked Sharpe"] = m["sharpe"]
+            row["B.5 locked MaxDD"] = m["max_dd"]
+        else:
+            row["B.5 locked Sharpe"] = np.nan
+            row["B.5 locked MaxDD"] = np.nan
+        # RL policies: post-hoc cost applied to raw_returns
+        for policy_name, r in [("RL no-op", r_noop), ("Trained RL", r_trained)]:
+            raw = r.get("raw_returns")
+            to = r.get("daily_turnover")
+            if raw is not None and to is not None:
+                m = _cost_adjusted_metrics(raw, to, primary_cost, start, end)
                 row[f"{policy_name} Sharpe"] = m["sharpe"]
                 row[f"{policy_name} MaxDD"] = m["max_dd"]
             else:
@@ -500,11 +639,13 @@ def main():
         regime_rows.append(row)
     regime_df = pd.DataFrame(regime_rows)
 
-    # 50-bps Sharpe for trained RL (approximate via policy rollout)
+    # 50-bps Sharpe for trained RL — from cost_sensitivity DataFrame
     sharpe_50bps = np.nan
-    if r_trained.get("net_returns") is not None:
-        m50 = _metrics_window(r_trained["net_returns"], HOLDOUT_START, HOLDOUT_END)
-        sharpe_50bps = m50.get("sharpe", np.nan)
+    cost_df_trained = r_trained.get("cost_sensitivity")
+    if cost_df_trained is not None and not cost_df_trained.empty and "cost_bps" in cost_df_trained.columns:
+        row_50 = cost_df_trained[cost_df_trained["cost_bps"] == 50.0]
+        if not row_50.empty:
+            sharpe_50bps = float(row_50["sharpe"].iloc[0])
 
     # --- Promotion gate evaluation ---
     gates_df = evaluate_promotion_gates(r_trained, r_noop, r_random, r_b5, sharpe_50bps)
@@ -526,7 +667,7 @@ def main():
     logger.info("Saved D.6 CSVs")
 
     # --- Render report ---
-    report = render_report(r_b5, r_noop, r_random, r_trained, regime_df, gates_df)
+    report = render_report(r_b5, r_noop, r_random, r_trained, regime_df, gates_df, primary_cost_bps=primary_cost)
     (out_dir / "phase_d6_rl_evaluation.md").write_text(report)
     logger.info("Wrote phase_d6_rl_evaluation.md")
 

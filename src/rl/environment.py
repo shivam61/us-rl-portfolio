@@ -72,6 +72,7 @@ class PortfolioEnv(gym.Env):
         lambda_tilt: float = 0.01,
         lambda_dd: float = 0.05,
         rebalance_dates: list[pd.Timestamp] | None = None,
+        cost_bps: float = 0.0,
     ):
         super().__init__()
 
@@ -81,6 +82,7 @@ class PortfolioEnv(gym.Env):
         self.end_date = pd.Timestamp(end_date)
         self.lambda_tilt = lambda_tilt
         self.lambda_dd = lambda_dd
+        self._cost_bps = float(cost_bps)
 
         # Use provided rebalance_dates (actual change dates from build_promoted_weights),
         # or detect them from weight differences in the DataFrame.
@@ -126,6 +128,7 @@ class PortfolioEnv(gym.Env):
         self._step_idx: int = 0
         self._nav_series: pd.Series = pd.Series(dtype=float)
         self._last_rebalance_date: pd.Timestamp | None = None
+        self._current_weights: pd.Series | None = None  # weights held since last rebalance
 
     # ------------------------------------------------------------------
     def reset(self, seed=None, options=None):
@@ -136,6 +139,13 @@ class PortfolioEnv(gym.Env):
         self._nav_series = pd.Series(
             [1.0], index=pd.DatetimeIndex([first_date], name="date")
         )
+        # Initialise _current_weights from B.5 weights just before episode start.
+        # This gives correct turnover on the first rebalance (change from pre-episode
+        # B.5 weights). For the holdout window, the portfolio was already running;
+        # for training windows that start at the first-ever B.5 date, _current_weights
+        # = None, which triggers full-acquisition turnover.
+        pre_start = self.b5_weights_df[self.b5_weights_df.index < first_date]
+        self._current_weights = pre_start.iloc[-1].fillna(0.0) if not pre_start.empty else None
         obs = self._build_obs(first_date)
         return obs, {}
 
@@ -166,8 +176,22 @@ class PortfolioEnv(gym.Env):
         tilted_sector_weights = self._sector_weights_from_slice(tilted_constrained)
         applied_tilts = tilted_sector_weights - b5_sector_weights
 
+        # --- Compute turnover vs weights held since last rebalance ---
+        prev_w = self._current_weights
+        if prev_w is not None:
+            turnover = float(
+                (tilted_constrained - prev_w.reindex(tilted_constrained.index).fillna(0.0))
+                .abs().sum()
+            )
+        else:
+            # First rebalance with no prior weights: treat as full acquisition
+            turnover = float(tilted_constrained.abs().sum())
+        self._current_weights = tilted_constrained
+
         # --- Simulate returns from current_date to next_date ---
-        daily_returns = self._compute_daily_returns(tilted_constrained, current_date, next_date)
+        daily_returns = self._compute_daily_returns(
+            tilted_constrained, current_date, next_date, rebalance_turnover=turnover
+        )
 
         # --- Update NAV ---
         if len(daily_returns) > 0:
@@ -197,6 +221,8 @@ class PortfolioEnv(gym.Env):
             "aggressiveness": float(
                 0.75 + (1.0 - 0.75) * (float(action_arr[11]) + 1.0) / 2.0
             ),
+            "turnover": turnover,           # for post-hoc cost sensitivity in D.6
+            "next_date": next_date.isoformat(),
         }
         return obs, float(reward), bool(terminated), False, info
 
@@ -252,8 +278,13 @@ class PortfolioEnv(gym.Env):
         weights: pd.Series,
         from_date: pd.Timestamp,
         to_date: pd.Timestamp,
+        rebalance_turnover: float = 0.0,
     ) -> pd.Series:
-        """Compute portfolio daily returns from from_date+1 through to_date."""
+        """Compute portfolio daily returns from from_date+1 through to_date.
+
+        Transaction cost (if cost_bps > 0) is applied to the first day's return only,
+        matching the logic in compute_net_returns: cost = turnover * cost_bps / 10_000.
+        """
         mask = (self.prices.index > from_date) & (self.prices.index <= to_date)
         price_slice = self.prices.loc[mask]
         if price_slice.empty:
@@ -262,11 +293,23 @@ class PortfolioEnv(gym.Env):
         if not tickers:
             return pd.Series(0.0, index=price_slice.index)
         w = weights.reindex(tickers).fillna(0.0)
-        ret = price_slice[tickers].pct_change().fillna(0.0)
-        ret.iloc[0] = price_slice[tickers].iloc[0] / price_slice[tickers].iloc[0].shift(1).fillna(price_slice[tickers].iloc[0]) - 1.0
-        # Use first available prior close to avoid NaN on first day
+
+        # Use prior close to avoid NaN on first day
         prior = self.prices.loc[self.prices.index <= from_date, tickers]
-        if not prior.empty:
-            first_returns = price_slice[tickers].iloc[0] / prior.iloc[-1] - 1.0
-            ret.iloc[0] = first_returns.fillna(0.0)
-        return (ret * w.values).sum(axis=1)
+        if prior.empty:
+            return pd.Series(0.0, index=price_slice.index)
+        prior_close = prior.iloc[-1]
+
+        daily_prices = pd.concat([prior_close.to_frame().T, price_slice[tickers]])
+        ret = daily_prices.pct_change().iloc[1:].fillna(0.0)
+        raw_returns = (ret * w.values).sum(axis=1)
+
+        # Apply transaction cost on first day of this holding interval
+        if self._cost_bps > 0.0 and rebalance_turnover > 0.0 and len(raw_returns) > 0:
+            cost_fraction = rebalance_turnover * self._cost_bps / 10_000.0
+            r0 = float(raw_returns.iloc[0])
+            raw_returns.iloc[0] = float(
+                max(-1.0, (1.0 - cost_fraction) * (1.0 + r0) - 1.0)
+            )
+
+        return raw_returns
