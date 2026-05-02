@@ -1,7 +1,11 @@
 """Phase D.5 — PPO training on 2008–2016 with early stopping on 2017–2018 validation Sharpe.
 
 Usage:
-    .venv/bin/python scripts/train_rl.py [--config ...] [--universe ...]
+    # Full training (sp500, 2008–2016):
+    .venv/bin/python scripts/train_rl.py
+
+    # Smoke test (verify env + PPO plumbing, finishes in ~60s):
+    .venv/bin/python scripts/train_rl.py --total-timesteps 2000 --eval-freq 500 --universe config/universes/sp100.yaml
 
 Outputs:
     artifacts/models/rl_ppo_best.zip      — best checkpoint by validation Sharpe
@@ -64,19 +68,18 @@ def _sharpe_from_env_rollout(
     env: PortfolioEnv,
     model: PPO,
 ) -> float:
-    """Run a full episode on env using model, return realised Sharpe."""
+    """Run a full episode on env using model; return annualised Sharpe from daily NAV."""
     obs, _ = env.reset()
-    nav_list = [1.0]
     done = False
     while not done:
         action, _ = model.predict(obs, deterministic=True)
         obs, _reward, terminated, truncated, info = env.step(action)
-        nav_list.append(info["nav"])
         done = terminated or truncated
-    nav = pd.Series(nav_list)
-    if len(nav) < 22:
+    # Use the accumulated daily NAV series (much more data than rebalance-step count)
+    daily_nav = env._nav_series
+    if len(daily_nav) < 22:
         return np.nan
-    m = calculate_metrics(nav)
+    m = calculate_metrics(daily_nav)
     return float(m.get("Sharpe", np.nan))
 
 
@@ -97,6 +100,15 @@ def main():
     parser.add_argument("--universe", default="config/universes/sp500.yaml")
     parser.add_argument("--max-episodes", type=int, default=MAX_EPISODES)
     parser.add_argument("--patience", type=int, default=PATIENCE)
+    # Smoke-test / timestep-budget mode: overrides episode loop
+    parser.add_argument(
+        "--total-timesteps", type=int, default=None,
+        help="If set, train for exactly this many env steps (smoke test). Ignores --max-episodes.",
+    )
+    parser.add_argument(
+        "--eval-freq", type=int, default=STEPS_PER_EPISODE,
+        help="Validate every N env steps (used with --total-timesteps). Default: STEPS_PER_EPISODE.",
+    )
     args = parser.parse_args()
 
     out_dir = REPO_ROOT / "artifacts"
@@ -123,20 +135,14 @@ def main():
     )
     logger.info("B.5 weights shape: %s, time %.1fs", b5_weights_df.shape, time.perf_counter() - t0)
 
-    # Validate that training/validation windows have enough rebalance dates
-    train_dates = b5_weights_df.index[
-        (b5_weights_df.index >= pd.Timestamp(TRAIN_START))
-        & (b5_weights_df.index <= pd.Timestamp(TRAIN_END))
-    ]
-    val_dates = b5_weights_df.index[
-        (b5_weights_df.index >= pd.Timestamp(VAL_START))
-        & (b5_weights_df.index <= pd.Timestamp(VAL_END))
-    ]
-    logger.info("Train rebalance dates: %d, Val dates: %d", len(train_dates), len(val_dates))
-    if len(train_dates) < 10:
-        raise ValueError(f"Too few training dates ({len(train_dates)}); check B.5 weights and date range")
-    if len(val_dates) < 5:
-        raise ValueError(f"Too few validation dates ({len(val_dates)}); check B.5 weights and date range")
+    # Validate using actual control_dates (not all daily rows in b5_weights_df)
+    train_ctrl = [d for d in _ctrl if pd.Timestamp(TRAIN_START) <= d <= pd.Timestamp(TRAIN_END)]
+    val_ctrl = [d for d in _ctrl if pd.Timestamp(VAL_START) <= d <= pd.Timestamp(VAL_END)]
+    logger.info("Actual rebalance dates — train: %d, val: %d", len(train_ctrl), len(val_ctrl))
+    if len(train_ctrl) < 5:
+        raise ValueError(f"Too few training rebalance dates ({len(train_ctrl)}); check date range")
+    if len(val_ctrl) < 2:
+        raise ValueError(f"Too few validation rebalance dates ({len(val_ctrl)}); check date range")
 
     # Build environments — DummyVecEnv wraps a single env (avoids pickling issues)
     logger.info("Building training environment …")
@@ -166,66 +172,74 @@ def main():
     patience_counter = 0
     log_rows = []
 
-    logger.info(
-        "Starting PPO training: max_episodes=%d, patience=%d, steps_per_episode=%d",
-        args.max_episodes,
-        args.patience,
-        STEPS_PER_EPISODE,
-    )
-
-    for episode in range(1, args.max_episodes + 1):
-        t_ep = time.perf_counter()
-        model.learn(total_timesteps=STEPS_PER_EPISODE, reset_num_timesteps=False)
-
-        # Evaluate on validation
-        val_sharpe = _sharpe_from_env_rollout(val_env, model)
-
-        # Quick training Sharpe from last rollout buffer (approximate)
+    def _run_eval_step(step_label: str, step_t: float) -> float:
+        """Evaluate val env, update best, return val_sharpe."""
+        nonlocal best_val_sharpe, patience_counter
+        v_sharpe = _sharpe_from_env_rollout(val_env, model)
         train_sharpe = np.nan
         if hasattr(model, "ep_info_buffer") and model.ep_info_buffer:
             rewards = [ep["r"] for ep in model.ep_info_buffer if "r" in ep]
             if rewards:
                 train_sharpe = float(np.mean(rewards[-10:]))
-
         log_rows.append({
-            "episode": episode,
+            "step_label": step_label,
             "train_sharpe_approx": train_sharpe,
-            "val_sharpe": val_sharpe,
+            "val_sharpe": v_sharpe,
             "best_val_sharpe": best_val_sharpe,
             "patience_counter": patience_counter,
         })
-
-        if np.isfinite(val_sharpe) and val_sharpe > best_val_sharpe:
-            best_val_sharpe = val_sharpe
+        if np.isfinite(v_sharpe) and v_sharpe > best_val_sharpe:
+            best_val_sharpe = v_sharpe
             model.save(str(models_dir / "rl_ppo_best"))
             patience_counter = 0
             logger.info(
-                "Episode %d: val_sharpe=%.4f NEW BEST — saved checkpoint (%.1fs)",
-                episode,
-                val_sharpe,
-                time.perf_counter() - t_ep,
+                "%s: val_sharpe=%.4f NEW BEST — checkpoint saved (%.1fs)",
+                step_label, v_sharpe, time.perf_counter() - step_t,
             )
         else:
             patience_counter += 1
-            if episode % 10 == 0:
-                logger.info(
-                    "Episode %d: val_sharpe=%.4f best=%.4f patience=%d/%d (%.1fs)",
-                    episode,
-                    val_sharpe,
-                    best_val_sharpe,
-                    patience_counter,
-                    args.patience,
-                    time.perf_counter() - t_ep,
-                )
+            logger.info(
+                "%s: val_sharpe=%.4f best=%.4f patience=%d (%.1fs)",
+                step_label, v_sharpe, best_val_sharpe, patience_counter,
+                time.perf_counter() - step_t,
+            )
+        return v_sharpe
 
-        if episode % CHECKPOINT_EVERY == 0:
-            ckpt_path = models_dir / f"rl_ppo_ep{episode:04d}"
-            model.save(str(ckpt_path))
-            logger.info("Checkpoint saved: %s", ckpt_path)
+    if args.total_timesteps is not None:
+        # ── Timestep-budget mode (smoke test / custom cap) ──────────────────
+        eval_freq = args.eval_freq
+        total = args.total_timesteps
+        steps_done = 0
+        eval_idx = 0
+        logger.info(
+            "Timestep-budget mode: total_timesteps=%d, eval_freq=%d",
+            total, eval_freq,
+        )
+        while steps_done < total:
+            chunk = min(eval_freq, total - steps_done)
+            model.learn(total_timesteps=chunk, reset_num_timesteps=False)
+            steps_done += chunk
+            eval_idx += 1
+            _run_eval_step(f"step={steps_done}", time.perf_counter())
+    else:
+        # ── Episode-based mode (full production training) ────────────────────
+        logger.info(
+            "Episode mode: max_episodes=%d, patience=%d, steps_per_episode=%d",
+            args.max_episodes, args.patience, STEPS_PER_EPISODE,
+        )
+        for episode in range(1, args.max_episodes + 1):
+            t_ep = time.perf_counter()
+            model.learn(total_timesteps=STEPS_PER_EPISODE, reset_num_timesteps=False)
+            _run_eval_step(f"ep={episode}", t_ep)
 
-        if patience_counter >= args.patience:
-            logger.info("Early stopping at episode %d (patience=%d)", episode, args.patience)
-            break
+            if episode % CHECKPOINT_EVERY == 0:
+                ckpt_path = models_dir / f"rl_ppo_ep{episode:04d}"
+                model.save(str(ckpt_path))
+                logger.info("Checkpoint saved: %s", ckpt_path)
+
+            if patience_counter >= args.patience:
+                logger.info("Early stopping at episode %d (patience=%d)", episode, args.patience)
+                break
 
     # Save final checkpoint if no best was saved
     final_path = models_dir / "rl_ppo_final"

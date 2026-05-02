@@ -7,7 +7,13 @@ Policies:
   4. Trained RL — load artifacts/models/rl_ppo_best.zip; run on holdout without retraining
 
 Usage:
-    .venv/bin/python scripts/run_rl_backtest.py [--config ...] [--universe ...]
+    # Full four-way comparison:
+    .venv/bin/python scripts/run_rl_backtest.py
+
+    # Smoke test — run individual policies:
+    .venv/bin/python scripts/run_rl_backtest.py --policy no_op
+    .venv/bin/python scripts/run_rl_backtest.py --policy random --seeds 5
+    .venv/bin/python scripts/run_rl_backtest.py --policy b5
 """
 import argparse
 import logging
@@ -405,6 +411,16 @@ def main():
     parser.add_argument("--config", default="config/base.yaml")
     parser.add_argument("--universe", default="config/universes/sp500.yaml")
     parser.add_argument("--model-path", default="artifacts/models/rl_ppo_best.zip")
+    parser.add_argument(
+        "--policy",
+        choices=["all", "b5", "no_op", "random", "trained"],
+        default="all",
+        help="Which policy to run. 'all' runs the full four-way comparison.",
+    )
+    parser.add_argument(
+        "--seeds", type=int, default=RANDOM_SEEDS,
+        help=f"Number of seeds for random bounded policy (default {RANDOM_SEEDS}).",
+    )
     args = parser.parse_args()
 
     out_dir = REPO_ROOT / "artifacts" / "reports"
@@ -428,22 +444,41 @@ def main():
     logger.info("B.5 weights built in %.1fs", time.perf_counter() - t0)
 
     model_path = REPO_ROOT / args.model_path
+    run_all = args.policy == "all"
 
-    # --- Run four policies ---
-    logger.info("Running B.5 locked …")
-    r_b5 = run_b5_locked(inputs, b5_weights_df, validation_end)
-    logger.info("B.5 locked: Sharpe=%.3f MaxDD=%.2f%%", r_b5["sharpe"], r_b5["max_dd"] * 100)
+    # --- Run policies (skip if not requested) ---
+    def _null_result(name: str) -> dict:
+        return {"policy": name, "sharpe": np.nan, "cagr": np.nan, "max_dd": np.nan,
+                "avg_tilt_magnitude": np.nan, "net_returns": None}
 
-    logger.info("Running RL no-op …")
-    r_noop = run_noop_policy(inputs, b5_weights_df, rebalance_dates=_ctrl)
-    logger.info("RL no-op: Sharpe=%.3f MaxDD=%.2f%%", r_noop["sharpe"], r_noop["max_dd"] * 100)
+    if run_all or args.policy == "b5":
+        logger.info("Running B.5 locked …")
+        r_b5 = run_b5_locked(inputs, b5_weights_df, validation_end)
+        logger.info("B.5 locked: Sharpe=%.3f MaxDD=%.2f%%", r_b5["sharpe"], r_b5["max_dd"] * 100)
+    else:
+        r_b5 = _null_result("B.5 locked")
 
-    logger.info("Running random bounded (%d seeds) …", RANDOM_SEEDS)
-    r_random = run_random_policy(inputs, b5_weights_df, n_seeds=RANDOM_SEEDS, rebalance_dates=_ctrl)
-    logger.info("Random: Sharpe=%.3f MaxDD=%.2f%%", r_random["sharpe"], r_random["max_dd"] * 100)
+    if run_all or args.policy == "no_op":
+        logger.info("Running RL no-op …")
+        r_noop = run_noop_policy(inputs, b5_weights_df, rebalance_dates=_ctrl)
+        logger.info("RL no-op: Sharpe=%.3f MaxDD=%.2f%%", r_noop["sharpe"], r_noop["max_dd"] * 100)
+    else:
+        r_noop = _null_result("RL no-op")
 
-    logger.info("Running trained RL …")
-    r_trained = run_trained_rl(inputs, b5_weights_df, model_path, rebalance_dates=_ctrl)
+    n_seeds = args.seeds
+    if run_all or args.policy == "random":
+        logger.info("Running random bounded (%d seeds) …", n_seeds)
+        r_random = run_random_policy(inputs, b5_weights_df, n_seeds=n_seeds, rebalance_dates=_ctrl)
+        logger.info("Random (%d seeds): Sharpe=%.3f MaxDD=%.2f%%", n_seeds, r_random["sharpe"], r_random["max_dd"] * 100)
+    else:
+        r_random = _null_result(f"Random bounded ({n_seeds} seeds)")
+
+    if run_all or args.policy == "trained":
+        logger.info("Running trained RL …")
+        r_trained = run_trained_rl(inputs, b5_weights_df, model_path, rebalance_dates=_ctrl)
+        logger.info("Trained RL: Sharpe=%.3f MaxDD=%.2f%%", r_trained["sharpe"], r_trained["max_dd"] * 100)
+    else:
+        r_trained = _null_result("Trained RL")
     logger.info("Trained RL: Sharpe=%.3f MaxDD=%.2f%%", r_trained["sharpe"], r_trained["max_dd"] * 100)
 
     # --- Regime breakdown for B.5 locked and trained RL ---
