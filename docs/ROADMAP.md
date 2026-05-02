@@ -2,24 +2,26 @@
 
 > **For AI agents:** This file is the navigation index only. Each phase has a dedicated doc in `docs/phases/`. Read this file first, then open only the phase doc you need.
 
-**System:** `vol_score` alpha signal → (Phase D) RL sector overlay → locked B.5 risk construction → walk-forward backtest (2006–2026, S&P 500).
+**System:** `vol_score` alpha signal → (Phase E) RL regime controller (exposure mix) → locked B.5 risk construction → walk-forward backtest (2006–2026, S&P 500).
 RL is an overlay only. It cannot replace vol_score, trend sleeve, stress blend, beta cap, or rebalance cadence.
 
 ---
 
-## Current State — 2026-05-01
+## Current State — 2026-05-02
 
 | | |
 |---|---|
-| Active phase | **Phase D** — RL overlay on locked B.5 system |
-| Current step | **D.0** — Phase C complete; measuring B.5 holdout baseline |
+| Active phase | **Phase E** — RL Regime Controller v2 (exposure mix: equity / trend / cash) |
+| Current step | **E.1** — Phase D closed; spec agreed; building Phase E state vector + environment |
 | Locked production system | **B.5 `b4_stress_cap_trend_boost`** — vol_score signal, dynamic beta cap `0.90 − 0.20 × stress`, floor 0.50, trend sleeve, stress blend |
 | Current headline metrics (sp500, 2008–2026, 10 bps) | CAGR `16.04%`, Sharpe `1.078`, MaxDD `−32.98%`, turnover `84.12`; 50 bps Sharpe `0.934` |
+| Holdout metrics (sp500, 2019–2026-04-24, 10 bps) | CAGR `20.69%`, Sharpe `1.270`, MaxDD `−32.98%`, 50 bps Sharpe `1.135` |
 | Production alpha signal | `volatility_score` — locked; Phase C confirmed no replacement candidate |
 | Phase A status | A.7.3 validated; B.1 found same-day alignment in unlagged headline; do not use unlagged A.7.3 as baseline |
 | Phase B status | **Complete** — B.5 passed all 8 exit criteria (2026-05-01) |
 | Phase C status | **Complete** — C.1 REJECT (LGBM negative IC), C.2 POSITIVE IC (simple_mean_rank), C.3 REJECT (portfolio Sharpe 1.050 vs gate 1.05 — crisis regime collapse). vol_score unchanged. |
-| Phase D constraint | RL adjusts sector tilts and aggressiveness ONLY; vol_score, trend sleeve, stress blend, beta cap, and rebalance cadence are all locked |
+| Phase D status | **Complete — REJECT** (2026-05-02) — trained RL Sharpe `1.295` vs random bounded `1.321`; sector-tilt action space too constrained. B.5 remains production. |
+| Phase E constraint | RL controls equity/trend/cash exposure mix ONLY; vol_score, stock selection, within-sleeve proportions, beta cap, gross cap, and rebalance cadence are all locked |
 
 ## Baseline Convention
 
@@ -52,7 +54,8 @@ RL is an overlay only. It cannot replace vol_score, trend sleeve, stress blend, 
 | **A** | Alpha discovery + alpha expression (A.1–A.7.3) | ✅ Candidate validated; hand off to Phase B | [phases/phase_a.md](phases/phase_a.md) |
 | **B** | Portfolio stabilization: optimizer integration, risk engine redesign, exposure shaping | ✅ Complete — B.5 gate passed 2026-05-01 | [phases/phase_b.md](phases/phase_b.md) |
 | **C** | Model refinement: LightGBM tuning + feature improvements | ✅ Complete — vol_score unchanged (2026-05-01) | [phases/phase_c.md](phases/phase_c.md) |
-| **D** | RL overlay on locked B.5 system: sector tilts + aggressiveness | 🔄 In progress — Phase D.0 entry | [phases/phase_d.md](phases/phase_d.md) |
+| **D** | RL overlay on locked B.5 system: sector tilts + aggressiveness | ✅ Complete — REJECT (2026-05-02); B.5 remains production | [phases/phase_d.md](phases/phase_d.md) |
+| **E** | RL Regime Controller v2: equity/trend/cash exposure mix | 🔄 In progress — Phase E.1 | [phases/phase_e.md](phases/phase_e.md) |
 
 ### Phase Gates
 
@@ -63,6 +66,7 @@ RL is an overlay only. It cannot replace vol_score, trend sleeve, stress blend, 
 | B → C | Stable portfolio behavior | optimizer + risk engine consistent; exposures controlled; no brittle regime dependence |
 | C → D | Phase C complete; vol_score confirmed as production signal | Cleared 2026-05-01 — vol_score locked, B.5 construction locked |
 | D done | RL holdout Sharpe vs B.5 baseline | RL ≥ 1.00 (floor), preferred ≥ 1.078; MaxDD ≥ −35%; zero beta violations |
+| E done | RL holdout Sharpe vs B.5 holdout | Sharpe ≥ 1.270 (Path A) or ≥ 1.240 with MaxDD ≥ −31.48% (Path B); 50 bps Sharpe ≥ 0.90; beats no-op and random; MaxDD ≥ −35% |
 
 ---
 
@@ -79,7 +83,8 @@ RL is an overlay only. It cannot replace vol_score, trend sleeve, stress blend, 
 | `src/rl/environment.py` | RL env skeleton (Phase D) |
 | `docs/phases/phase_a.md` | Phase A detail: features, IC results, decisions |
 | `docs/DATA_AND_FEATURE_ENGINEERING.md` | Data/feature cache conventions, coverage audits, and extension guide |
-| `docs/phases/phase_d.md` | Phase D detail: RL design, state/action/reward |
+| `docs/phases/phase_d.md` | Phase D detail: RL design, state/action/reward (closed — REJECT) |
+| `docs/phases/phase_e.md` | Phase E detail: RL regime controller v2, exposure mix design |
 | `docs/agent_handoff.md` | Experiment history, legacy session notes, useful commands |
 
 ---

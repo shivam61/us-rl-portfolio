@@ -246,5 +246,6 @@ Key invariants to unit-test:
 | 2026-05-01 | Phase D spec | Refined + agreed | Drawdown penalty, total tilt budget, zero-sum enforcement, four-way D.6, tightened gate, 2019 holdout. |
 | 2026-05-02 | D.0 baseline | **DONE** | B.5 holdout (2019–2026-04-24): CAGR `20.69%`, Sharpe `1.270`, MaxDD `−32.98%`, 50 bps Sharpe `1.135`. Holdout Sharpe (1.270) > full-period (1.078) — 2019+ is a strong regime. RL promotion gates updated to holdout numbers: Path A ≥ 1.270, Path B ≥ 1.240. |
 | 2026-05-02 | D.1–D.4 build | **DONE** | `state_builder.py` (28-dim obs), `tilts.py` (10-step sequence + invariant tests), `reward.py` (three-term reward), `environment.py` (full PortfolioEnv wired). |
-| — | D.5 training | Not started | PPO on 2008–2016 training window (`scripts/train_rl.py`) |
-| — | D.6 evaluation | Not started | Four-way: B.5 locked / no-op / random / trained RL (`scripts/run_rl_backtest.py`) |
+| 2026-05-02 | D.5 training | **DONE** | PPO early-stopped at episode 66 (patience=50), ~40 min. Best val Sharpe `1.1163`. Models: `artifacts/models/rl_ppo_best.zip`, `rl_ppo_final.zip`. |
+| 2026-05-02 | D.6 evaluation | **DONE — REJECT** | Trained RL Sharpe `1.295`, MaxDD `-24.90%`. Fails "beats random bounded" gate (random `1.321`). Passes Path A, Path B, 50 bps Sharpe, beats no-op. B.5 remains production system. |
+| 2026-05-02 | Phase D closed | **COMPLETE** | B.5 is final production system. RL showed genuine tail improvement (MaxDD -24.90% vs -32.98%; 2020 regime Sharpe 0.81 vs 0.44) but cannot beat bounded random — action space too constrained for policy to demonstrate skill. Proceed to Phase E. |

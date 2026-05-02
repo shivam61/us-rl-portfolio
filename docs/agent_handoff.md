@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-02T03:17:20+00:00
+Last updated: 2026-05-02T09:59:57+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -620,3 +620,37 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
   SPY hedging controls drawdown but gives up too much return/Sharpe; long-only beta targeting preserves return but cannot truly hit low beta targets and leaves drawdown too high.
 - Current decision:
   stop standalone volatility-sleeve tuning for now. Keep `volatility_score` as a validated alpha component, but move next to multi-factor blending before Phase B/C/RL.
+
+### 2026-05-02 — Phase D.5 + D.6 Complete
+
+#### Phase D.5 — RL PPO Training
+- Training completed with early stopping at episode 66 (patience=50), total time ~40 min.
+- Best validation Sharpe: `1.1163` (achieved around episode 11–12, then plateaued).
+- Final model saved: `artifacts/models/rl_ppo_final.zip`; best checkpoint: `artifacts/models/rl_ppo_best.zip`.
+- Training log: `artifacts/reports/phase_d5_training_log.csv`.
+
+#### Phase D.6 — Four-Way Holdout Comparison (2019–2026-04-24)
+- Run date: 2026-05-02 09:27:33 UTC.
+- Sanity check PASS: no-op Sharpe `1.245` vs B.5 locked `1.270` (diff `0.025` < `0.05` threshold).
+
+| Policy | CAGR | Sharpe | MaxDD | Avg tilt |
+|---|---|---|---|---|
+| B.5 locked | 20.69% | 1.270 | -32.98% | — |
+| RL no-op | 20.33% | 1.245 | -32.98% | 0 |
+| Random bounded (50 seeds) | 17.72% | 1.321 | -27.04% | 0.014 |
+| **Trained RL** | **17.40%** | **1.295** | **-24.90%** | **0.012** |
+
+- **Verdict: REJECT trained RL. Keep B.5 as production system.**
+- Failing gate: trained RL Sharpe (`1.295`) did not beat random bounded (`1.321`).
+- Gates passed: Path A (Sharpe ≥ 1.270, MaxDD ≥ -32.98%) ✅, Path B ✅, 50 bps Sharpe `1.203` ≥ 0.90 ✅, beats no-op ✅.
+- Notable positives: trained RL shows genuine tail improvement — MaxDD `-24.90%` vs B.5 `-32.98%` (8pp better); 2020 COVID crash regime Sharpe `0.81` vs B.5 `0.44`.
+- Root cause of REJECT: the RL policy adds value over no-op (+0.05 Sharpe) but cannot demonstrate skill above a random bounded tilt policy, indicating the learned tilt structure is not meaningfully better than noise within the bounded action space.
+- Artifacts: `artifacts/reports/phase_d6_rl_evaluation.md`, `d6_policy_comparison.csv`, `d6_regime_breakdown.csv`, `d6_promotion_gates.csv`.
+
+#### Phase D — Status and Next Steps
+- Phase D is functionally complete. The RL overlay experiment was run to conclusion.
+- B.5 (`b4_stress_cap_trend_boost`, sp500, 2008–2026) remains the locked production system: CAGR `16.04%`, Sharpe `1.078`, MaxDD `-32.98%`.
+- Potential next directions (not yet prioritized):
+  1. Improve RL reward shaping or state representation and retrain (longer patience, regime-conditioned reward, richer state).
+  2. Accept the tail-protection benefit and promote a drawdown-weighted variant (if that becomes the objective).
+  3. Close Phase D and move to the next research phase (new alpha signal, execution cost model, live-data integration).

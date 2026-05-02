@@ -1,0 +1,7 @@
+gate,value,pass,promoted
+Path A: Sharpe ≥ 1.270 AND MaxDD ≥ -32.98%,"Sharpe=1.295, MaxDD=-24.90%",True,False
+Path B: Sharpe ≥ 1.240 AND MaxDD ≥ -31.48%,"Sharpe=1.295, MaxDD=-24.90%",True,False
+50 bps Sharpe ≥ 0.90,1.203,True,False
+Beats RL no-op Sharpe (1.245),1.295,True,False
+Beats random bounded Sharpe (1.321),1.295,False,False
+Hard rejection: MaxDD ≥ -35% (no blowup),-24.90%,True,False

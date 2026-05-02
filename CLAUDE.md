@@ -5,11 +5,11 @@ All repo rules, workflow rules, save rules, file lookup order, roadmap-first beh
 Do not treat this file as an independent source of repo instructions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-02T03:17:20+00:00
+## Current State — 2026-05-02T09:59:57+00:00
 - Branch: `main`
-- Working tree: 12 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/agent_handoff.md`, `?? artifacts/models/`, `?? artifacts/reports/d6_policy_comparison.csv`
-- Latest commit: `91734e37 2026-05-02 add smoke-test flags to D.5/D.6 scripts; fix val Sharpe NaN bug`
+- Working tree: 17 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_d.md`
+- Latest commit: `0fd4284c 2026-05-02 fix cost-parity in D.6: RL env tracks turnover, post-hoc cost adjustment in backtest`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
