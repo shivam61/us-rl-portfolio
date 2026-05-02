@@ -168,15 +168,17 @@ No RL improvement is valid unless it beats both the no-op and random bounded bas
 
 ## Phase D Promotion Gate
 
-Promote trained RL only if **all** of the following hold on the 2019–2026-04-24 holdout:
+Promote trained RL only if **all** of the following hold on the 2019–2026-04-24 holdout.
+
+**D.0 established holdout benchmark (2026-05-02):** B.5 holdout Sharpe = **1.270**, MaxDD = **−32.98%**, 50 bps Sharpe = **1.135**.
 
 | Condition | Target |
 |---|---|
-| Sharpe (Path A — clear win) | ≥ 1.078 (matches or beats B.5) AND MaxDD ≥ −32.98% |
-| Sharpe (Path B — tail improvement) | ≥ 1.048 (= B.5 − 0.03) AND MaxDD materially better (≥ B.5 MaxDD + 1.5pp, i.e. ≥ −31.48%) |
+| Sharpe (Path A — clear win) | ≥ 1.270 (matches or beats B.5 **holdout**) AND MaxDD ≥ −32.98% |
+| Sharpe (Path B — tail improvement) | ≥ 1.240 (= B.5 holdout − 0.03) AND MaxDD materially better (≥ B.5 holdout MaxDD + 1.5pp, i.e. ≥ −31.48%) |
 | **Either path** also requires | 50 bps Sharpe ≥ 0.90 |
 | **Either path** also requires | Beats RL no-op AND random bounded policy on holdout Sharpe |
-| **Hard rejections** | Sharpe < 1.048, OR MaxDD < −35%, OR any beta violation, OR max gross > 1.50 |
+| **Hard rejections** | MaxDD < −35%, OR any beta violation, OR max gross > 1.50 |
 
 If RL does not meet either promotion path: reject, keep B.5 as final production system.
 
@@ -242,7 +244,7 @@ Key invariants to unit-test:
 |---|---|---|---|
 | 2026-05-01 | Phase C complete | Entry gate cleared | `vol_score` locked, B.5 construction locked. Sharpe `1.078`, MaxDD `−32.98%`. |
 | 2026-05-01 | Phase D spec | Refined + agreed | Drawdown penalty, total tilt budget, zero-sum enforcement, four-way D.6, tightened gate, 2019 holdout. |
-| — | D.0 baseline | Not started | Measure B.5 on 2019–2026-04-24 holdout only |
-| — | D.1–D.4 build | Not started | State builder, tilts, env, reward |
-| — | D.5 training | Not started | PPO on 2008–2016 training window |
-| — | D.6 evaluation | Not started | Four-way: B.5 locked / no-op / random / trained RL |
+| 2026-05-02 | D.0 baseline | **DONE** | B.5 holdout (2019–2026-04-24): CAGR `20.69%`, Sharpe `1.270`, MaxDD `−32.98%`, 50 bps Sharpe `1.135`. Holdout Sharpe (1.270) > full-period (1.078) — 2019+ is a strong regime. RL promotion gates updated to holdout numbers: Path A ≥ 1.270, Path B ≥ 1.240. |
+| 2026-05-02 | D.1–D.4 build | **DONE** | `state_builder.py` (28-dim obs), `tilts.py` (10-step sequence + invariant tests), `reward.py` (three-term reward), `environment.py` (full PortfolioEnv wired). |
+| — | D.5 training | Not started | PPO on 2008–2016 training window (`scripts/train_rl.py`) |
+| — | D.6 evaluation | Not started | Four-way: B.5 locked / no-op / random / trained RL (`scripts/run_rl_backtest.py`) |

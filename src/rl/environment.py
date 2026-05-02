@@ -1,34 +1,272 @@
+"""Phase D.3 — RL environment wiring state builder, tilt application, and reward.
+
+Episode = one pass through rebalance dates in [start_date, end_date].
+Step = one every_2_rebalances interval (apply action, observe outcome, advance).
+"""
+import sys
+from pathlib import Path
+
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
+import pandas as pd
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_SCRIPTS_DIR = _REPO_ROOT / "scripts"
+for _p in (_REPO_ROOT, _SCRIPTS_DIR):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
+
+from run_phase_b4_risk_engine import (  # noqa: E402
+    BETA_MAX_BASE,
+    BETA_MAX_SENSITIVITY,
+    BETA_MIN,
+    TREND_STRESS_SCALE_MAX,
+    TREND_STRESS_THRESHOLD,
+    B4Variant,
+    _NON_BENCHMARK_TREND,
+    apply_b4_constraints,
+    build_stress_series,
+)
+from run_phase_b3_exposure_control import rolling_beta_matrix  # noqa: E402
+
+from src.rl.state_builder import TREND_ASSETS, build_state
+from src.rl.tilts import apply_sector_tilts
+from src.rl.reward import compute_reward
+
+_B5_VARIANT = B4Variant(
+    name="b4_stress_cap_trend_boost",
+    beta_min=BETA_MIN,
+    beta_max_base=BETA_MAX_BASE,
+    beta_max_sensitivity=BETA_MAX_SENSITIVITY,
+    trend_stress_boost=True,
+    trend_stress_threshold=TREND_STRESS_THRESHOLD,
+    trend_stress_scale_max=TREND_STRESS_SCALE_MAX,
+)
+
 
 class PortfolioEnv(gym.Env):
+    """RL overlay environment for Phase D.
+
+    Observation: 28-dim state (macro + stress + sector vol_scores + sector weights + portfolio state).
+    Action: 12-dim raw ∈ [−1, +1] (11 sector tilts + 1 aggressiveness).
+    Reward: rolling_sharpe_21d − tilt_penalty − drawdown_penalty.
+
+    Args:
+        inputs: Standard inputs dict (prices, vol_scores, universe_config, …).
+        b5_weights_df: Precomputed B.5 constrained weights DataFrame (dates × tickers).
+        start_date: First rebalance date to include in episodes.
+        end_date: Last rebalance date to include in episodes.
+        lambda_tilt: Tilt penalty coefficient in reward.
+        lambda_dd: Drawdown penalty coefficient in reward.
     """
-    Skeleton RL Environment for Portfolio Overlay.
-    This environment does not pick stocks directly, but chooses sector tilts and cash target.
-    """
-    def __init__(self, n_sectors: int = 11):
+
+    metadata = {"render_modes": []}
+
+    def __init__(
+        self,
+        inputs: dict,
+        b5_weights_df: pd.DataFrame,
+        start_date: str = "2008-01-01",
+        end_date: str = "2016-12-31",
+        lambda_tilt: float = 0.01,
+        lambda_dd: float = 0.05,
+        rebalance_dates: list[pd.Timestamp] | None = None,
+    ):
         super().__init__()
-        self.n_sectors = n_sectors
-        
-        # State: Macro (6) + Sector Scores (n_sectors) + Current Weights (n_sectors) + Cash (1) + Drawdown (1)
-        obs_dim = 6 + n_sectors * 2 + 1 + 1
-        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(obs_dim,), dtype=np.float32)
-        
-        # Action: Sector Tilt (-1 to 1 for each sector), Cash Target (0 to 1), Aggressiveness (0 to 1)
-        action_dim = n_sectors + 1 + 1
-        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(action_dim,), dtype=np.float32)
-        
+
+        self.inputs = inputs
+        self.b5_weights_df = b5_weights_df.copy()
+        self.start_date = pd.Timestamp(start_date)
+        self.end_date = pd.Timestamp(end_date)
+        self.lambda_tilt = lambda_tilt
+        self.lambda_dd = lambda_dd
+
+        # Use provided rebalance_dates (actual change dates from build_promoted_weights),
+        # or detect them from weight differences in the DataFrame.
+        if rebalance_dates is not None:
+            all_dates = [
+                d for d in rebalance_dates
+                if self.start_date <= d <= self.end_date
+            ]
+        else:
+            diff_mask = b5_weights_df.diff().abs().sum(axis=1) > 1e-8
+            all_dates = list(
+                b5_weights_df.index[
+                    diff_mask
+                    & (b5_weights_df.index >= self.start_date)
+                    & (b5_weights_df.index <= self.end_date)
+                ]
+            )
+        self.rebalance_dates: list[pd.Timestamp] = all_dates
+        assert len(self.rebalance_dates) >= 2, (
+            f"Need ≥2 rebalance dates in [{start_date}, {end_date}]; got {len(self.rebalance_dates)}"
+        )
+
+        # Precompute helpers
+        self.stress_series: pd.Series = build_stress_series(inputs)
+        self.beta_frame: pd.DataFrame = rolling_beta_matrix(
+            inputs["prices"], inputs["universe_config"].benchmark
+        )
+        self.prices: pd.DataFrame = inputs["prices"]
+        self.ticker_to_sector: dict[str, str] = dict(inputs["universe_config"].tickers)
+        self.trend_tickers: list[str] = [
+            t for t in _NON_BENCHMARK_TREND if t in b5_weights_df.columns
+        ]
+
+        # Gymnasium spaces
+        self.observation_space = spaces.Box(
+            low=-np.inf, high=np.inf, shape=(28,), dtype=np.float32
+        )
+        self.action_space = spaces.Box(
+            low=-1.0, high=1.0, shape=(12,), dtype=np.float32
+        )
+
+        # Episode state (initialised in reset)
+        self._step_idx: int = 0
+        self._nav_series: pd.Series = pd.Series(dtype=float)
+        self._last_rebalance_date: pd.Timestamp | None = None
+
+    # ------------------------------------------------------------------
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
-        obs = np.zeros(self.observation_space.shape, dtype=np.float32)
-        info = {}
-        return obs, info
-        
+        self._step_idx = 0
+        first_date = self.rebalance_dates[0]
+        self._last_rebalance_date = None
+        self._nav_series = pd.Series(
+            [1.0], index=pd.DatetimeIndex([first_date], name="date")
+        )
+        obs = self._build_obs(first_date)
+        return obs, {}
+
+    # ------------------------------------------------------------------
     def step(self, action):
-        obs = np.zeros(self.observation_space.shape, dtype=np.float32)
-        reward = 0.0
-        terminated = False
-        truncated = False
-        info = {}
-        return obs, reward, terminated, truncated, info
+        current_date = self.rebalance_dates[self._step_idx]
+        next_idx = self._step_idx + 1
+        terminated = next_idx >= len(self.rebalance_dates)
+        next_date = self.rebalance_dates[next_idx] if not terminated else current_date
+
+        # --- Get B.5 weights at current date ---
+        b5_snap = self._b5_weights_at(current_date)
+
+        # --- Apply sector tilts ---
+        action_arr = np.asarray(action, dtype=float)
+        tilted = apply_sector_tilts(
+            b5_snap,
+            self.ticker_to_sector,
+            self.trend_tickers,
+            raw_action=action_arr,
+        )
+
+        # --- Apply B.4 constraints as hard floor ---
+        tilted_constrained = self._apply_b4_single_date(tilted, current_date)
+
+        # --- Compute sector tilts applied (for reward/info) ---
+        b5_sector_weights = self._sector_weights_from_slice(b5_snap)
+        tilted_sector_weights = self._sector_weights_from_slice(tilted_constrained)
+        applied_tilts = tilted_sector_weights - b5_sector_weights
+
+        # --- Simulate returns from current_date to next_date ---
+        daily_returns = self._compute_daily_returns(tilted_constrained, current_date, next_date)
+
+        # --- Update NAV ---
+        if len(daily_returns) > 0:
+            nav_values = (1.0 + daily_returns).cumprod() * float(self._nav_series.iloc[-1])
+            self._nav_series = pd.concat([self._nav_series, nav_values])
+
+        # --- Compute reward ---
+        reward = compute_reward(
+            daily_returns,
+            applied_tilts,
+            self._nav_series,
+            lambda_tilt=self.lambda_tilt,
+            lambda_dd=self.lambda_dd,
+        )
+
+        # --- Advance step ---
+        self._last_rebalance_date = current_date
+        self._step_idx = next_idx
+
+        # --- Build next observation ---
+        obs = self._build_obs(next_date if not terminated else current_date)
+
+        info = {
+            "date": current_date.isoformat(),
+            "nav": float(self._nav_series.iloc[-1]),
+            "applied_tilts": applied_tilts.tolist(),
+            "aggressiveness": float(
+                0.75 + (1.0 - 0.75) * (float(action_arr[11]) + 1.0) / 2.0
+            ),
+        }
+        return obs, float(reward), bool(terminated), False, info
+
+    # ------------------------------------------------------------------
+    def _build_obs(self, date: pd.Timestamp) -> np.ndarray:
+        return build_state(
+            inputs=self.inputs,
+            b5_weights=self.b5_weights_df,
+            nav_series=self._nav_series,
+            date=date,
+            stress_series=self.stress_series,
+            last_rebalance_date=self._last_rebalance_date,
+        )
+
+    def _b5_weights_at(self, date: pd.Timestamp) -> pd.Series:
+        available = self.b5_weights_df[self.b5_weights_df.index <= date]
+        if available.empty:
+            return pd.Series(dtype=float)
+        return available.iloc[-1].fillna(0.0)
+
+    def _apply_b4_single_date(
+        self, weights: pd.Series, date: pd.Timestamp
+    ) -> pd.Series:
+        """Wrap apply_b4_constraints for a single rebalance date."""
+        single_row = pd.DataFrame([weights], index=[date])
+        beta_slice = self.beta_frame.reindex(index=[date]).fillna(0.0)
+        if beta_slice.empty or (beta_slice.abs().sum().sum() < 1e-12):
+            # No beta data: skip constraint (env handles startup gracefully)
+            return weights
+        constrained, _ = apply_b4_constraints(
+            single_row,
+            beta_slice,
+            self.stress_series,
+            _B5_VARIANT,
+            control_dates=[date],
+            benchmark=self.inputs["universe_config"].benchmark,
+        )
+        return constrained.iloc[0].fillna(0.0)
+
+    def _sector_weights_from_slice(self, weights: pd.Series) -> np.ndarray:
+        from src.rl.state_builder import SECTOR_ORDER
+        ticker_to_sector = self.ticker_to_sector
+        trend_set = TREND_ASSETS | set(self.trend_tickers)
+        stock_w = weights[[t for t in weights.index if t not in trend_set]]
+        out = np.zeros(11, dtype=float)
+        for i, sec in enumerate(SECTOR_ORDER):
+            tickers = [t for t in stock_w.index if ticker_to_sector.get(t) == sec]
+            out[i] = float(stock_w.reindex(tickers).fillna(0.0).sum())
+        return out
+
+    def _compute_daily_returns(
+        self,
+        weights: pd.Series,
+        from_date: pd.Timestamp,
+        to_date: pd.Timestamp,
+    ) -> pd.Series:
+        """Compute portfolio daily returns from from_date+1 through to_date."""
+        mask = (self.prices.index > from_date) & (self.prices.index <= to_date)
+        price_slice = self.prices.loc[mask]
+        if price_slice.empty:
+            return pd.Series(dtype=float)
+        tickers = [t for t in weights.index if t in price_slice.columns and abs(float(weights.get(t, 0.0))) > 1e-12]
+        if not tickers:
+            return pd.Series(0.0, index=price_slice.index)
+        w = weights.reindex(tickers).fillna(0.0)
+        ret = price_slice[tickers].pct_change().fillna(0.0)
+        ret.iloc[0] = price_slice[tickers].iloc[0] / price_slice[tickers].iloc[0].shift(1).fillna(price_slice[tickers].iloc[0]) - 1.0
+        # Use first available prior close to avoid NaN on first day
+        prior = self.prices.loc[self.prices.index <= from_date, tickers]
+        if not prior.empty:
+            first_returns = price_slice[tickers].iloc[0] / prior.iloc[-1] - 1.0
+            ret.iloc[0] = first_returns.fillna(0.0)
+        return (ret * w.values).sum(axis=1)

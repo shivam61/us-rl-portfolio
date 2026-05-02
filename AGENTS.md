@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-01T16:28:30+00:00
+## Current State — 2026-05-02T03:02:48+00:00
 - Branch: `main`
-- Working tree: 8 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_d.md`, `?? artifacts/reports/phase_c1_run.log`
-- Latest commit: `08c57d14 2026-05-01 plan Phase D — RL overlay on locked B.5 system; close Phase C`
+- Working tree: 17 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_d.md`, ` M src/rl/environment.py`
+- Latest commit: `3bea4f3e 2026-05-01 refine Phase D spec and add implementation plan`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
@@ -34,6 +34,47 @@ Quantitative US equity research system with point-in-time data handling, feature
 - If the task is large, make a sequential plan and execute it step by step.
 - Before using any subagent, ask the user for explicit approval and explain why it is necessary.
 - Prefer targeted file reads and targeted edits over delegation.
+
+### Output budget
+
+- Keep responses concise and actionable.
+- Do not exceed ~100 lines of normal output.
+- Do not print full file contents unless explicitly requested.
+- Prefer targeted diffs over full rewrites.
+- Do not regenerate unchanged code.
+
+
+### Context reuse
+
+- Read large docs (ROADMAP, phase docs, agent_handoff) at most once per session.
+- Do not re-read unless:
+  - task materially changes
+  - or user explicitly asks.
+- Reuse already-read context.
+
+### Subagent hard ban
+
+Forbidden unless explicitly approved:
+- subagents
+- parallel agents
+- background agents
+- `general-purpose` agents
+- separate test/debug/refactor agents
+
+## Productivity Exception (important)
+
+- Cost controls must not compromise correctness.
+- Never skip:
+  - repo rules
+  - validation
+  - required checks
+- If a task requires:
+  - reading large files
+  - generating more output
+  - deeper reasoning  
+  → do it, but briefly explain why.
+
+
 
 ## File Lookup Order
 
