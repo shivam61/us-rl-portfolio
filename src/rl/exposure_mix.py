@@ -4,8 +4,9 @@ RL outputs raw_action ∈ [−1, +1]^3 = [raw_equity, raw_trend, raw_cash].
 
 These are mapped to target proportions (equity, trend, cash) that:
   - sum exactly to 1.0
-  - satisfy: equity ∈ [0.25, 1.00], trend ∈ [0.00, 1.00], cash ∈ [0.00, 0.60]
+  - satisfy: equity ∈ [0.25, 1.00], trend ∈ [0.00, 1.00], cash ∈ [0.00, 0.50]
 
+E.7 change: cash cap tightened from 0.60 → 0.50. Equity floor unchanged at 0.25.
 The within-sleeve proportions (vol_score stock weights and TLT/GLD/UUP weights)
 are preserved; the RL only sets the sleeve-level exposure fractions.
 """
@@ -15,7 +16,7 @@ import pandas as pd
 # Box constraints for each proportion component
 _EQ_MIN, _EQ_MAX = 0.25, 1.00
 _TR_MIN, _TR_MAX = 0.00, 1.00
-_CA_MIN, _CA_MAX = 0.00, 0.60
+_CA_MIN, _CA_MAX = 0.00, 0.50  # E.7: tightened from 0.60
 
 # Fallback allocation when raw_action sums to near zero
 _FALLBACK = (0.85, 0.10, 0.05)

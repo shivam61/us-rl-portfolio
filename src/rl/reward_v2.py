@@ -9,7 +9,16 @@ reward_t = sharpe_63d(daily_returns)
 Sign conventions (consistent with Phase D reward.py):
   - drawdown_from_peak = (nav_now − peak) / peak  ≤ 0 (negative when underwater)
   - dd_penalty = lambda_dd × max(0.0, −drawdown_from_peak)  → positive penalty
-  - cash_drag fires ONLY when spy_trend_positive=True AND stress < 0.30
+  - cash_drag fires when spy_trend_positive=True (stress gate removed in E.7)
+
+E.7 calibration changes (vs original E.4 defaults):
+  - lambda_dd:   0.15 → 0.08  (was dominant over Sharpe term; halved)
+  - lambda_cash: 0.03 → 0.05  (strengthened to match order-of-magnitude of reduced λ_dd)
+  - bull_regime: spy_trend only — stress < 0.30 gate removed (fired too rarely in 2021/2023)
+
+Drawdown definition (expanding all-time-high peak) intentionally unchanged in E.7.
+E.8 note: if E.7 remains over-defensive, test replacing expanding peak with rolling
+252d peak or a regime-triggered drawdown penalty that only fires in genuine crash regimes.
 """
 import numpy as np
 import pandas as pd
@@ -34,8 +43,8 @@ def compute_reward_v2(
     cash_frac: float,
     stress_score: float = 0.0,
     spy_trend_positive: bool = True,
-    lambda_dd: float = 0.15,
-    lambda_cash: float = 0.03,
+    lambda_dd: float = 0.08,
+    lambda_cash: float = 0.05,
     lambda_churn: float = 0.02,
 ) -> float:
     """Five-term reward for Phase E exposure-control RL.
@@ -48,8 +57,8 @@ def compute_reward_v2(
         cash_frac: Cash fraction applied at this step [0, 0.60].
         stress_score: B.5 stress score at current step [0,1].
         spy_trend_positive: True if SPY 63d return > 0 at current step date.
-        lambda_dd: Drawdown penalty weight (default 0.15, stronger than Phase D's 0.05).
-        lambda_cash: Cash-drag penalty weight (default 0.03; only in bull regimes).
+        lambda_dd: Drawdown penalty weight (E.7 default 0.08; original E.4 was 0.15).
+        lambda_cash: Cash-drag penalty weight (E.7 default 0.05; original E.4 was 0.03).
         lambda_churn: Equity-churn penalty weight (default 0.02).
 
     Returns:
@@ -98,7 +107,7 @@ def compute_reward_v2(
     # Term 4 — Cash-drag penalty (bull regimes only)                     #
     # Prevents RL hiding in cash to avoid drawdown penalty.              #
     # ------------------------------------------------------------------ #
-    bull_regime = spy_trend_positive and (stress_score < 0.30)
+    bull_regime = spy_trend_positive
     cash_drag = lambda_cash * float(cash_frac) * (1.0 if bull_regime else 0.0)
 
     # ------------------------------------------------------------------ #
