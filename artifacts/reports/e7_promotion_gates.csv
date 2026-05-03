@@ -1,0 +1,9 @@
+gate,value,pass,required,promoted,verdict_note
+Path A: Sharpe ≥ 1.270 AND MaxDD ≥ -32.98%,"Sharpe=1.296, MaxDD=-24.48%",True,either path,True,
+Path B: Sharpe ≥ 1.240 AND MaxDD ≥ -31.48%,"Sharpe=1.296, MaxDD=-24.48%",True,either path,True,
+50 bps Sharpe ≥ 0.90,1.179,True,yes,True,
+Beats RL no-op Sharpe (1.058),1.296,True,yes,True,
+Beats random median Sharpe (1.212) [hard minimum],1.296,True,yes,True,
+Beats random p75 Sharpe (1.280) [preferred],1.296,True,preferred,True,
+Beats rule-based controller Sharpe (1.083),1.296,True,yes,True,
+Hard rejection: MaxDD ≥ -35% (no blowup),-24.48%,True,yes,True,

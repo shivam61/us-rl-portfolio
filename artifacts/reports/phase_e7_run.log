@@ -1,0 +1,68 @@
+2026-05-03 09:25:49,954 INFO Loading inputs …
+2026-05-03 09:26:01,902 INFO StockFeatureGenerator: 32 features, 520 tickers, 5112 dates
+2026-05-03 09:26:06,063 INFO Building beta/stress …
+2026-05-03 09:26:06,744 INFO Building B.5 weights …
+2026-05-03 09:26:31,947 INFO B.5 weights built in 42.0s
+2026-05-03 09:26:31,948 INFO Loading sector features …
+2026-05-03 09:26:31,958 INFO Running B.5 locked …
+2026-05-03 09:26:32,651 INFO B.5 locked: Sharpe=1.270 MaxDD=-32.98% (@ 10 bps)
+2026-05-03 09:26:32,651 INFO Running RL no-op …
+2026-05-03 09:26:40,388 INFO RL no-op: Sharpe=1.058 (note: trend sleeve removed; expected below B.5)
+2026-05-03 09:26:40,388 INFO Running random bounded (50 seeds) …
+2026-05-03 09:26:48,157 INFO Random seed 1/50: Sharpe=1.276
+2026-05-03 09:26:55,898 INFO Random seed 2/50: Sharpe=1.274
+2026-05-03 09:27:03,668 INFO Random seed 3/50: Sharpe=1.181
+2026-05-03 09:27:11,409 INFO Random seed 4/50: Sharpe=1.089
+2026-05-03 09:27:19,173 INFO Random seed 5/50: Sharpe=1.057
+2026-05-03 09:27:26,939 INFO Random seed 6/50: Sharpe=1.295
+2026-05-03 09:27:34,635 INFO Random seed 7/50: Sharpe=1.220
+2026-05-03 09:27:42,506 INFO Random seed 8/50: Sharpe=1.348
+2026-05-03 09:27:50,266 INFO Random seed 9/50: Sharpe=1.226
+2026-05-03 09:27:57,981 INFO Random seed 10/50: Sharpe=1.188
+2026-05-03 09:28:05,674 INFO Random seed 11/50: Sharpe=1.143
+2026-05-03 09:28:13,499 INFO Random seed 12/50: Sharpe=1.568
+2026-05-03 09:28:21,237 INFO Random seed 13/50: Sharpe=1.043
+2026-05-03 09:28:28,968 INFO Random seed 14/50: Sharpe=1.238
+2026-05-03 09:28:36,755 INFO Random seed 15/50: Sharpe=1.132
+2026-05-03 09:28:44,602 INFO Random seed 16/50: Sharpe=1.232
+2026-05-03 09:28:52,279 INFO Random seed 17/50: Sharpe=1.177
+2026-05-03 09:28:59,940 INFO Random seed 18/50: Sharpe=1.219
+2026-05-03 09:29:07,612 INFO Random seed 19/50: Sharpe=1.306
+2026-05-03 09:29:15,343 INFO Random seed 20/50: Sharpe=1.257
+2026-05-03 09:29:23,040 INFO Random seed 21/50: Sharpe=1.195
+2026-05-03 09:29:31,002 INFO Random seed 22/50: Sharpe=1.089
+2026-05-03 09:29:38,723 INFO Random seed 23/50: Sharpe=1.281
+2026-05-03 09:29:46,395 INFO Random seed 24/50: Sharpe=1.380
+2026-05-03 09:29:54,128 INFO Random seed 25/50: Sharpe=1.390
+2026-05-03 09:30:01,818 INFO Random seed 26/50: Sharpe=1.499
+2026-05-03 09:30:09,442 INFO Random seed 27/50: Sharpe=1.198
+2026-05-03 09:30:17,201 INFO Random seed 28/50: Sharpe=1.155
+2026-05-03 09:30:25,063 INFO Random seed 29/50: Sharpe=1.181
+2026-05-03 09:30:32,728 INFO Random seed 30/50: Sharpe=1.138
+2026-05-03 09:30:40,473 INFO Random seed 31/50: Sharpe=1.075
+2026-05-03 09:30:48,104 INFO Random seed 32/50: Sharpe=1.345
+2026-05-03 09:30:55,751 INFO Random seed 33/50: Sharpe=1.199
+2026-05-03 09:31:03,542 INFO Random seed 34/50: Sharpe=1.199
+2026-05-03 09:31:11,209 INFO Random seed 35/50: Sharpe=1.211
+2026-05-03 09:31:18,857 INFO Random seed 36/50: Sharpe=1.189
+2026-05-03 09:31:26,547 INFO Random seed 37/50: Sharpe=1.136
+2026-05-03 09:31:34,383 INFO Random seed 38/50: Sharpe=1.159
+2026-05-03 09:31:42,072 INFO Random seed 39/50: Sharpe=1.174
+2026-05-03 09:31:49,698 INFO Random seed 40/50: Sharpe=1.222
+2026-05-03 09:31:57,433 INFO Random seed 41/50: Sharpe=1.320
+2026-05-03 09:32:05,197 INFO Random seed 42/50: Sharpe=1.261
+2026-05-03 09:32:13,043 INFO Random seed 43/50: Sharpe=1.302
+2026-05-03 09:32:20,744 INFO Random seed 44/50: Sharpe=1.213
+2026-05-03 09:32:28,535 INFO Random seed 45/50: Sharpe=1.132
+2026-05-03 09:32:36,219 INFO Random seed 46/50: Sharpe=1.305
+2026-05-03 09:32:43,874 INFO Random seed 47/50: Sharpe=1.213
+2026-05-03 09:32:51,738 INFO Random seed 48/50: Sharpe=1.339
+2026-05-03 09:32:59,471 INFO Random seed 49/50: Sharpe=0.977
+2026-05-03 09:33:07,139 INFO Random seed 50/50: Sharpe=1.118
+2026-05-03 09:33:07,143 INFO Random: mean=1.221 median=1.212 p75=1.280
+2026-05-03 09:33:07,143 INFO Running rule-based controller …
+2026-05-03 09:33:14,782 INFO Rule-based: Sharpe=1.083 MaxDD=-30.08%
+2026-05-03 09:33:14,782 INFO Running trained Phase E RL …
+2026-05-03 09:33:25,343 INFO Trained RL: Sharpe=1.296 MaxDD=-24.48%
+2026-05-03 09:33:25,397 INFO Report written: phase_e6_rl_evaluation.md
+2026-05-03 09:33:25,397 INFO Total time: 455.4s

@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-03T06:16:28+00:00
+Last updated: 2026-05-03T09:35:04+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -723,14 +723,20 @@ Five-way holdout (2019-01-01 → 2026-04-24, 10 bps):
 - B.5 remains the production system. RL v2 model is a tail-protection overlay candidate.
 - Artifacts: `artifacts/reports/phase_e6_rl_evaluation.md`, `e6_policy_comparison.csv`, `e6_regime_breakdown.csv`, `e6_promotion_gates.csv`, `e6_random_distribution.csv`.
 
-#### Phase E — Status: COMPLETE
+#### Phase E.7 — PROMOTE (2026-05-03)
 
-- B.5 (`b4_stress_cap_trend_boost`, sp500, 2008–2026) remains locked production: CAGR `16.04%`, Sharpe `1.078`, MaxDD `−32.98%`.
-- Recommended next direction: Phase E.7 reward retuning — reduce `λ_dd` from `0.15` to `0.08–0.10`, tighten cash cap from `0.60` to `0.40`, then retrain. Goal: raise avg equity toward `0.60–0.70` while keeping tail protection, potentially clearing the p75 gate and recovering CAGR.
-- Alternative: walk-forward retraining (expanding window, every 2 years) deferred from Phase E — adds training complexity but may improve generalization.
+E.7 reward calibration fixed the over-defensiveness diagnosed in E.6:
+- `λ_dd` 0.15→0.08, `λ_cash` 0.03→0.05, `bull_regime` removes `stress<0.30` gate, cash cap 0.60→0.50.
+- Drawdown definition (expanding all-time-high peak) intentionally unchanged.
+
+Training: best val Sharpe `1.0761` at episode 51; early stopping episode 101 (~132 min). Model: `artifacts/models/rl_e_ppo_best.zip`.
+
+Five-way holdout (2019-01-01 → 2026-04-24, 10 bps): Sharpe `1.296`, MaxDD `−24.48%`, CAGR `17.79%`, avg equity `0.406`. All 8 gates pass incl. p75 (`1.296 > 1.280`). CAGR sacrifice `2.9pp` vs B.5. 2019 bull `3.18` (improved), 2020 COVID `0.63` (weaker than E.6's `0.89` — accepted trade-off).
+
+**Phase E CLOSED — PROMOTE.** E.8 deferred: if further tuning needed, test rolling 252d peak drawdown definition instead of expanding all-time-high.
 
 #### Useful Commands (Phase E)
 
-- Re-run E.6 evaluation (model already trained): `.venv/bin/python scripts/run_rl_backtest_v2.py`
+- Re-run evaluation: `.venv/bin/python scripts/run_rl_backtest_v2.py`
 - Full retrain (sp500): `.venv/bin/python scripts/train_rl_v2.py`
 - Smoke test: `.venv/bin/python scripts/train_rl_v2.py --total-timesteps 2000 --eval-freq 500 --universe config/universes/sp100.yaml`
