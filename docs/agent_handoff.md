@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-03T16:06:08+00:00
+Last updated: 2026-05-03T19:08:06+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -754,3 +754,46 @@ Hypothesis disproved: rolling peak resets faster in recovery regimes, creating f
 - Re-run evaluation: `.venv/bin/python scripts/run_rl_backtest_v2.py`
 - Full retrain (sp500): `.venv/bin/python scripts/train_rl_v2.py`
 - Smoke test: `.venv/bin/python scripts/train_rl_v2.py --total-timesteps 2000 --eval-freq 500 --universe config/universes/sp100.yaml`
+
+### 2026-05-03 — Phase F.1 Complete
+
+#### Phase F.1 — Top-N Sensitivity Under E.7 RL — REJECT all alternatives (2026-05-03)
+
+Goal: test whether changing equity sleeve breadth (Top-N) improves CAGR without sacrificing
+the E.7 drawdown advantage. No reward change, no RL retraining in F.1a.
+
+Script: `scripts/run_phase_f1_topn_sensitivity.py` — sp500, holdout 2019-01-01→2026-04-24, 10 bps, 20 random seeds per variant.
+
+**Model checkpoint note:** `rl_e_ppo_best.zip` is the E.8 checkpoint (E.7's file was
+overwritten during E.8 training; not recovered). Evaluated with E.7 expanding-peak
+reward environment. Top-20 internal baseline = Sharpe `1.277` (vs E.7 published `1.296`).
+All four variants use the same checkpoint — comparison is internally consistent.
+
+**F.1a results (RL, 10 bps holdout):**
+
+| Top-N | Sharpe | MaxDD | CAGR | 50bps Sharpe | Avg equity | Rand p75 |
+|---|---|---|---|---|---|---|
+| 10 | 1.217 | −25.69% | 18.39% | 1.119 | 0.396 | 1.194 |
+| 15 | 1.199 | −27.48% | 17.43% | 1.095 | 0.395 | 1.196 |
+| **20 (baseline)** | **1.277** | **−24.54%** | **17.72%** | **1.165** | **0.396** | **1.275** |
+| 30 | 1.209 | −24.14% | 16.19% | 1.093 | 0.396 | 1.204 |
+
+**B.5 no-RL by Top-N (10 bps holdout):** Top-10: 1.191/−33.93%/21.02%, Top-15: 1.158/−36.58%/19.84%, Top-20: 1.270/−32.98%/20.69%, Top-30: 1.242/−32.67%/19.60%. RL drawdown advantage preserved (~8–10pp) across all Top-N.
+
+**Gate results (all non-20 REJECT):**
+- Top-10: Sharpe gate FAIL (1.217 < 1.270). CAGR (+0.67pp vs Top-20) and rand p75 pass. Concentrated book hurts Sharpe.
+- Top-15: Sharpe FAIL + MaxDD FAIL (−27.48% just under −27% gate). Not material vs Top-20.
+- Top-30: Sharpe FAIL + CAGR FAIL (16.19% < 17.79%). Dilution hurts both metrics.
+
+**Key findings:**
+- Avg equity ~0.396 is stable across all Top-N — RL posture is insensitive to breadth.
+- RL Sharpe is highest at Top-20 because the policy was trained with Top-20 weights.
+- Top-10 shows CAGR benefit but idiosyncratic risk exceeds the RL's hedging capacity.
+
+**F.1b: No retrain recommended.** Top-20 remains the optimal breadth.
+
+**Phase F.1 CLOSED — Top-20 confirmed.** Next step: if CAGR improvement still desired, consider Phase F.2 (walk-forward RL retraining with the current E.7 reward setup) or Phase F.3 (signal enhancement on the volatility_score alpha).
+
+Artifacts: `artifacts/reports/phase_f1_topn_sensitivity.md`, `f1_topn_comparison.csv`, `f1_regime_breakdown.csv`, `f1_sector_concentration.csv`.
+
+Run command: `.venv/bin/python scripts/run_phase_f1_topn_sensitivity.py`
