@@ -16,9 +16,9 @@ E.7 calibration changes (vs original E.4 defaults):
   - lambda_cash: 0.03 → 0.05  (strengthened to match order-of-magnitude of reduced λ_dd)
   - bull_regime: spy_trend only — stress < 0.30 gate removed (fired too rarely in 2021/2023)
 
-Drawdown definition (expanding all-time-high peak) intentionally unchanged in E.7.
-E.8 note: if E.7 remains over-defensive, test replacing expanding peak with rolling
-252d peak or a regime-triggered drawdown penalty that only fires in genuine crash regimes.
+E.8 tested rolling 252d peak — REJECTED (regression: Sharpe 1.296→1.277, avg equity
+0.406→0.396, p75 gate failed). Rolling peak resets faster in recovery regimes, creating
+fresh penalties earlier and making the RL more defensive, not less. Expanding peak retained.
 """
 import numpy as np
 import pandas as pd

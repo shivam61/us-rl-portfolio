@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-03T09:35:04+00:00
+Last updated: 2026-05-03T16:06:08+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -734,6 +734,20 @@ Training: best val Sharpe `1.0761` at episode 51; early stopping episode 101 (~1
 Five-way holdout (2019-01-01 → 2026-04-24, 10 bps): Sharpe `1.296`, MaxDD `−24.48%`, CAGR `17.79%`, avg equity `0.406`. All 8 gates pass incl. p75 (`1.296 > 1.280`). CAGR sacrifice `2.9pp` vs B.5. 2019 bull `3.18` (improved), 2020 COVID `0.63` (weaker than E.6's `0.89` — accepted trade-off).
 
 **Phase E CLOSED — PROMOTE.** E.8 deferred: if further tuning needed, test rolling 252d peak drawdown definition instead of expanding all-time-high.
+
+#### Phase E.8 — REJECT (2026-05-03)
+
+E.8 hypothesis: expanding all-time-high creates a permanent scar keeping RL over-defensive; rolling 252d peak would make penalty forward-looking and allow re-risking in recovery.
+
+Change tested: `portfolio_nav.expanding().max()` → `portfolio_nav.rolling(252, min_periods=1).max()` in `reward_v2.py`.
+
+Training: best val Sharpe `1.0923` at episode 49; early stopping episode 99 (~128 min).
+
+Five-way holdout (2019–2026-04-24, 10 bps): Sharpe `1.277`, MaxDD `−24.54%`, avg equity `0.396`. 7/8 gates — p75 gate **fails** (`1.277 < 1.280`). Regression on all dimensions vs E.7 (Sharpe −0.019, avg equity −0.010).
+
+Hypothesis disproved: rolling peak resets faster in recovery regimes, creating fresh penalties earlier → RL more defensive in 2021/2023 bull phases (2021 Sharpe 1.593 vs B.5's 2.420). `reward_v2.py` reverted to E.7 state. E.7 remains the production model.
+
+**Conclusion:** avg equity ~0.40 is likely the policy's correct posture for 2019–2026, not a fixable bug. The CAGR sacrifice is the price paid for MaxDD improvement. Proceed to F.1 (Top-N sensitivity) if higher CAGR is desired.
 
 #### Useful Commands (Phase E)
 

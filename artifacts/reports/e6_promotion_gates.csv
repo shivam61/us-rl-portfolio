@@ -1,9 +1,9 @@
 gate,value,pass,required,promoted,verdict_note
-Path A: Sharpe ≥ 1.270 AND MaxDD ≥ -32.98%,"Sharpe=1.275, MaxDD=-21.73%",True,either path,True,CONDITIONAL: beats random median but not p75
-Path B: Sharpe ≥ 1.240 AND MaxDD ≥ -31.48%,"Sharpe=1.275, MaxDD=-21.73%",True,either path,True,CONDITIONAL: beats random median but not p75
-50 bps Sharpe ≥ 0.90,1.208,True,yes,True,CONDITIONAL: beats random median but not p75
-Beats RL no-op Sharpe (1.058),1.275,True,yes,True,CONDITIONAL: beats random median but not p75
-Beats random median Sharpe (1.206) [hard minimum],1.275,True,yes,True,CONDITIONAL: beats random median but not p75
-Beats random p75 Sharpe (1.279) [preferred],1.275,False,preferred,True,CONDITIONAL: beats random median but not p75
-Beats rule-based controller Sharpe (1.083),1.275,True,yes,True,CONDITIONAL: beats random median but not p75
-Hard rejection: MaxDD ≥ -35% (no blowup),-21.73%,True,yes,True,CONDITIONAL: beats random median but not p75
+Path A: Sharpe ≥ 1.270 AND MaxDD ≥ -32.98%,"Sharpe=1.277, MaxDD=-24.54%",True,either path,True,CONDITIONAL: beats random median but not p75
+Path B: Sharpe ≥ 1.240 AND MaxDD ≥ -31.48%,"Sharpe=1.277, MaxDD=-24.54%",True,either path,True,CONDITIONAL: beats random median but not p75
+50 bps Sharpe ≥ 0.90,1.165,True,yes,True,CONDITIONAL: beats random median but not p75
+Beats RL no-op Sharpe (1.058),1.277,True,yes,True,CONDITIONAL: beats random median but not p75
+Beats random median Sharpe (1.212) [hard minimum],1.277,True,yes,True,CONDITIONAL: beats random median but not p75
+Beats random p75 Sharpe (1.280) [preferred],1.277,False,preferred,True,CONDITIONAL: beats random median but not p75
+Beats rule-based controller Sharpe (1.083),1.277,True,yes,True,CONDITIONAL: beats random median but not p75
+Hard rejection: MaxDD ≥ -35% (no blowup),-24.54%,True,yes,True,CONDITIONAL: beats random median but not p75
