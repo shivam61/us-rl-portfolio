@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-02T10:00:31+00:00
+Last updated: 2026-05-03T06:16:28+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -697,7 +697,40 @@ Phase E redesigns the RL action space from sector tilts (12-dim, ±15%) to expli
 | `scripts/train_rl_v2.py` | E.5 | ✅ Complete |
 | `scripts/run_rl_backtest_v2.py` | E.6 | ✅ Complete |
 
-#### Next Steps
-1. Smoke test: `.venv/bin/python scripts/train_rl_v2.py --total-timesteps 2000 --eval-freq 500 --universe config/universes/sp100.yaml`
-2. Full training: `.venv/bin/python scripts/train_rl_v2.py` (~60–90 min; outputs `artifacts/models/rl_e_ppo_best.zip`)
-3. E.6 evaluation: `.venv/bin/python scripts/run_rl_backtest_v2.py` (after training)
+#### E.5 Training Results (2026-05-03)
+
+- sp500, 2008–2016 train / 2017–2018 val.
+- Best val Sharpe: `1.0746` at episode 13; early stopping at episode 63 (patience=50).
+- Total time: ~82 min. Model: `artifacts/models/rl_e_ppo_best.zip`.
+- Training log: `artifacts/reports/phase_e5_training_log.csv`.
+
+#### E.6 Evaluation Results (2026-05-03) — CONDITIONAL PROMOTE
+
+Five-way holdout (2019-01-01 → 2026-04-24, 10 bps):
+
+| Policy | CAGR | Sharpe | MaxDD | Avg equity |
+|---|---|---|---|---|
+| B.5 locked | 20.69% | 1.270 | −32.98% | — |
+| RL no-op | 17.95% | 1.058 | −29.28% | 1.000 |
+| Rule-based (VIX+SPY) | 18.25% | 1.083 | −30.08% | 0.696 |
+| Random (50 seeds) | 18.46% | 1.218 mean / 1.206 median / 1.279 p75 | −25.90% | — |
+| **Trained Phase E RL** | **16.86%** | **1.275** | **−21.73%** | **0.365** |
+
+- All hard gates pass: Path A (Sharpe ≥ 1.270 AND MaxDD ≥ −32.98%) ✅, Path B ✅, 50 bps Sharpe `1.208` ≥ 0.90 ✅, beats no-op ✅, beats random median ✅, beats rule-based ✅, no blowup ✅.
+- Missed p75 preferred gate by `0.004` (1.275 vs 1.279) ❌ → CONDITIONAL (not clean) promote.
+- Key strength: tail protection. 2020 COVID Sharpe `0.888` vs B.5 `0.435`. MaxDD `−21.73%` vs B.5 `−32.98%` (11pp improvement).
+- Key concern: avg equity `0.365` — RL is over-defensive; CAGR sacrifice `3.83pp`. The `λ_dd=0.15` drawdown penalty likely dominates the reward.
+- B.5 remains the production system. RL v2 model is a tail-protection overlay candidate.
+- Artifacts: `artifacts/reports/phase_e6_rl_evaluation.md`, `e6_policy_comparison.csv`, `e6_regime_breakdown.csv`, `e6_promotion_gates.csv`, `e6_random_distribution.csv`.
+
+#### Phase E — Status: COMPLETE
+
+- B.5 (`b4_stress_cap_trend_boost`, sp500, 2008–2026) remains locked production: CAGR `16.04%`, Sharpe `1.078`, MaxDD `−32.98%`.
+- Recommended next direction: Phase E.7 reward retuning — reduce `λ_dd` from `0.15` to `0.08–0.10`, tighten cash cap from `0.60` to `0.40`, then retrain. Goal: raise avg equity toward `0.60–0.70` while keeping tail protection, potentially clearing the p75 gate and recovering CAGR.
+- Alternative: walk-forward retraining (expanding window, every 2 years) deferred from Phase E — adds training complexity but may improve generalization.
+
+#### Useful Commands (Phase E)
+
+- Re-run E.6 evaluation (model already trained): `.venv/bin/python scripts/run_rl_backtest_v2.py`
+- Full retrain (sp500): `.venv/bin/python scripts/train_rl_v2.py`
+- Smoke test: `.venv/bin/python scripts/train_rl_v2.py --total-timesteps 2000 --eval-freq 500 --universe config/universes/sp100.yaml`

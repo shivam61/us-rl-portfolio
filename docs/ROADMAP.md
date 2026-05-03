@@ -7,21 +7,22 @@ RL is an overlay only. It cannot replace vol_score, trend sleeve, stress blend, 
 
 ---
 
-## Current State — 2026-05-02
+## Current State — 2026-05-03
 
 | | |
 |---|---|
-| Active phase | **Phase E** — RL Regime Controller v2 (exposure mix: equity / trend / cash) |
-| Current step | **E.1** — Phase D closed; spec agreed; building Phase E state vector + environment |
+| Active phase | **Phase E — COMPLETE (CONDITIONAL PROMOTE)** |
+| Current step | **E.6 done** — five-way holdout complete; trained RL beats all hard gates; missed p75 by 0.004 |
 | Locked production system | **B.5 `b4_stress_cap_trend_boost`** — vol_score signal, dynamic beta cap `0.90 − 0.20 × stress`, floor 0.50, trend sleeve, stress blend |
 | Current headline metrics (sp500, 2008–2026, 10 bps) | CAGR `16.04%`, Sharpe `1.078`, MaxDD `−32.98%`, turnover `84.12`; 50 bps Sharpe `0.934` |
 | Holdout metrics (sp500, 2019–2026-04-24, 10 bps) | CAGR `20.69%`, Sharpe `1.270`, MaxDD `−32.98%`, 50 bps Sharpe `1.135` |
+| Phase E RL holdout (2019–2026-04-24, 10 bps) | CAGR `16.86%`, Sharpe `1.275`, MaxDD `−21.73%`, avg equity `0.365`; 50 bps Sharpe `1.208` |
 | Production alpha signal | `volatility_score` — locked; Phase C confirmed no replacement candidate |
 | Phase A status | A.7.3 validated; B.1 found same-day alignment in unlagged headline; do not use unlagged A.7.3 as baseline |
 | Phase B status | **Complete** — B.5 passed all 8 exit criteria (2026-05-01) |
 | Phase C status | **Complete** — C.1 REJECT (LGBM negative IC), C.2 POSITIVE IC (simple_mean_rank), C.3 REJECT (portfolio Sharpe 1.050 vs gate 1.05 — crisis regime collapse). vol_score unchanged. |
 | Phase D status | **Complete — REJECT** (2026-05-02) — trained RL Sharpe `1.295` vs random bounded `1.321`; sector-tilt action space too constrained. B.5 remains production. |
-| Phase E constraint | RL controls equity/trend/cash exposure mix ONLY; vol_score, stock selection, within-sleeve proportions, beta cap, gross cap, and rebalance cadence are all locked |
+| Phase E status | **Complete — CONDITIONAL PROMOTE** (2026-05-03) — Sharpe `1.275` (Path A + B pass), MaxDD `−21.73%` (11pp better). Missed p75 by `0.004`. Over-defensive (avg equity `0.365`). B.5 remains production. |
 
 ## Baseline Convention
 
@@ -55,7 +56,7 @@ RL is an overlay only. It cannot replace vol_score, trend sleeve, stress blend, 
 | **B** | Portfolio stabilization: optimizer integration, risk engine redesign, exposure shaping | ✅ Complete — B.5 gate passed 2026-05-01 | [phases/phase_b.md](phases/phase_b.md) |
 | **C** | Model refinement: LightGBM tuning + feature improvements | ✅ Complete — vol_score unchanged (2026-05-01) | [phases/phase_c.md](phases/phase_c.md) |
 | **D** | RL overlay on locked B.5 system: sector tilts + aggressiveness | ✅ Complete — REJECT (2026-05-02); B.5 remains production | [phases/phase_d.md](phases/phase_d.md) |
-| **E** | RL Regime Controller v2: equity/trend/cash exposure mix | 🔄 In progress — Phase E.1 | [phases/phase_e.md](phases/phase_e.md) |
+| **E** | RL Regime Controller v2: equity/trend/cash exposure mix | ✅ CONDITIONAL PROMOTE (2026-05-03) — Sharpe `1.275` / MaxDD `−21.73%`; B.5 remains production | [phases/phase_e.md](phases/phase_e.md) |
 
 ### Phase Gates
 

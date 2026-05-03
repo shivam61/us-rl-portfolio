@@ -382,7 +382,9 @@ def run_trained_rl_v2(
 def _regime_metrics(result: dict, label: str) -> list[dict]:
     """Compute per-regime Sharpe and MaxDD for a policy result."""
     rows = []
-    raw = result.get("raw_returns") or result.get("net_returns")
+    raw = result.get("raw_returns")
+    if raw is None:
+        raw = result.get("net_returns")
     to = result.get("daily_turnover", pd.Series(dtype=float))
     if raw is None:
         return [{"regime": r, f"{label} Sharpe": np.nan, f"{label} MaxDD": np.nan} for r, *_ in HOLDOUT_REGIMES]

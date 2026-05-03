@@ -1,0 +1,18 @@
+2026-05-02 16:17:51,656 INFO Loading inputs …
+2026-05-02 16:17:53,758 INFO StockFeatureGenerator: 32 features, 61 tickers, 5112 dates
+2026-05-02 16:17:54,101 INFO validation_end=2026-04-29
+2026-05-02 16:17:54,101 INFO Building beta/stress …
+2026-05-02 16:17:54,183 INFO Building B.5 constrained weights (full period) …
+2026-05-02 16:18:15,567 INFO B.5 weights shape: (4610, 47), time 23.9s
+2026-05-02 16:18:15,567 INFO Loading sector features …
+2026-05-02 16:18:15,594 INFO Sector features loaded: (50605, 5)
+2026-05-02 16:18:15,595 INFO Rebalance dates — train: 59, val: 13
+2026-05-02 16:18:15,595 INFO Building training environment (PortfolioEnvV2) …
+2026-05-02 16:18:18,994 INFO Timestep-budget mode: total_timesteps=2000, eval_freq=500
+2026-05-02 16:19:28,637 INFO step=500: val_sharpe=1.3186 NEW BEST — checkpoint saved (0.9s)
+2026-05-02 16:20:39,074 INFO step=1000: val_sharpe=1.3265 NEW BEST — checkpoint saved (0.9s)
+2026-05-02 16:21:50,356 INFO step=1500: val_sharpe=1.3378 NEW BEST — checkpoint saved (0.9s)
+2026-05-02 16:22:59,836 INFO step=2000: val_sharpe=1.3369 best=1.3378 patience=1 (0.9s)
+2026-05-02 16:22:59,842 INFO Final model saved: /home/shivamguptanit/github/us-rl-portfolio/artifacts/models/rl_e_ppo_final
+2026-05-02 16:22:59,847 INFO Training log saved: 4 rows
+2026-05-02 16:22:59,847 INFO Training complete: best_val_sharpe=1.3378, total_time=308.2s
