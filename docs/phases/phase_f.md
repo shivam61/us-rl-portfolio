@@ -140,10 +140,12 @@ This reproduces the exact reward regime E.7 was originally trained with. The E.7
 
 ### Outputs
 
-- `artifacts/models/rl_e_ppo_best.zip` — best checkpoint by val Sharpe (replaces E.8)
-- `artifacts/models/rl_e_ppo_final.zip` — final checkpoint
+- `artifacts/production/rl_e7_clean_promoted.zip` — **production model** (copy of best checkpoint)
+- `artifacts/production/rl_e7_manifest.json` — full provenance manifest
+- `artifacts/models/rl_e_ppo_best.zip` — source checkpoint (best by val Sharpe, ep=51)
+- `artifacts/models/rl_e_ppo_final.zip` — **DO NOT USE** — not saved; still contains smoke test model
 - `artifacts/reports/phase_e5_training_log.csv` — episode-level val Sharpe trace
-- `artifacts/reports/phase_f2_training_run.log` — full stdout log
+- `artifacts/reports/phase_f2_training_run.log` — stdout log (truncated at ep=91 due to process kill)
 
 ### F.2 Results
 
@@ -159,6 +161,10 @@ Training ran to ep=51 before early stopping (patience=50). Best checkpoint saved
 | MaxDD hard floor | -24.48% | ≥ -35% | ✅ |
 
 Checkpoint reproduces original E.7 exactly (same seed=42, same effective lambdas, same training
-data). `rl_e_ppo_best.zip` is now a clean E.7 checkpoint. **F.2 PROMOTE.**
+data). **F.2 COMPLETE — PROMOTE.**
+
+- Production model: `artifacts/production/rl_e7_clean_promoted.zip`
+- Manifest: `artifacts/production/rl_e7_manifest.json`
+- `rl_e_ppo_final.zip` was not saved (process killed before completion) — do not use it.
 
 ---
