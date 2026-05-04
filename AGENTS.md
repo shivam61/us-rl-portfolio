@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-03T19:08:06+00:00
+## Current State — 2026-05-04T09:46:36+00:00
 - Branch: `main`
-- Working tree: 18 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M artifacts/models/rl_e_ppo_best.zip`, ` M artifacts/models/rl_e_ppo_final.zip`, ` M artifacts/reports/phase_e5_training_log.csv`
-- Latest commit: `35361dba 2026-05-03 Phase E.8 REJECT: rolling 252d peak regression — Sharpe 1.296→1.277, p75 gate fails`
+- Working tree: 24 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M artifacts/models/rl_e_ppo_best.zip`, ` M artifacts/models/rl_e_ppo_final.zip`, ` M artifacts/reports/e6_policy_comparison.csv`
+- Latest commit: `f0b69a36 2026-05-03 Phase F.1 REJECT all Top-N alternatives — Top-20 confirmed as optimal breadth`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

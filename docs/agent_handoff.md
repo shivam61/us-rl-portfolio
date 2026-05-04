@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-03T19:08:06+00:00
+Last updated: 2026-05-04T09:46:36+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -797,3 +797,58 @@ All four variants use the same checkpoint — comparison is internally consisten
 Artifacts: `artifacts/reports/phase_f1_topn_sensitivity.md`, `f1_topn_comparison.csv`, `f1_regime_breakdown.csv`, `f1_sector_concentration.csv`.
 
 Run command: `.venv/bin/python scripts/run_phase_f1_topn_sensitivity.py`
+
+### 2026-05-04 — Phase F.2 Complete + Phase G/H/PROD Plans Created
+
+#### Phase F.2 — Clean E.7 Retrain — PROMOTE (2026-05-04)
+
+**Context:** `rl_e_ppo_best.zip` was contaminated by E.8 training (rolling 252d peak, rejected).
+F.2 retrains E.7 exactly, with explicit lambda pinning in `train_rl_v2.py` to lock in the
+effective values (env defaults, not reward_v2.py function defaults).
+
+**Lambda bug resolved:** `reward_v2.py` advertises `lambda_dd=0.08, lambda_cash=0.05` as function
+defaults, but `PortfolioEnvV2.__init__` defaults are `0.15 / 0.03` and passes `self.lambda_*` to
+the reward function — overriding the function defaults. Training never explicitly set these, so
+E.7 was effectively trained with `0.15 / 0.03`. F.2 pins this explicitly as
+`LAMBDA_DD_E7_EFFECTIVE=0.15`, `LAMBDA_CASH_E7_EFFECTIVE=0.03` in `train_rl_v2.py`.
+
+**Training outcome:** Best checkpoint at ep=51 (val_sharpe=1.0761 on 2017–2018 val window).
+Process was killed by session reset before final model save, but best checkpoint was already
+written to `rl_e_ppo_best.zip` at 07:35.
+
+**Holdout evaluation (2019–2026-04-24, 10 bps):**
+
+| Metric | Value | Gate | Pass |
+|--------|-------|------|------|
+| Sharpe | 1.296 | ≥ 1.270 | ✅ |
+| MaxDD | -24.48% | ≥ -32.98% | ✅ |
+| 50 bps Sharpe | 1.179 | ≥ 1.0 | ✅ |
+| MaxDD hard floor | -24.48% | ≥ -35% | ✅ |
+
+Checkpoint reproduces original E.7 exactly (seed=42, same lambdas, same training window).
+
+**Phase F CLOSED — PROMOTE.** `rl_e_ppo_best.zip` is now a clean E.7 checkpoint.
+
+#### Phase G/H/PROD Plans Created (2026-05-04)
+
+Production deployment plan split into three phases:
+- **Phase G** (`docs/phases/phase_g.md`): Production infrastructure — feature parity check (G.0),
+  signal gen pipeline (G.1), audit trail (G.2), drift monitoring (G.3), dual-mode switching (G.4),
+  benchmark dashboard (G.5).
+- **Phase H** (`docs/phases/phase_h.md`): Paper trading — 8–12 week forward test, daily ops
+  schedule, 8 exit gates (slippage < 20 bps, pipeline reliability, RL mode operational, etc.).
+  Recommended broker: Alpaca for Phase H.
+- **Phase PROD** (`docs/phases/phase_prod.md`): Live capital deployment — `$[BUDGET]` placeholder
+  (min ~$25K), 4-week capital ramp (25%→50%→75%→100%), circuit breakers (15% HWM drawdown →
+  liquidate, 2-day pipeline failure → hold), T+1 execution, quarterly retrain gate.
+
+**Next active phase: Phase G** — build production infrastructure starting from G.0 feature parity.
+
+Useful commands:
+```bash
+# Holdout evaluation (trained RL only, ~70s):
+.venv/bin/python scripts/run_rl_backtest_v2.py --policy trained
+
+# Full 5-way holdout comparison (~15 min with 50 random seeds):
+.venv/bin/python scripts/run_rl_backtest_v2.py --policy all
+```

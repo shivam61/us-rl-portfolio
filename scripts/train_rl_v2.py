@@ -1,4 +1,4 @@
-"""Phase E.5 — PPO training for RL Regime Controller v2 on 2008–2016 with early stopping.
+"""Phase E.5 / F.2 — PPO training for RL Regime Controller v2 on 2008–2016 with early stopping.
 
 Usage:
     # Full training (sp500, 2008–2016):
@@ -11,6 +11,15 @@ Outputs:
     artifacts/models/rl_e_ppo_best.zip      — best checkpoint by validation Sharpe
     artifacts/models/rl_e_ppo_final.zip     — final checkpoint (regardless of best)
     artifacts/reports/phase_e5_training_log.csv
+
+Lambda note (F.2 investigation):
+    reward_v2.py function signature has lambda_dd=0.08, lambda_cash=0.05 (E.7 intent).
+    BUT PortfolioEnvV2.__init__ has lambda_dd=0.15, lambda_cash=0.03 as defaults, and passes
+    self.lambda_dd/self.lambda_cash to compute_reward_v2 — overriding the function defaults.
+    Because train_rl_v2.py did not explicitly pass lambda_dd/lambda_cash to PortfolioEnvV2,
+    E.7 was effectively trained with lambda_dd=0.15, lambda_cash=0.03 (env defaults).
+    F.2 reproduces that behaviour exactly; the E.7-intended values are pinned below as
+    LAMBDA_DD_E7_EFFECTIVE / LAMBDA_CASH_E7_EFFECTIVE for clarity and to avoid silent drift.
 """
 import argparse
 import logging
@@ -62,6 +71,12 @@ PATIENCE = 50
 CHECKPOINT_EVERY = 100
 STEPS_PER_EPISODE = 512
 
+# E.7 effective reward lambdas — these are what the env actually uses during training
+# (env.__init__ defaults, not reward_v2.py function defaults; see module docstring for context)
+LAMBDA_DD_E7_EFFECTIVE    = 0.15   # env default; reward_v2.py function default is 0.08
+LAMBDA_CASH_E7_EFFECTIVE  = 0.03   # env default; reward_v2.py function default is 0.05
+LAMBDA_CHURN_E7_EFFECTIVE = 0.02   # unchanged across E.4 / E.7
+
 
 def _sharpe_from_env_rollout(env: PortfolioEnvV2, model: PPO) -> float:
     """Run a full episode on env using model; return annualised Sharpe from daily NAV."""
@@ -79,13 +94,20 @@ def _sharpe_from_env_rollout(env: PortfolioEnvV2, model: PPO) -> float:
 
 
 def make_env_fn(inputs, b5_weights_df, start_date, end_date, rebalance_dates, sector_features_df):
-    """Factory for DummyVecEnv — preloads sector_features_df to avoid repeated disk reads."""
+    """Factory for DummyVecEnv — preloads sector_features_df to avoid repeated disk reads.
+
+    Lambda values are pinned explicitly so future env default changes do not silently alter
+    training behaviour. Values match what E.7 was effectively trained with (see module docstring).
+    """
     def _make():
         return PortfolioEnvV2(
             inputs, b5_weights_df,
             start_date=start_date, end_date=end_date,
             rebalance_dates=rebalance_dates,
             sector_features_df=sector_features_df,
+            lambda_dd=LAMBDA_DD_E7_EFFECTIVE,
+            lambda_cash=LAMBDA_CASH_E7_EFFECTIVE,
+            lambda_churn=LAMBDA_CHURN_E7_EFFECTIVE,
         )
     return _make
 
@@ -151,6 +173,9 @@ def main():
     val_env = PortfolioEnvV2(
         inputs, b5_weights_df, start_date=VAL_START, end_date=VAL_END,
         rebalance_dates=_ctrl, sector_features_df=sector_features_df,
+        lambda_dd=LAMBDA_DD_E7_EFFECTIVE,
+        lambda_cash=LAMBDA_CASH_E7_EFFECTIVE,
+        lambda_churn=LAMBDA_CHURN_E7_EFFECTIVE,
     )
 
     model = PPO(
