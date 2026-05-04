@@ -5,11 +5,11 @@ All repo rules, workflow rules, save rules, file lookup order, roadmap-first beh
 Do not treat this file as an independent source of repo instructions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-04T09:46:36+00:00
+## Current State — 2026-05-04T09:56:41+00:00
 - Branch: `main`
-- Working tree: 24 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M artifacts/models/rl_e_ppo_best.zip`, ` M artifacts/models/rl_e_ppo_final.zip`, ` M artifacts/reports/e6_policy_comparison.csv`
-- Latest commit: `f0b69a36 2026-05-03 Phase F.1 REJECT all Top-N alternatives — Top-20 confirmed as optimal breadth`
+- Working tree: 11 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, `?? artifacts/models/rl_e_ppo_ep0100.zip`
+- Latest commit: `c000fe1f 2026-05-04 promote E.7 checkpoint to production: rl_e7_clean_promoted.zip + manifest`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

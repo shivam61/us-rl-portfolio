@@ -11,8 +11,8 @@ RL is an overlay only. It cannot replace vol_score, trend sleeve, stress blend, 
 
 | | |
 |---|---|
-| Active phase | **Phase G — NEXT** |
-| Current step | **Phase F COMPLETE** — F.1 Top-20 locked, F.2 E.7 retrain promoted (Sharpe 1.296 / MaxDD −24.48%) |
+| Active phase | **Phase G — Production Infrastructure** |
+| Current step | **Phase F COMPLETE (2026-05-04)** — F.1 Top-20 locked; F.2 E.7 retrain promoted; production model at `artifacts/production/rl_e7_clean_promoted.zip` |
 | Locked production system | **B.5 `b4_stress_cap_trend_boost`** — vol_score signal, dynamic beta cap `0.90 − 0.20 × stress`, floor 0.50, trend sleeve, stress blend |
 | Current headline metrics (sp500, 2008–2026, 10 bps) | CAGR `16.04%`, Sharpe `1.078`, MaxDD `−32.98%`, turnover `84.12`; 50 bps Sharpe `0.934` |
 | Holdout metrics (sp500, 2019–2026-04-24, 10 bps) | CAGR `20.69%`, Sharpe `1.270`, MaxDD `−32.98%`, 50 bps Sharpe `1.135` |
@@ -58,9 +58,9 @@ RL is an overlay only. It cannot replace vol_score, trend sleeve, stress blend, 
 | **D** | RL overlay on locked B.5 system: sector tilts + aggressiveness | ✅ Complete — REJECT (2026-05-02); B.5 remains production | [phases/phase_d.md](phases/phase_d.md) |
 | **E** | RL Regime Controller v2: equity/trend/cash exposure mix | ✅ **PROMOTE** (2026-05-03 E.7) — Sharpe `1.296` / MaxDD `−24.48%`; all gates pass incl. p75 | [phases/phase_e.md](phases/phase_e.md) |
 | **F** | RL policy hardening: Top-N sensitivity + clean E.7 retrain | ✅ **COMPLETE** — F.1 Top-20 locked; F.2 E.7 retrain Sharpe `1.296` / MaxDD `−24.48%` | [phases/phase_f.md](phases/phase_f.md) |
-| **G** | Production infrastructure: signal pipeline, audit trail, drift monitoring, dual-mode switching | ⏳ **PENDING** — begins after F.2 promotes | [phases/phase_g.md](phases/phase_g.md) |
-| **H** | Paper trading: 8–12 week forward test with live data, simulated fills, exit gate | ⏳ **PENDING** — begins after Phase G complete | [phases/phase_h.md](phases/phase_h.md) |
-| **PROD** | Live deployment: real capital, ramp schedule, circuit breakers, steady-state ops | ⏳ **PENDING** — begins after all Phase H exit gates pass | [phases/phase_prod.md](phases/phase_prod.md) |
+| **G** | Production infrastructure: feature parity, signal pipeline, audit trail, drift monitoring, dual-mode switching | 🔄 **ACTIVE** — G.0 feature parity check is first step | [phases/phase_g.md](phases/phase_g.md) |
+| **H** | Paper trading: 8–12 week forward test with live data, simulated fills, 8 exit gates | ⏳ **PENDING** — begins after Phase G complete | [phases/phase_h.md](phases/phase_h.md) |
+| **PROD** | Live deployment: real capital, 4-week ramp, circuit breakers, steady-state ops, quarterly retrain gate | ⏳ **PENDING** — begins after all Phase H exit gates pass | [phases/phase_prod.md](phases/phase_prod.md) |
 
 ### Phase Gates
 
@@ -72,6 +72,10 @@ RL is an overlay only. It cannot replace vol_score, trend sleeve, stress blend, 
 | C → D | Phase C complete; vol_score confirmed as production signal | Cleared 2026-05-01 — vol_score locked, B.5 construction locked |
 | D done | RL holdout Sharpe vs B.5 baseline | RL ≥ 1.00 (floor), preferred ≥ 1.078; MaxDD ≥ −35%; zero beta violations |
 | E done | RL holdout Sharpe vs B.5 holdout | Sharpe ≥ 1.270 (Path A) or ≥ 1.240 with MaxDD ≥ −31.48% (Path B); 50 bps Sharpe ≥ 0.90; beats no-op and random; MaxDD ≥ −35% |
+| F done | Clean E.7 checkpoint validated | Holdout Sharpe ≥ 1.270, MaxDD ≥ −32.98%, production artifact at `artifacts/production/` |
+| G done | Production infrastructure live | Signal pipeline runs unattended 5 days; dual-mode switching validated on 3 historical dates |
+| H done | Paper trading exit gate | 8 gates pass: slippage < 20 bps, zero unrecovered pipeline failures, RL mode operational |
+| PROD entry | Capital deployment approved | All H gates pass + broker funded + PROD.0 checklist signed off |
 
 ---
 
@@ -91,6 +95,12 @@ RL is an overlay only. It cannot replace vol_score, trend sleeve, stress blend, 
 | `docs/phases/phase_d.md` | Phase D detail: RL design, state/action/reward (closed — REJECT) |
 | `docs/phases/phase_e.md` | Phase E detail: RL regime controller v2, exposure mix design |
 | `docs/agent_handoff.md` | Experiment history, legacy session notes, useful commands |
+| `docs/phases/phase_f.md` | Phase F: F.1 Top-N results, F.2 E.7 retrain results |
+| `docs/phases/phase_g.md` | Phase G: production infrastructure plan (G.0–G.5) |
+| `docs/phases/phase_h.md` | Phase H: paper trading plan, 8 exit gates |
+| `docs/phases/phase_prod.md` | Phase PROD: live deployment, capital ramp, circuit breakers |
+| `artifacts/production/rl_e7_clean_promoted.zip` | **Production model** — E.7 RL policy (do not use rl_e_ppo_final.zip) |
+| `artifacts/production/rl_e7_manifest.json` | Model provenance: seed, windows, reward config, holdout metrics, git commit |
 
 ---
 

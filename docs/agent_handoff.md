@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-04T09:46:36+00:00
+Last updated: 2026-05-04T09:56:41+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -852,3 +852,31 @@ Useful commands:
 # Full 5-way holdout comparison (~15 min with 50 random seeds):
 .venv/bin/python scripts/run_rl_backtest_v2.py --policy all
 ```
+
+### 2026-05-04 — Production Artifact + Roadmap Update
+
+#### Production Model Promoted
+
+- `artifacts/production/rl_e7_clean_promoted.zip` — canonical production checkpoint
+- `artifacts/production/rl_e7_manifest.json` — full provenance (seed, windows, lambdas, metrics, git hash `e6dacb92`)
+- `rl_e_ppo_final.zip` marked DO NOT USE — process was killed before final save; it contains the smoke test model
+- `rl_e_ppo_best.zip` remains as source; production code should reference the `artifacts/production/` path
+
+#### Active Next Phase: G — Production Infrastructure
+
+Step sequence and first task:
+
+| Step | Goal | First action |
+|------|------|-------------|
+| **G.0** | Feature parity check | Run state vector computation on last 30 trading days; compare backtest vs live feature values; gate: max abs diff < 1e-6 |
+| G.1 | Signal gen pipeline | Build `scripts/run_prod_signal.py` — EOD scheduled, deterministic, exports allocation JSON |
+| G.2 | Audit trail | Append-only parquet store at `data/audit/`; every allocation decision logged with full state snapshot |
+| G.3 | Drift monitoring | Rolling 63d Sharpe, feature PSI, avg equity, stress score alerts |
+| G.4 | Dual-mode switching | B.5-only ↔ RL switching rule; validate on 2020-03, 2022-01, 2023-10 historical dates |
+| G.5 | Benchmark dashboard | Daily-updating NAV, Sharpe, MaxDD vs SPY/60-40/B.5 |
+
+**G.0 is the critical dependency** — all downstream phases assume feature parity.
+
+#### Open Item Before Phase PROD
+
+- `$[BUDGET]` in `docs/phases/phase_prod.md` needs to be filled in (minimum ~$25K; determines broker choice and position sizing)
