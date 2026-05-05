@@ -16,9 +16,9 @@ and a clean dual-mode architecture that can switch between B.5 and RL without ma
 |------|------|--------|-------------|
 | G.0 | Feature Parity Check | ✅ **COMPLETE** (2026-05-04) — max dev 0.00e+00, 30/30 pass | All features match within 1e-6 on last 30 trading days |
 | G.1 | Signal Generation Pipeline | ✅ **COMPLETE** (2026-05-04) — dry-run validated; state persistence verified | Signal exports run unattended for 5 consecutive days |
-| G.2 | Audit Trail | ⏳ NEXT | Every allocation decision has a queryable record |
-| G.3 | Live Drift Monitoring | ⏳ PENDING | Dashboard live; alert fires on simulated breach |
-| G.4 | Dual-Mode Allocation | ⏳ PENDING | Mode switch validated on 3 historical transition dates |
+| G.2 | Audit Trail | ✅ **COMPLETE** (2026-05-04) — append-only parquet; wired into G.1 pipeline | Every allocation decision has a queryable record |
+| G.3 | Live Drift Monitoring | ✅ **COMPLETE** (2026-05-05) — 5 flags + alert rule; gate PASS on simulated breach | Dashboard live; alert fires on simulated breach |
+| G.4 | Dual-Mode Allocation | ⏳ **NEXT** | Mode switch validated on 3 historical transition dates |
 | G.5 | Benchmark Dashboard | ⏳ PENDING | Dashboard auto-updates daily |
 
 ---
@@ -122,6 +122,17 @@ Database migration is a G.2+ concern, not a G.2 blocker.
 ---
 
 ## G.3 — Live Drift Monitoring
+
+**Status: COMPLETE — PASS (2026-05-05)**
+
+**Implementation:**
+- Core logic: `src/rl/drift_monitor.py` — 5 flag detectors + alert aggregator
+- Script: `scripts/run_drift_monitor_g3.py` — daily dashboard + `--simulate-breach` gate mode
+- Dashboard: `artifacts/reports/phase_g3_drift_report.md` (auto-updated on each run)
+- Flag history: `data/drift/flags.parquet` (append-only, one row per run)
+
+**Gate result:** `--simulate-breach` injected `stress_breach` (15 consecutive days > 0.70)
++ `cash_trap` (18 consecutive rebalances with equity_frac=0.20 < 0.25) → alert fired ✅
 
 **Objective:** Detect two classes of degradation in production:
 

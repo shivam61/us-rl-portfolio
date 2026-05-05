@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-04T09:56:41+00:00
+## Current State — 2026-05-05T15:18:19+00:00
 - Branch: `main`
-- Working tree: 11 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, `?? artifacts/models/rl_e_ppo_ep0100.zip`
-- Latest commit: `c000fe1f 2026-05-04 promote E.7 checkpoint to production: rl_e7_clean_promoted.zip + manifest`
+- Working tree: 15 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_g.md`
+- Latest commit: `60669251 2026-05-04 Phase G.0/G.1/G.2: feature parity PASS, signal pipeline, audit trail`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
