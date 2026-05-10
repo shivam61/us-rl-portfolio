@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-10T13:09:51+00:00
+## Current State — 2026-05-10T13:22:21+00:00
 - Branch: `main`
-- Working tree: 12 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M artifacts/reports/phase_g3_drift_report.md`, ` M artifacts/reports/phase_g5_benchmark_dashboard.md`, ` M docs/agent_handoff.md`
-- Latest commit: `afceab5e 2026-05-10 Update docs: README, ROADMAP, phase_h with full paper trading runbook`
+- Working tree: 10 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/agent_handoff.md`, `?? artifacts/models/rl_e_ppo_ep0100.zip`, `?? artifacts/reports/phase_c1_run.log`
+- Latest commit: `8bd09497 2026-05-10 Sync all docs and session state; expand README with system description`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
@@ -108,3 +108,16 @@ Forbidden unless explicitly approved:
 - Prefer `.venv/bin/python` when dependencies are needed.
 - After verified code or doc changes, create a git commit with a focused message.
 - After a successful commit, sync to the remote repository with `git push`.
+
+## Token Efficiency Rules (always apply)
+
+Long subprocess logs and full file reads burn context quickly. Follow these rules on every tool call:
+
+1. **Cap subprocess output** — pipe to `tail` so only the result lands in context:
+   ```bash
+   .venv/bin/python scripts/foo.py --args > /tmp/out.log 2>&1 && tail -3 /tmp/out.log || tail -20 /tmp/out.log
+   ```
+2. **Read with offset/limit** — never read a whole file when you need 20 lines; use `grep -n` first to locate the section, then `Read` with `offset`/`limit`.
+3. **Verify with one-liners** — after portfolio or data changes print only the 4 numbers that matter, not a full DataFrame.
+4. **Prefer `Edit` over `Write`** — `Edit` sends only the diff; `Write` sends the whole file.
+5. **Batch independent commands** — run independent bash calls in parallel (single message, multiple tool calls).
