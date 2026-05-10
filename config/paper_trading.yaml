@@ -1,0 +1,45 @@
+# Phase H paper trading configuration — FROZEN at H.0 setup
+# Do not edit after paper trading starts without a version bump and documented reason.
+# Single source of truth for all H.0–H.11 paper trading parameters.
+
+phase: H
+version: "H.0.0"
+frozen_at: "2026-05-10"
+
+capital:
+  initial_nav: 50000.00          # USD, paper account seed capital
+  currency: USD
+
+broker:
+  name: alpaca
+  mode: paper                    # never "live" until Phase PROD is approved
+  fractional_shares: true        # required: $50K / 503 tickers → many sub-$100 positions
+  min_order_notional: 1.00       # USD — skip any position change below this threshold
+  order_type: market             # market-on-open next session (T+1)
+
+execution:
+  signal_time_et: "16:05"        # run run_prod_signal.py at/after this time
+  order_submit_time_et: "09:35"  # T+1 morning open; submit before 09:35 market activity
+  rebalance_cadence_days: 14     # must match run_prod_signal.py cadence exactly
+
+slippage:
+  assumption_bps: 20             # H-2 gate: avg fill slippage must stay below this
+  flag_bps: 30                   # per-trade warning threshold — log slippage_flagged=True
+  model: midpoint                # simulated fill = (signal_close + next_open) / 2
+
+risk:
+  max_position_weight: 0.05      # hard cap per stock; matches base.yaml B.5 constraint
+  max_turnover_rebalance: 0.35   # H-3 gate: avg rebalance turnover must stay below this
+  target_weight_drift_pp: 5.0    # H-4 gate: max drift from target weight in percentage points
+
+monitoring:
+  drift_flag_alert_count: 2      # alert if >= 2 simultaneous G.3 drift flags
+  pipeline_failure_max: 2        # H.5 mid-point review fails if > 2 pipeline failures
+  rl_mode_required: true         # H-5 gate: at least 1 rebalance must occur in rl_e7 mode
+
+paths:
+  allocations_dir: data/allocations
+  paper_trading_dir: data/paper_trading
+  prod_state: data/prod_state/current_state.json
+  audit_trail: data/audit/decisions.parquet
+  drift_flags: data/drift/flags.parquet

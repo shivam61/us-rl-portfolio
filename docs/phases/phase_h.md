@@ -42,6 +42,10 @@ Extend to 12 weeks if mid-point review flags concerns.
 
 ## H.0 — Setup
 
+> **Status: COMPLETE** — Config frozen at `config/paper_trading.yaml` v H.0.0 (2026-05-10).
+> Scripts: `compute_paper_orders.py`, `log_paper_fills.py`, `run_daily_paper_ops.py`.
+> Initial NAV: **$50,000** | Broker: Alpaca paper | Fractional shares: enabled.
+
 ### Broker Choice
 
 | Option | Best for | Notes |
@@ -56,7 +60,7 @@ Before Phase PROD, migrate to the actual broker you'll use with real capital.
 ### Initial Paper Allocation
 
 1. Run full G.1 signal pipeline to get current target allocation
-2. Load paper account with simulated NAV = planned Phase PROD capital (e.g., $[BUDGET])
+2. Load paper account with simulated NAV = planned Phase PROD capital ($50,000)
 3. Submit paper orders at today's close prices using target weights
 4. This becomes the paper portfolio baseline (T=0 NAV)
 

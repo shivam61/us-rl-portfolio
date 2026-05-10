@@ -7,12 +7,12 @@ RL is an overlay only. It cannot replace vol_score, trend sleeve, stress blend, 
 
 ---
 
-## Current State — 2026-05-04
+## Current State — 2026-05-10
 
 | | |
 |---|---|
-| Active phase | **Phase G — Production Infrastructure** |
-| Current step | **Phase F COMPLETE (2026-05-04)** — F.1 Top-20 locked; F.2 E.7 retrain promoted; production model at `artifacts/production/rl_e7_clean_promoted.zip` |
+| Active phase | **Phase H — Paper Trading** |
+| Current step | **Phase G COMPLETE (2026-05-10)** — G.0–G.5 all gates pass; H.0 setup done: $50K NAV, config frozen at `config/paper_trading.yaml` v H.0.0, daily ops loop ready |
 | Locked production system | **B.5 `b4_stress_cap_trend_boost`** — vol_score signal, dynamic beta cap `0.90 − 0.20 × stress`, floor 0.50, trend sleeve, stress blend |
 | Current headline metrics (sp500, 2008–2026, 10 bps) | CAGR `16.04%`, Sharpe `1.078`, MaxDD `−32.98%`, turnover `84.12`; 50 bps Sharpe `0.934` |
 | Holdout metrics (sp500, 2019–2026-04-24, 10 bps) | CAGR `20.69%`, Sharpe `1.270`, MaxDD `−32.98%`, 50 bps Sharpe `1.135` |
@@ -58,8 +58,8 @@ RL is an overlay only. It cannot replace vol_score, trend sleeve, stress blend, 
 | **D** | RL overlay on locked B.5 system: sector tilts + aggressiveness | ✅ Complete — REJECT (2026-05-02); B.5 remains production | [phases/phase_d.md](phases/phase_d.md) |
 | **E** | RL Regime Controller v2: equity/trend/cash exposure mix | ✅ **PROMOTE** (2026-05-03 E.7) — Sharpe `1.296` / MaxDD `−24.48%`; all gates pass incl. p75 | [phases/phase_e.md](phases/phase_e.md) |
 | **F** | RL policy hardening: Top-N sensitivity + clean E.7 retrain | ✅ **COMPLETE** — F.1 Top-20 locked; F.2 E.7 retrain Sharpe `1.296` / MaxDD `−24.48%` | [phases/phase_f.md](phases/phase_f.md) |
-| **G** | Production infrastructure: feature parity, signal pipeline, audit trail, drift monitoring, dual-mode switching | 🔄 **ACTIVE** — G.3 drift monitor complete; G.4 dual-mode next | [phases/phase_g.md](phases/phase_g.md) |
-| **H** | Paper trading: 8–12 week forward test with live data, simulated fills, 8 exit gates | ⏳ **PENDING** — begins after Phase G complete | [phases/phase_h.md](phases/phase_h.md) |
+| **G** | Production infrastructure: feature parity, signal pipeline, audit trail, drift monitoring, dual-mode switching | ✅ **COMPLETE** — G.0–G.5 all gates pass (2026-05-10) | [phases/phase_g.md](phases/phase_g.md) |
+| **H** | Paper trading: 8–12 week forward test with live data, simulated fills, 8 exit gates | 🔄 **ACTIVE** — H.0 setup complete; $50K NAV, Alpaca paper, fractional shares, config frozen | [phases/phase_h.md](phases/phase_h.md) |
 | **PROD** | Live deployment: real capital, 4-week ramp, circuit breakers, steady-state ops, quarterly retrain gate | ⏳ **PENDING** — begins after all Phase H exit gates pass | [phases/phase_prod.md](phases/phase_prod.md) |
 
 ### Phase Gates

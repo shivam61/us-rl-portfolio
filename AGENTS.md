@@ -5,12 +5,14 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-10T06:08:52+00:00
+## Current State — 2026-05-10T07:08:00+00:00
 - Branch: `main`
-- Working tree: 15 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_g.md`, ` M scripts/run_prod_signal.py`
-- Latest commit: `d20a1ede 2026-05-10 Phase G.4 COMPLETE: Dual-mode allocation with switching rule — 3/3 validations PASS`
-- Active jobs: none detected
+- Active phase: **Phase H — Paper Trading** (H.0 setup complete)
+- Latest commit: `249643ed 2026-05-10 G.5 dashboard: add data freshness table, rename heading to Chart Window`
+- Phase G: **COMPLETE** — G.0–G.5 all gates pass
+- Phase H.0: **COMPLETE** — config frozen at `config/paper_trading.yaml` v H.0.0; $50K NAV; fractional shares; Alpaca paper
+- New scripts: `scripts/compute_paper_orders.py`, `scripts/log_paper_fills.py`, `scripts/run_daily_paper_ops.py`
+- Next: run `run_daily_paper_ops.py --date <today> --initial` for T=0 allocation; then begin H.1 daily ops
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
 <!-- CURRENT_STATE_END -->
