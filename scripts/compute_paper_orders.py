@@ -135,12 +135,12 @@ def compute_orders(
 
     target_weights = build_target_weights(alloc)
 
-    # Normalise weights so they sum to exactly 1.0 across all non-cash tickers.
-    # The RL allocation JSON can have per-ticker weights that sum > 1 (e.g. 1.337)
-    # because they reflect the B.5 system's raw position weights before sleeve scaling.
-    # Without normalisation orders would exceed the $50K NAV budget.
+    # Only normalise if weights sum > 1.0 (guards against old B.5 raw-weight bug where
+    # stock_weights + trend_weights could sum to ~1.337, exceeding the NAV budget).
+    # When weights sum < 1.0, the remainder is the intended cash allocation — do NOT
+    # normalise it away, or cash gets stripped and sleeves inflate proportionally.
     total_weight = sum(w for w, _ in target_weights.values())
-    if total_weight > 1e-9:
+    if total_weight > 1.0 + 1e-9:
         target_weights = {t: (w / total_weight, s) for t, (w, s) in target_weights.items()}
 
     # current holdings indexed by ticker

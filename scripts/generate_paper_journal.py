@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 PT_DIR = REPO_ROOT / "data" / "paper_trading"
 ALLOC_DIR = REPO_ROOT / "data" / "allocations"
 JOURNAL_PATH = REPO_ROOT / "docs" / "paper_trading_journal.md"
+DATED_DIR = REPO_ROOT / "docs" / "paper_trading"  # per-date files: YYYY-MM-DD.md
 
 
 def _flag(val: bool) -> str:
@@ -294,10 +295,20 @@ def main() -> None:
                 dates.append(d)
         dates.sort()
 
+    DATED_DIR.mkdir(parents=True, exist_ok=True)
+
     for d in dates:
         section = build_day_section(d)
         update_journal(d, section)
-        logger.info("Journal updated for %s", d)
+
+        # Write standalone dated file: docs/paper_trading/YYYY-MM-DD.md
+        dated_path = DATED_DIR / f"{d}.md"
+        dated_path.write_text(
+            f"# Paper Trading — {d}\n\n"
+            f"> [Back to full journal](../paper_trading_journal.md)\n\n"
+            + section
+        )
+        logger.info("Dated file written: %s", dated_path)
 
     logger.info("Journal written to %s", JOURNAL_PATH)
 
