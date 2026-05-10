@@ -164,6 +164,8 @@ def main() -> None:
 
     # Step 1: G.1 signal generation
     signal_cmd = [PYTHON, str(SCRIPTS_DIR / "run_prod_signal.py"), "--as-of", args.date]
+    if args.initial:
+        signal_cmd.append("--force-rebalance")  # T=0: RL must fire its action, not carry forward B.5 defaults
     if args.dry_run:
         signal_cmd.append("--dry-run")
     ok, err = run_step("G.1 signal", signal_cmd)
