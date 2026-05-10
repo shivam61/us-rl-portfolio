@@ -6,7 +6,8 @@ Runs the full nightly paper trading loop in sequence:
   3. Order computation          → data/paper_trading/orders_{date}.csv
   4. [T+1] Fill simulation      → data/paper_trading/fills_{date}.csv + positions_latest.parquet
   5. G.5 benchmark dashboard    → artifacts/reports/benchmark_dashboard.html
-  6. H.6 experience log         → data/paper_trading/experience_log.parquet (rebalance days only)
+  6. Journal update             → docs/paper_trading_journal.md (human-readable daily log)
+  7. H.6 experience log         → data/paper_trading/experience_log.parquet (rebalance days only)
 
 Structured ops log is appended to data/paper_trading/daily_ops_log.jsonl.
 
@@ -197,9 +198,18 @@ def main() -> None:
     if not ok:
         errors.append(f"G.5 dashboard: {err}")
 
-    # Step 6: H.6 experience log — append T-row + backfill T+14 (rebalance days only)
-    alloc_check = load_allocation_summary(args.date, cfg)
-    if alloc_check["is_rebalance"] and not args.dry_run and signal_ok:
+    # Load allocation summary (needed by steps 6, 7 and ops log)
+    alloc_summary = load_allocation_summary(args.date, cfg)
+    orders_count = count_orders(args.date, cfg)
+
+    # Step 6: Journal update — human-readable daily log
+    journal_cmd = [PYTHON, str(SCRIPTS_DIR / "generate_paper_journal.py"), "--date", args.date]
+    ok, err = run_step("journal", journal_cmd)
+    if not ok:
+        errors.append(f"journal: {err}")
+
+    # Step 7: H.6 experience log — append T-row + backfill T+14 (rebalance days only)
+    if alloc_summary["is_rebalance"] and not args.dry_run and signal_ok:
         exp_cmd = [PYTHON, str(SCRIPTS_DIR / "append_experience_log.py"), "--date", args.date]
         ok, err = run_step("H.6 experience log", exp_cmd)
         if not ok:
@@ -207,11 +217,7 @@ def main() -> None:
     elif not args.dry_run:
         logger.info("[H.6 experience log] skipped (non-rebalance day)")
 
-    # Load allocation summary for ops log
-    alloc_summary = load_allocation_summary(args.date, cfg)
-    orders_count = count_orders(args.date, cfg)
-
-    # Write ops log entry
+    # Write ops log entry  (alloc_summary + orders_count already loaded above)
     entry = {
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "date": args.date,
