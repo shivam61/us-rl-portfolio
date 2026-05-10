@@ -255,6 +255,71 @@ def check_alert(flag_results: dict) -> tuple[bool, list, str]:
     return alert, active_flags, msg
 
 
+def aggregate_flags_5day_window(
+    flag_history_df: pd.DataFrame,
+    window_days: int = 5,
+) -> tuple[bool, list[str], str]:
+    """
+    Aggregate G.3 flags over a rolling 5-trading-day window.
+
+    Args:
+        flag_history_df: DataFrame with columns [as_of_date, flag_sharpe_degradation,
+                         flag_drawdown_excess, flag_cash_trap, flag_feature_psi,
+                         flag_stress_breach] where flag_* columns are bool.
+        window_days: Rolling window size in trading days (default: 5).
+
+    Returns:
+        (alert_active, co_firing_flags, message) tuple.
+
+    A 5-day co-occurrence rule means: if ≥2 flags are active within any rolling
+    5-trading-day window, escalate to manual review.
+    """
+    if flag_history_df.empty:
+        return False, [], "no_flag_data"
+
+    df = flag_history_df.copy()
+    df["as_of_date"] = pd.to_datetime(df["as_of_date"])
+    df = df.set_index("as_of_date").sort_index()
+
+    # Expected flag columns from G.3 drift monitor
+    flag_cols = [
+        "flag_sharpe_degradation",
+        "flag_drawdown_excess",
+        "flag_cash_trap",
+        "flag_feature_psi",
+        "flag_stress_breach",
+    ]
+
+    # Check which columns exist
+    available_flags = [col for col in flag_cols if col in df.columns]
+    if len(available_flags) < 2:
+        return False, [], f"insufficient_flag_columns ({len(available_flags)} available)"
+
+    # Convert to bool
+    flag_bool = df[available_flags].astype(bool)
+
+    # Count active flags per day
+    daily_count = flag_bool.sum(axis=1)
+
+    # Rolling max over window_days trading days
+    rolling_max = daily_count.rolling(window=window_days).max()
+
+    # Check if any window has 2+ flags
+    alert = (rolling_max >= 2).any()
+
+    if alert:
+        # Find which flags co-occurred in the most recent window
+        last_window_start = df.index.max() - pd.Timedelta(days=window_days)
+        window_df = flag_bool[flag_bool.index >= last_window_start]
+        co_firing = [col.replace("flag_", "") for col in available_flags if window_df[col].any()]
+        msg = f"2+ flags co-occurred within {window_days}-day window: {', '.join(co_firing)}"
+    else:
+        co_firing = []
+        msg = f"No 2+ flag co-occurrences in last {window_days} days"
+
+    return alert, co_firing, msg
+
+
 # ── Public entry point ────────────────────────────────────────────────────────
 
 def run_drift_check(

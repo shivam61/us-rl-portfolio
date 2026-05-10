@@ -299,6 +299,8 @@ def main():
     parser.add_argument("--config",    default="config/base.yaml")
     parser.add_argument("--universe",  default="config/universes/sp500.yaml")
     parser.add_argument("--mode",      choices=["rl_e7", "b5_only"], default="rl_e7")
+    parser.add_argument("--mode-override", choices=["rl_e7", "b5_only"], default=None,
+                        help="Force mode override (bypasses G.4 switching rule)")
     parser.add_argument("--as-of",     default=None,
                         help="Override date (YYYY-MM-DD); defaults to latest in price data")
     parser.add_argument("--force-rebalance", action="store_true",
@@ -352,7 +354,39 @@ def main():
                 portfolio_state["equity_frac"], portfolio_state["trend_frac"],
                 portfolio_state["cash_frac"], float(portfolio_state["nav_series"].iloc[-1]))
 
-    # Compute allocation
+    # [G.4] Evaluate switching rule before allocation
+    logger.info("Evaluating G.4 switching rule …")
+    from src.rl.switching_rule import SwitchingRuleEngine
+    from src.rl.audit_trail import query_decisions
+
+    switching_engine = SwitchingRuleEngine(
+        b5_sharpe_ref=1.296,
+        b5_maxdd_ref=-0.2448,
+    )
+
+    audit_df = query_decisions(end=str(as_of_date.date()))
+
+    # Load drift flags if available
+    drift_flags_path = REPO_ROOT / "data" / "drift" / "flags.parquet"
+    if drift_flags_path.exists():
+        drift_flags_df = pd.read_parquet(drift_flags_path)
+    else:
+        logger.warning("No drift flags found at %s — switching rule will skip drift checks", drift_flags_path)
+        drift_flags_df = pd.DataFrame()
+
+    new_mode, switch_reason = switching_engine.evaluate(
+        audit_df=audit_df,
+        drift_flags_df=drift_flags_df,
+        mode=args.mode,
+        manual_override=args.mode_override,
+    )
+
+    if new_mode != args.mode:
+        logger.warning("G.4 mode switch: %s → %s (%s)", args.mode, new_mode, switch_reason)
+    else:
+        logger.info("G.4 switching rule: mode=%s unchanged (%s)", new_mode, switch_reason)
+
+    # Use new_mode for allocation
     allocation, updated_state = compute_allocation(
         inputs=inputs,
         b5_weights_df=b5_weights_df,
@@ -362,7 +396,7 @@ def main():
         model=model,
         portfolio_state=portfolio_state,
         as_of_date=as_of_date,
-        mode=args.mode,
+        mode=new_mode,  # <-- Use switching-rule-determined mode
         force_rebalance=args.force_rebalance,
     )
 
