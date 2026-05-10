@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-05T15:18:19+00:00
+## Current State — 2026-05-10T06:08:52+00:00
 - Branch: `main`
 - Working tree: 15 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/ROADMAP.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_g.md`
-- Latest commit: `60669251 2026-05-04 Phase G.0/G.1/G.2: feature parity PASS, signal pipeline, audit trail`
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/agent_handoff.md`, ` M docs/phases/phase_g.md`, ` M scripts/run_prod_signal.py`
+- Latest commit: `d20a1ede 2026-05-10 Phase G.4 COMPLETE: Dual-mode allocation with switching rule — 3/3 validations PASS`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

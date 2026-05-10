@@ -19,7 +19,7 @@ and a clean dual-mode architecture that can switch between B.5 and RL without ma
 | G.2 | Audit Trail | ✅ **COMPLETE** (2026-05-04) — append-only parquet; wired into G.1 pipeline | Every allocation decision has a queryable record |
 | G.3 | Live Drift Monitoring | ✅ **COMPLETE** (2026-05-05) — 5 flags + alert rule; gate PASS on simulated breach | Dashboard live; alert fires on simulated breach |
 | G.4 | Dual-Mode Allocation | ✅ **COMPLETE** (2026-05-10) — 3/3 historical validations PASS | Mode switch validated on 3 historical transition dates |
-| G.5 | Benchmark Dashboard | ⏳ **NEXT** | Dashboard auto-updates daily |
+| G.5 | Benchmark Dashboard | ✅ **COMPLETE** (2026-05-10) — 4 NAV series, rolling metrics, drift flags; gate PASS | Dashboard auto-updates daily |
 
 ---
 
@@ -211,6 +211,13 @@ holdout window (2019–2026) before it is considered production-ready. Recommend
 
 ## G.5 — Benchmark Dashboard
 
+**Status: ✅ COMPLETE — PASS (2026-05-10)**
+
+**Script:** `scripts/run_benchmark_dashboard_g5.py`
+**Report:** `artifacts/reports/phase_g5_benchmark_dashboard.md`
+
+**Gate result:** Dashboard generates end-to-end with all 4 NAV series, rolling 63d Sharpe + MaxDD, regime posture table, and drift flag status. Exit 0. ✅
+
 **Objective:** Auto-updating daily dashboard showing live performance of both modes vs benchmarks.
 
 **Contents:**
@@ -221,7 +228,7 @@ holdout window (2019–2026) before it is considered production-ready. Recommend
 - Stress score over time
 - Active G.3 drift flags
 
-**Update cadence:** Daily, post-market close, automated via G.1 pipeline output.
+**Update cadence:** Daily, post-market close, run `scripts/run_benchmark_dashboard_g5.py`.
 
 ---
 
