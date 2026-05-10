@@ -71,33 +71,43 @@ def load_positions(cfg: dict) -> pd.DataFrame:
 
 
 def load_close_prices(date: str) -> pd.Series:
-    """Load EOD close prices from processed data. Falls back to yfinance."""
+    """Load EOD close prices.
+
+    Priority:
+      1. data/processed/prices.parquet (wide panel, fastest)
+      2. data/raw/{ticker}.parquet per-ticker files (always present after feature pipeline)
+    """
+    target = pd.Timestamp(date)
+
+    # 1. Wide panel
     prices_path = REPO_ROOT / "data" / "processed" / "prices.parquet"
     if prices_path.exists():
         prices = pd.read_parquet(prices_path)
-        # prices index is datetime; columns are tickers
         prices.index = pd.to_datetime(prices.index)
-        target = pd.Timestamp(date)
-        if target in prices.index:
-            return prices.loc[target].dropna()
-        # use last available date on or before target
         available = prices.index[prices.index <= target]
         if len(available) > 0:
             return prices.loc[available[-1]].dropna()
-    # fallback: yfinance snapshot
-    try:
-        import yfinance as yf
-        logger.info("prices.parquet not available for %s — fetching via yfinance", date)
-        sp500_path = REPO_ROOT / "config" / "universes" / "sp500.yaml"
-        with open(sp500_path) as f:
-            univ = yaml.safe_load(f)
-        tickers = univ.get("tickers", []) + ["SPY", "TLT", "GLD", "UUP"]
-        data = yf.download(tickers, start=date, end=date, auto_adjust=True, progress=False)
-        if "Close" in data.columns:
-            return data["Close"].iloc[0].dropna()
-        return data.iloc[0].dropna()
-    except Exception as e:
-        raise RuntimeError(f"Could not load close prices for {date}: {e}") from e
+
+    # 2. Per-ticker raw parquets
+    raw_dir = REPO_ROOT / "data" / "raw"
+    if raw_dir.exists():
+        logger.info("Building price series from data/raw/ per-ticker parquets for %s", date)
+        records: dict[str, float] = {}
+        for parquet_file in raw_dir.glob("*.parquet"):
+            ticker = parquet_file.stem
+            try:
+                df = pd.read_parquet(parquet_file, columns=["adj_close"])
+                df.index = pd.to_datetime(df.index)
+                avail = df.index[df.index <= target]
+                if len(avail) > 0:
+                    records[ticker] = float(df.loc[avail[-1], "adj_close"])
+            except Exception:
+                continue
+        if records:
+            logger.info("Loaded prices for %d tickers from raw parquets", len(records))
+            return pd.Series(records)
+
+    raise RuntimeError(f"Could not load close prices for {date}: no price source available")
 
 
 def build_target_weights(alloc: dict) -> dict[str, tuple[float, str]]:

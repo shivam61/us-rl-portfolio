@@ -63,45 +63,60 @@ def next_business_day(date_str: str) -> str:
     return (ts + pd.offsets.BDay(1)).strftime("%Y-%m-%d")
 
 
+def _load_prices_from_raw(date: str, col: str) -> pd.Series:
+    """Read per-ticker data/raw/*.parquet and return latest `col` value on or before date."""
+    raw_dir = REPO_ROOT / "data" / "raw"
+    target = pd.Timestamp(date)
+    records: dict[str, float] = {}
+    for pf in raw_dir.glob("*.parquet"):
+        try:
+            df = pd.read_parquet(pf, columns=[col])
+            df.index = pd.to_datetime(df.index)
+            avail = df.index[df.index <= target]
+            if len(avail) > 0:
+                records[pf.stem] = float(df.loc[avail[-1], col])
+        except Exception:
+            continue
+    return pd.Series(records)
+
+
 def load_open_prices(date: str) -> pd.Series:
-    """Load next-day open prices from processed data. Falls back to yfinance."""
-    prices_path = REPO_ROOT / "data" / "processed" / "prices_open.parquet"
-    if prices_path.exists():
-        opens = pd.read_parquet(prices_path)
+    """Load next-day open prices.
+
+    Priority:
+      1. data/processed/prices_open.parquet (wide panel)
+      2. data/processed/prices.parquet close prices as proxy
+      3. data/raw/{ticker}.parquet open column
+    """
+    target = pd.Timestamp(date)
+
+    # 1. Wide open panel
+    open_path = REPO_ROOT / "data" / "processed" / "prices_open.parquet"
+    if open_path.exists():
+        opens = pd.read_parquet(open_path)
         opens.index = pd.to_datetime(opens.index)
-        target = pd.Timestamp(date)
-        if target in opens.index:
-            return opens.loc[target].dropna()
-        available = opens.index[opens.index <= target]
-        if len(available) > 0:
-            return opens.loc[available[-1]].dropna()
+        avail = opens.index[opens.index <= target]
+        if len(avail) > 0:
+            return opens.loc[avail[-1]].dropna()
 
-    # fallback: use close prices as proxy (conservative — avoids yfinance for opens)
-    prices_path = REPO_ROOT / "data" / "processed" / "prices.parquet"
-    if prices_path.exists():
-        closes = pd.read_parquet(prices_path)
+    # 2. Close prices as proxy
+    close_path = REPO_ROOT / "data" / "processed" / "prices.parquet"
+    if close_path.exists():
+        closes = pd.read_parquet(close_path)
         closes.index = pd.to_datetime(closes.index)
-        target = pd.Timestamp(date)
-        available = closes.index[closes.index <= target]
-        if len(available) > 0:
+        avail = closes.index[closes.index <= target]
+        if len(avail) > 0:
             logger.info("open prices not available — using close prices as fill proxy for %s", date)
-            return closes.loc[available[-1]].dropna()
+            return closes.loc[avail[-1]].dropna()
 
-    try:
-        import yfinance as yf
-        logger.info("Fetching open prices via yfinance for %s", date)
-        sp500_path = REPO_ROOT / "config" / "universes" / "sp500.yaml"
-        with open(sp500_path) as f:
-            univ = yaml.safe_load(f)
-        tickers = univ.get("tickers", []) + ["SPY", "TLT", "GLD", "UUP"]
-        end = (pd.Timestamp(date) + pd.offsets.BDay(1)).strftime("%Y-%m-%d")
-        data = yf.download(tickers, start=date, end=end, auto_adjust=True, progress=False)
-        if "Open" in data.columns:
-            row = data["Open"].loc[data.index >= date]
-            if not row.empty:
-                return row.iloc[0].dropna()
-    except Exception as e:
-        raise RuntimeError(f"Could not load open prices for {date}: {e}") from e
+    # 3. Per-ticker raw parquets (open column)
+    raw_dir = REPO_ROOT / "data" / "raw"
+    if raw_dir.exists():
+        logger.info("Building open price series from data/raw/ per-ticker parquets for %s", date)
+        series = _load_prices_from_raw(date, "open")
+        if not series.empty:
+            logger.info("Loaded open prices for %d tickers from raw parquets", len(series))
+            return series
 
     raise RuntimeError(f"No open prices found for {date}")
 
@@ -257,7 +272,8 @@ def main() -> None:
         available = closes_all.index[closes_all.index <= target]
         close_prices = closes_all.loc[available[-1]].dropna() if len(available) > 0 else pd.Series(dtype=float)
     else:
-        close_prices = pd.Series(dtype=float)
+        logger.info("prices.parquet not found — loading close prices from data/raw/ for %s", args.signal_date)
+        close_prices = _load_prices_from_raw(args.signal_date, "adj_close")
 
     open_prices = load_open_prices(fill_date)
     logger.info("Loaded open prices for %d tickers on %s", len(open_prices), fill_date)
