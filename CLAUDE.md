@@ -5,11 +5,11 @@ All repo rules, workflow rules, save rules, file lookup order, roadmap-first beh
 Do not treat this file as an independent source of repo instructions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-10T07:09:55+00:00
+## Current State — 2026-05-10T13:09:51+00:00
 - Branch: `main`
-- Working tree: 11 changed path(s)
-- Dirty paths sample: `M CLAUDE.md`, ` M docs/agent_handoff.md`, ` M scripts/run_prod_signal.py`, ` M src/rl/drift_monitor.py`, `?? artifacts/models/rl_e_ppo_ep0100.zip`
-- Latest commit: `6b9c422f 2026-05-10 Phase H.0 COMPLETE: paper trading setup — $50K, fractional shares, frozen config`
+- Working tree: 12 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M artifacts/reports/phase_g3_drift_report.md`, ` M artifacts/reports/phase_g5_benchmark_dashboard.md`, ` M docs/agent_handoff.md`
+- Latest commit: `afceab5e 2026-05-10 Update docs: README, ROADMAP, phase_h with full paper trading runbook`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

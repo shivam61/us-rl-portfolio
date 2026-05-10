@@ -1,7 +1,24 @@
 # US RL Portfolio System
 
-A complete end-to-end US equity portfolio system with walk-forward backtesting, RL regime
-control, risk overlays, and a live paper trading loop.
+A complete end-to-end US equity portfolio management system built from scratch across 9 phases.
+The system combines a quantitative alpha signal (volatility score), a constrained portfolio
+optimizer, a risk engine, and a Reinforcement Learning regime controller — all running on
+S&P 500 data from 2006 to present.
+
+**What it does:**
+- Generates a daily `vol_score` alpha signal across 500+ US equities using 32 point-in-time-safe features
+- Constructs a portfolio using a mean-variance optimizer with turnover penalty (B.5 system)
+- Applies a dynamic risk overlay: stress-aware beta cap, trend sleeve (UUP/GLD/TLT), cash buffer
+- Uses a PPO-trained RL agent (`rl_e7`) to set the equity/trend/cash allocation mix based on market regime
+- Runs a full paper trading loop with simulated fills, slippage tracking, and drift monitoring
+- Collects an offline RL experience log for future retraining
+
+**Current production metrics (holdout 2019–2026, S&P 500):**
+- RL system: CAGR 17.8% · Sharpe 1.296 · MaxDD −24.5%
+- B.5 baseline: CAGR 20.7% · Sharpe 1.270 · MaxDD −33.0%
+- SPY buy-and-hold: CAGR ~14% · Sharpe ~0.75 · MaxDD ~−34%
+
+The RL controller trades 2.9pp of CAGR for a 8.5pp reduction in max drawdown vs B.5.
 
 **Disclaimer:** Research infrastructure only. Not investment advice. Do not deploy real capital
 without completing all Phase H exit gates.

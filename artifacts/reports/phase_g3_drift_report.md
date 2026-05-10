@@ -1,24 +1,24 @@
 # Phase G.3 — Drift Monitor Report
 
-**As-of:** 2026-04-20  
-**Generated:** 2026-05-05T15:17:29Z  
-**Mode:** simulate_breach  
+**As-of:** 2026-05-10  
+**Generated:** 2026-05-10T12:44:54Z  
+**Mode:** live  
 
-## ⚠️ ALERT ACTIVE
+## ✅ No Alert
 
-> ALERT: 2 drift flags active simultaneously (cash_trap, stress_breach) — escalate to manual review; consider switching to b5_only mode (G.4 switching rule)
+> All drift flags within normal bounds — RL policy operating in-distribution.
 
 ## Flag Summary
 
-**Active flags:** 2 / 5
+**Active flags:** 0 / 5
 
 | Status | Flag | Value | Threshold | Detail |
 |--------|------|-------|-----------|--------|
-| 🟢 | `sharpe_degradation` | N/A | -0.0500 | Insufficient data (20 records; need ≥65 for 63d rolling Sharpe) |
-| 🟢 | `drawdown_excess` | 0.2258 | -0.0500 | Live MaxDD=-1.9% vs B.5 ref -24.5% (excess=-22.6%; flag at >5%) |
-| 🔴 | `cash_trap` | 0.2000 | 0.2500 | equity_frac=0.200 (threshold=0.25); consecutive rebalances below threshold = 18 (flag at ≥10) |
-| 🟢 | `feature_psi` | N/A | 0.2000 | Insufficient data for PSI (20 records; need ≥73) |
-| 🔴 | `stress_breach` | 0.7500 | 0.7000 | stress_score=0.750 (threshold=0.70); consecutive days above threshold = 15 (flag at ≥5d) |
+| 🟢 | `sharpe_degradation` | N/A | -0.0500 | Insufficient data (8 records; need ≥65 for 63d rolling Sharpe) |
+| 🟢 | `drawdown_excess` | 0.2448 | -0.0500 | Live MaxDD=0.0% vs B.5 ref -24.5% (excess=-24.5%; flag at >5%) |
+| 🟢 | `cash_trap` | 0.2500 | 0.2500 | equity_frac=0.250 (threshold=0.25); consecutive rebalances below threshold = 0 (flag at ≥10) |
+| 🟢 | `feature_psi` | N/A | 0.2000 | Insufficient data for PSI (8 records; need ≥73) |
+| 🟢 | `stress_breach` | 0.3333 | 0.7000 | stress_score=0.333 (threshold=0.70); consecutive days above threshold = 0 (flag at ≥5d) |
 
 ---
 
