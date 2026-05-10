@@ -145,9 +145,60 @@ All of the following must pass to proceed to Phase PROD:
 
 ---
 
+## H.6 — Paper Trading Experience Log
+
+**Purpose:** Passive data collection for future offline RL training/evaluation. No automatic
+retraining is triggered. The log is inert until explicitly used by a researcher.
+
+**Artifact:** `data/paper_trading/experience_log.parquet` — one row per rebalance.
+
+**Script:** `scripts/append_experience_log.py --date YYYY-MM-DD`
+Called automatically from `run_daily_paper_ops.py` Step 6 on rebalance days only.
+
+### Schema
+
+| Field | When available | Source |
+|-------|---------------|--------|
+| `date_t` | T (rebalance) | allocation JSON |
+| `state_vector_t` | T | allocation JSON `rl_state_vector` (42-element, JSON string) |
+| `mode_t` | T | `"rl_e7"` or `"b5_only"` |
+| `rl_action_t` | T | allocation JSON `rl_raw_action` ([3 floats] or null) |
+| `target_weights_t` | T | allocation JSON `stock_weights` (JSON blob) |
+| `nav_t` | T | allocation JSON |
+| `equity_frac_t` | T | allocation JSON |
+| `cash_frac_t` | T | allocation JSON |
+| `stress_score_t` | T | allocation JSON |
+| `spy_trend_positive_t` | T | allocation JSON |
+| `model_id_t` | T | allocation JSON |
+| `switch_reason_t` | T | allocation JSON |
+| `drift_flags_t` | T | `data/drift/flags.parquet` latest row (JSON blob) |
+| `actual_weights_t` | T+1 fills | `positions_latest.parquet` |
+| `orders_t` | T+1 fills | `orders_{date}.csv` (ticker → delta_shares JSON) |
+| `fills_t` | T+1 fills | `fills_{date}.csv` (ticker → fill_price JSON) |
+| `slippage_bps_t` | T+1 fills | Notional-weighted avg `actual_slippage_bps` |
+| `rebalance_turnover_t` | T+1 fills | Sum(\|notional\|) / NAV |
+| `tracking_error_vs_target` | T+1 fills | Sqrt(sum((w_actual − w_target)²)) |
+| `nav_t_plus_1` | T+1 fills | Sum of market values after fills |
+| `nav_t_plus_14` | T+14 (backfilled) | Daily positions archive |
+| `realized_return_14d` | T+14 (backfilled) | `nav_t_plus_14 / nav_t − 1` |
+| `realized_vol_14d` | T+14 (backfilled) | Annualised std of daily returns [T, T+14] |
+| `drawdown_14d` | T+14 (backfilled) | `min(nav) / max(nav) − 1` over [T, T+14] |
+| `tracking_error_vs_b5` | T+14 (backfilled) | Annualised TE vs `nav_b5_backtest.parquet` |
+| `tracking_error_vs_spy` | T+14 (backfilled) | Annualised TE vs `data/raw/SPY.parquet` |
+| `reward_offline_t` | T+14 (backfilled) | `compute_reward_v2` with realized nav window |
+
+### Two-pass design
+
+- **Pass 1 (rebalance day):** T-fields + T+1 fill fields written; T+14 columns are null.
+- **Pass 2 (14 days later, on next rebalance):** T+14 outcome columns backfilled from
+  accumulated daily `positions_{date}.parquet` snapshots. Pass 2 is idempotent.
+
+---
+
 ## Artifacts
 
 - `data/paper_trading/daily_positions_{date}.parquet` — daily position snapshots
 - `data/paper_trading/fills_{date}.csv` — simulated fill records with slippage
 - `data/paper_trading/slippage_summary.csv` — aggregated slippage by ticker and date
+- `data/paper_trading/experience_log.parquet` — H.6 offline RL training dataset
 - `artifacts/reports/phase_h_exit_gate.md` — written gate evaluation at Week 11+
