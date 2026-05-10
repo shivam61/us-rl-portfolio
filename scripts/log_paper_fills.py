@@ -80,51 +80,44 @@ def _load_prices_from_raw(date: str, col: str) -> pd.Series:
     return pd.Series(records)
 
 
-def load_open_prices(date: str) -> pd.Series:
-    """Load next-day open prices.
+def load_fill_prices(date: str) -> pd.Series:
+    """Load adj_close prices for the fill date.
+
+    Simulation uses adj_close (same column as order sizing) so that
+    portfolio market value is consistent with target weights and the
+    $50K NAV budget is respected exactly at T=0.  Real slippage
+    (signal_close T vs fill T+1) is still measured correctly on
+    subsequent rebalances when dates differ.
 
     Priority:
-      1. data/processed/prices_open.parquet (wide panel)
-      2. data/processed/prices.parquet close prices as proxy
-      3. data/raw/{ticker}.parquet open column
+      1. data/processed/prices.parquet (wide panel)
+      2. data/raw/{ticker}.parquet adj_close column
     """
     target = pd.Timestamp(date)
 
-    # 1. Wide open panel
-    open_path = REPO_ROOT / "data" / "processed" / "prices_open.parquet"
-    if open_path.exists():
-        opens = pd.read_parquet(open_path)
-        opens.index = pd.to_datetime(opens.index)
-        avail = opens.index[opens.index <= target]
-        if len(avail) > 0:
-            return opens.loc[avail[-1]].dropna()
-
-    # 2. Close prices as proxy
     close_path = REPO_ROOT / "data" / "processed" / "prices.parquet"
     if close_path.exists():
         closes = pd.read_parquet(close_path)
         closes.index = pd.to_datetime(closes.index)
         avail = closes.index[closes.index <= target]
         if len(avail) > 0:
-            logger.info("open prices not available — using close prices as fill proxy for %s", date)
             return closes.loc[avail[-1]].dropna()
 
-    # 3. Per-ticker raw parquets (open column)
     raw_dir = REPO_ROOT / "data" / "raw"
     if raw_dir.exists():
-        logger.info("Building open price series from data/raw/ per-ticker parquets for %s", date)
-        series = _load_prices_from_raw(date, "open")
+        logger.info("Building fill price series from data/raw/ adj_close for %s", date)
+        series = _load_prices_from_raw(date, "adj_close")
         if not series.empty:
-            logger.info("Loaded open prices for %d tickers from raw parquets", len(series))
+            logger.info("Loaded fill prices for %d tickers from raw parquets", len(series))
             return series
 
-    raise RuntimeError(f"No open prices found for {date}")
+    raise RuntimeError(f"No fill prices found for {date}")
 
 
 def compute_fills(
     orders: pd.DataFrame,
     close_prices: pd.Series,
-    open_prices: pd.Series,
+    fill_prices: pd.Series,
     signal_date: str,
     fill_date: str,
     cfg: dict,
@@ -135,14 +128,14 @@ def compute_fills(
     active = orders[orders["action"] != "hold"].copy()
     for _, row in active.iterrows():
         ticker = row["ticker"]
-        if ticker not in open_prices.index:
-            logger.warning("No open price for %s on %s — skipping fill", ticker, fill_date)
+        if ticker not in fill_prices.index:
+            logger.warning("No fill price for %s on %s — skipping fill", ticker, fill_date)
             continue
         if ticker not in close_prices.index:
             logger.warning("No close price for %s on %s — skipping fill", ticker, signal_date)
             continue
 
-        fill_price = float(open_prices[ticker])
+        fill_price = float(fill_prices[ticker])
         signal_close = float(close_prices[ticker])
         shares = float(row["delta_shares"])
 
@@ -171,21 +164,22 @@ def compute_fills(
 def update_positions(
     orders: pd.DataFrame,
     fills: pd.DataFrame,
-    open_prices: pd.Series,
+    fill_prices: pd.Series,
     fill_date: str,
     cfg: dict,
 ) -> pd.DataFrame:
     nav = cfg["capital"]["initial_nav"]
 
-    # load existing positions
+    # load existing positions (exclude cash row for share accounting)
     pt_dir = REPO_ROOT / cfg["paths"]["paper_trading_dir"]
     pos_path = pt_dir / "positions_latest.parquet"
     if pos_path.exists():
-        existing = pd.read_parquet(pos_path).set_index("ticker")
+        existing = pd.read_parquet(pos_path)
+        existing = existing[existing["ticker"] != "__CASH__"].set_index("ticker")
     else:
         existing = pd.DataFrame(columns=["sleeve", "shares_held"])
 
-    # apply fills
+    # apply fills to share counts
     shares_map: dict[str, float] = {}
     sleeve_map: dict[str, str] = {}
     for _, row in existing.iterrows():
@@ -197,7 +191,7 @@ def update_positions(
         shares_map[ticker] = shares_map.get(ticker, 0.0) + float(row["shares_filled"])
         sleeve_map[ticker] = row["sleeve"]
 
-    # include all target tickers from orders even if zero fills (for weight tracking)
+    # include all target tickers from orders for weight tracking
     for _, row in orders.iterrows():
         t = row["ticker"]
         if t not in sleeve_map:
@@ -205,29 +199,47 @@ def update_positions(
         if t not in shares_map:
             shares_map[t] = 0.0
 
-    # build positions snapshot
+    # build equity/trend position rows priced at adj_close
     rows = []
-    total_mv = 0.0
+    total_invested = 0.0
     for ticker, shares in shares_map.items():
         if shares <= 0:
             continue
-        price = float(open_prices[ticker]) if ticker in open_prices.index else 0.0
-        mv = shares * price
-        total_mv += mv
-        rows.append({"ticker": ticker, "sleeve": sleeve_map.get(ticker, "equity"),
-                     "shares_held": round(shares, 6), "current_price": round(price, 4),
-                     "market_value": round(mv, 2)})
+        price = float(fill_prices[ticker]) if ticker in fill_prices.index else 0.0
+        mv = round(shares * price, 2)
+        total_invested += mv
+        rows.append({
+            "ticker": ticker,
+            "sleeve": sleeve_map.get(ticker, "equity"),
+            "shares_held": round(shares, 6),
+            "current_price": round(price, 4),
+            "market_value": mv,
+        })
 
     pos_df = pd.DataFrame(rows)
     if pos_df.empty:
         return pos_df
 
+    # weights relative to full NAV
     pos_df["portfolio_weight"] = (pos_df["market_value"] / nav).round(6)
 
-    # attach target weights from orders
     target_map = {row["ticker"]: row["target_weight"] for _, row in orders.iterrows()}
     pos_df["target_weight"] = pos_df["ticker"].map(target_map).fillna(0.0).round(6)
     pos_df["weight_drift_pp"] = ((pos_df["portfolio_weight"] - pos_df["target_weight"]) * 100).round(3)
+
+    # cash row — residual of NAV not invested
+    cash_mv = round(nav - total_invested, 2)
+    cash_row = pd.DataFrame([{
+        "ticker": "__CASH__",
+        "sleeve": "cash",
+        "shares_held": 1.0,
+        "current_price": round(cash_mv, 4),
+        "market_value": cash_mv,
+        "portfolio_weight": round(cash_mv / nav, 6),
+        "target_weight": round(cfg.get("risk", {}).get("cash_frac_target", cash_mv / nav), 6),
+        "weight_drift_pp": 0.0,
+    }])
+    pos_df = pd.concat([pos_df, cash_row], ignore_index=True)
     pos_df.insert(0, "as_of_date", fill_date)
 
     return pos_df
@@ -275,17 +287,18 @@ def main() -> None:
         logger.info("prices.parquet not found — loading close prices from data/raw/ for %s", args.signal_date)
         close_prices = _load_prices_from_raw(args.signal_date, "adj_close")
 
-    open_prices = load_open_prices(fill_date)
-    logger.info("Loaded open prices for %d tickers on %s", len(open_prices), fill_date)
+    fill_prices = load_fill_prices(fill_date)
+    logger.info("Loaded fill prices for %d tickers on %s", len(fill_prices), fill_date)
 
-    fills = compute_fills(orders, close_prices, open_prices, args.signal_date, fill_date, cfg)
+    fills = compute_fills(orders, close_prices, fill_prices, args.signal_date, fill_date, cfg)
     logger.info("Fills: %d trades, avg slippage %.1f bps, flagged %d",
                 len(fills),
                 fills["actual_slippage_bps"].abs().mean() if not fills.empty else 0.0,
                 fills["slippage_flagged"].sum() if not fills.empty else 0)
 
-    positions = update_positions(orders, fills, open_prices, fill_date, cfg)
-    max_drift = positions["weight_drift_pp"].abs().max() if not positions.empty else 0.0
+    positions = update_positions(orders, fills, fill_prices, fill_date, cfg)
+    invested = positions[positions["ticker"] != "__CASH__"]
+    max_drift = invested["weight_drift_pp"].abs().max() if not invested.empty else 0.0
     logger.info("Positions: %d holdings, max weight drift %.2f pp (H-4 gate: %.1f pp)",
                 len(positions), max_drift, cfg["risk"]["target_weight_drift_pp"])
 

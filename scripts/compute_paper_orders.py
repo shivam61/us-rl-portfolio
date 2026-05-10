@@ -27,6 +27,7 @@ Usage
 import argparse
 import json
 import logging
+import math
 import sys
 from pathlib import Path
 
@@ -134,6 +135,14 @@ def compute_orders(
 
     target_weights = build_target_weights(alloc)
 
+    # Normalise weights so they sum to exactly 1.0 across all non-cash tickers.
+    # The RL allocation JSON can have per-ticker weights that sum > 1 (e.g. 1.337)
+    # because they reflect the B.5 system's raw position weights before sleeve scaling.
+    # Without normalisation orders would exceed the $50K NAV budget.
+    total_weight = sum(w for w, _ in target_weights.values())
+    if total_weight > 1e-9:
+        target_weights = {t: (w / total_weight, s) for t, (w, s) in target_weights.items()}
+
     # current holdings indexed by ticker
     current_shares: dict[str, float] = {}
     current_weights: dict[str, float] = {}
@@ -159,7 +168,7 @@ def compute_orders(
 
         current_w = current_weights.get(ticker, 0.0)
         current_s = current_shares.get(ticker, 0.0)
-        target_s = round(target_w * nav / price, 6)
+        target_s = math.floor(target_w * nav / price * 1_000_000) / 1_000_000  # floor at 6dp, never exceed budget
         delta_s = round(target_s - current_s, 6)
         notional = abs(delta_s) * price
 

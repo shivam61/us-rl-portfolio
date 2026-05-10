@@ -116,14 +116,20 @@ def build_day_section(run_date: str) -> str:
         pos_path = PT_DIR / "positions_latest.parquet"
 
     if pos_path.exists():
-        pos = pd.read_parquet(pos_path).sort_values("market_value", ascending=False)
-        total_mv = pos["market_value"].sum()
-        max_drift = pos["weight_drift_pp"].abs().max()
+        pos_all = pd.read_parquet(pos_path)
+        cash_row = pos_all[pos_all["ticker"] == "__CASH__"]
+        pos = pos_all[pos_all["ticker"] != "__CASH__"].sort_values("market_value", ascending=False)
+        total_invested = pos["market_value"].sum()
+        cash_mv = float(cash_row["market_value"].iloc[0]) if not cash_row.empty else 0.0
+        total_nav = total_invested + cash_mv
+        max_drift = pos["weight_drift_pp"].abs().max() if not pos.empty else 0.0
         lines.append("### Portfolio Snapshot")
         lines.append(f"| Metric | Value |")
         lines.append(f"|--------|-------|")
-        lines.append(f"| Holdings | {len(pos)} |")
-        lines.append(f"| Total market value | {_usd(total_mv)} |")
+        lines.append(f"| Holdings | {len(pos)} positions + cash |")
+        lines.append(f"| Invested | {_usd(total_invested)} ({total_invested/total_nav*100:.1f}% of NAV) |")
+        lines.append(f"| Cash | {_usd(cash_mv)} ({cash_mv/total_nav*100:.1f}% of NAV) |")
+        lines.append(f"| Total NAV | {_usd(total_nav)} |")
         lines.append(f"| Max weight drift | {max_drift:.2f} pp (H-4 gate: 5.0 pp) |")
         lines.append("")
         lines.append("| Ticker | Sleeve | Shares | Price | Mkt Value | Port Wt | Target Wt | Drift pp |")
@@ -136,6 +142,7 @@ def build_day_section(run_date: str) -> str:
                 f"{r['portfolio_weight']*100:.2f}% | {r['target_weight']*100:.2f}% | "
                 f"{r['weight_drift_pp']:+.3f}{drift_flag} |"
             )
+        lines.append(f"| __CASH__ | cash | — | — | {_usd(cash_mv)} | {cash_mv/total_nav*100:.2f}% | {cash_mv/total_nav*100:.2f}% | +0.000 |")
         lines.append("")
 
     # --- Orders ---
@@ -193,7 +200,7 @@ def build_day_section(run_date: str) -> str:
         lines.append(f"| H-1 Pipeline reliability | Errors today: {len(ops_entry.get('pipeline_errors',[]))} | {'✅' if not ops_entry.get('pipeline_errors') else '⚠️'} |")
     if fills_path.exists() and not fills.empty:
         lines.append(f"| H-2 Fill slippage | {avg_slip:.1f} bps avg | {'✅' if avg_slip < 20 else '⚠️ T=0 artifact'} |")
-    if pos_path.exists():
+    if pos_path.exists() and not pos.empty:
         lines.append(f"| H-4 Weight drift | {max_drift:.2f} pp max | {'✅' if max_drift < 5.0 else '🚨'} |")
     if ops_entry:
         lines.append(f"| H-5 RL mode | {ops_entry.get('mode','?')} | {'✅' if ops_entry.get('mode') == 'rl_e7' else '⚠️'} |")
