@@ -68,31 +68,99 @@ Before Phase PROD, migrate to the actual broker you'll use with real capital.
 
 ## H.1–H.4 — Live Paper Trading Loop
 
-### Daily Operations
+> **Rebalance cadence: every 14 calendar days.**
+> The pipeline runs every trading day but most days it is read-only (signal + drift check only).
+> Orders and fills only happen on the ~4 rebalance days across the 8-week window.
+
+---
+
+### Every trading day — required (~5 min)
+
+Run after 16:05 ET (market close):
+
+```bash
+.venv/bin/python scripts/run_daily_paper_ops.py --date YYYY-MM-DD
+```
+
+What this does internally (7 steps, fully automated):
+
+| Step | Script | Action | Output |
+|------|--------|--------|--------|
+| 1 | `run_prod_signal.py` | Runs RL signal, computes allocation | `data/allocations/{date}.json` |
+| 2 | `run_drift_monitor_g3.py` | Checks feature drift, model health | `data/drift/flags.parquet` |
+| 3 | `compute_paper_orders.py` | Computes fractional share orders (rebalance days only; hold-only otherwise) | `data/paper_trading/orders_{date}.csv` |
+| 4 | `log_paper_fills.py` | Simulates T+1 fills at next open prices, logs slippage | `data/paper_trading/fills_{date}.csv` + `positions_latest.parquet` |
+| 5 | `run_benchmark_dashboard_g5.py` | Refreshes performance vs B.5 / SPY | `artifacts/reports/benchmark_dashboard.html` |
+| 6 | `generate_paper_journal.py` | Writes human-readable day entry | `docs/paper_trading_journal.md` |
+| 7 | `append_experience_log.py` | Logs full transition for offline RL (rebalance days only) | `data/paper_trading/experience_log.parquet` |
+
+**On non-rebalance days:** Steps 3, 4, 7 produce no orders/fills but still run to confirm
+data freshness and catch pipeline failures early.
+
+---
+
+### Rebalance days — additional review (~15 min, every 14 days)
+
+Next rebalance: **~2026-05-24** (14 days from T=0 on 2026-05-10).
+
+After the daily command completes, check:
+
+1. **Read the journal entry** — `docs/paper_trading_journal.md` (top section = today)
+   - Orders table: confirm tickers/notional look reasonable
+   - Slippage table: any trades flagged > 30 bps?
+   - H-gate status block: all green?
+
+2. **Check turnover** — should be < 35% (H-3 gate). Journal shows estimated turnover %.
+
+3. **Check weight drift** — max drift < 5pp across all positions (H-4 gate).
+
+4. **Check RL mode** — journal shows `mode: rl_e7` or `b5_only`. If stuck in `b5_only`
+   for 2+ consecutive rebalances, investigate G.4 switching rule thresholds.
+
+5. **Check drift flags** — if ≥ 2 flags active, read `data/drift/flags.parquet` and
+   open `artifacts/reports/phase_g3_drift_report.md` for context.
+
+---
+
+### Week 5 — Mid-point review (~30 min, ~2026-06-14)
+
+Run after the week-5 rebalance completes. Check cumulative stats across all rebalances so far:
+
+```bash
+.venv/bin/python -c "
+import pandas as pd
+fills = pd.read_csv('data/paper_trading/slippage_summary.csv')
+print('Avg slippage:', fills['actual_slippage_bps'].abs().mean().round(1), 'bps')
+print('Flagged trades:', fills['slippage_flagged'].sum(), '/', len(fills))
+ops = [__import__('json').loads(l) for l in open('data/paper_trading/daily_ops_log.jsonl')]
+errors = sum(len(e['pipeline_errors']) for e in ops)
+print('Total pipeline errors:', errors)
+print('RL mode days:', sum(1 for e in ops if e['mode']=='rl_e7'))
+"
+```
+
+Decision tree:
 
 ```
-16:00 ET  Market close
-16:05 ET  G.1 pipeline runs (fetches EOD prices, computes features, runs RL)
-16:10 ET  Allocation JSON exported (stock weights, fracs, state vector)
-16:15 ET  Order calculation: (target_weight × NAV / price → shares to buy/sell)
-16:20 ET  Paper orders submitted to broker (limit or market-on-close)
-16:30 ET  Fill confirmation + slippage log entry
-16:45 ET  G.2 audit trail entry written
-17:00 ET  G.3 drift monitoring checks run
+avg slippage < 20 bps?  YES → continue   NO → diagnose order timing / data source
+pipeline errors < 2?    YES → continue   NO → fix G.1 reliability before proceeding
+RL mode seen at least once? YES → continue   NO → diagnose G.4 switching thresholds
 ```
 
-**On non-rebalance days:** Signal pipeline still runs (feature computation, state vector, drift
-checks) but no orders are placed. This catches data failures early without unnecessary turnover.
+If any critical issue: pause paper trading, fix, restart the 8-week clock.
 
-### What to Track Daily
+---
 
-| Metric | How to compute | Flag threshold |
-|--------|---------------|----------------|
-| Signal latency | Time from 16:00 to allocation JSON ready | > 20 min |
-| Data feed failure | Any missing tickers in EOD prices | Any missing large-cap |
-| Target weight drift | Actual portfolio weights vs target | Any position > target + 3pp |
-| Paper slippage | Simulated fill price vs 16:00 close | > 30 bps per trade |
-| Rebalance turnover | Actual vs backtest estimated (25%) | > 40% on any rebalance |
+### What to track (automated — journal does this for you)
+
+| Metric | Flag threshold | Gate |
+|--------|---------------|------|
+| Avg fill slippage | > 20 bps cumulative avg | H-2 |
+| Rebalance turnover | > 35% on any rebalance | H-3 |
+| Max weight drift | > 5pp on any position for > 2 days | H-4 |
+| RL mode | stuck in b5_only for 2+ rebalances | H-5 |
+| Pipeline errors | any unrecovered failure | H-1 |
+| Drift flags active | ≥ 2 simultaneously | H-7 |
 
 ---
 

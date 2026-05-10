@@ -12,7 +12,7 @@ RL is an overlay only. It cannot replace vol_score, trend sleeve, stress blend, 
 | | |
 |---|---|
 | Active phase | **Phase H — Paper Trading** |
-| Current step | **Phase G COMPLETE (2026-05-10)** — G.0–G.5 all gates pass; H.0 setup done: $50K NAV, config frozen at `config/paper_trading.yaml` v H.0.0, daily ops loop ready |
+| Current step | **H.0 COMPLETE + T=0 bootstrap done (2026-05-10)** — $50K NAV deployed, 22 positions live (mode: `rl_e7`, 25% equity / 56.5% trend / 18.5% cash). Next rebalance: **~2026-05-24**. Run daily: `python scripts/run_daily_paper_ops.py --date YYYY-MM-DD` |
 | Locked production system | **B.5 `b4_stress_cap_trend_boost`** — vol_score signal, dynamic beta cap `0.90 − 0.20 × stress`, floor 0.50, trend sleeve, stress blend |
 | Current headline metrics (sp500, 2008–2026, 10 bps) | CAGR `16.04%`, Sharpe `1.078`, MaxDD `−32.98%`, turnover `84.12`; 50 bps Sharpe `0.934` |
 | Holdout metrics (sp500, 2019–2026-04-24, 10 bps) | CAGR `20.69%`, Sharpe `1.270`, MaxDD `−32.98%`, 50 bps Sharpe `1.135` |
@@ -59,7 +59,7 @@ RL is an overlay only. It cannot replace vol_score, trend sleeve, stress blend, 
 | **E** | RL Regime Controller v2: equity/trend/cash exposure mix | ✅ **PROMOTE** (2026-05-03 E.7) — Sharpe `1.296` / MaxDD `−24.48%`; all gates pass incl. p75 | [phases/phase_e.md](phases/phase_e.md) |
 | **F** | RL policy hardening: Top-N sensitivity + clean E.7 retrain | ✅ **COMPLETE** — F.1 Top-20 locked; F.2 E.7 retrain Sharpe `1.296` / MaxDD `−24.48%` | [phases/phase_f.md](phases/phase_f.md) |
 | **G** | Production infrastructure: feature parity, signal pipeline, audit trail, drift monitoring, dual-mode switching | ✅ **COMPLETE** — G.0–G.5 all gates pass (2026-05-10) | [phases/phase_g.md](phases/phase_g.md) |
-| **H** | Paper trading: 8–12 week forward test with live data, simulated fills, 8 exit gates | 🔄 **ACTIVE** — H.0 setup complete; $50K NAV, Alpaca paper, fractional shares, config frozen | [phases/phase_h.md](phases/phase_h.md) |
+| **H** | Paper trading: 8–12 week forward test with live data, simulated fills, 8 exit gates | 🔄 **ACTIVE** — T=0 live (2026-05-10); 22 positions, rl_e7 mode; next rebalance ~2026-05-24; 8 gates pending | [phases/phase_h.md](phases/phase_h.md) |
 | **PROD** | Live deployment: real capital, 4-week ramp, circuit breakers, steady-state ops, quarterly retrain gate | ⏳ **PENDING** — begins after all Phase H exit gates pass | [phases/phase_prod.md](phases/phase_prod.md) |
 
 ### Phase Gates
