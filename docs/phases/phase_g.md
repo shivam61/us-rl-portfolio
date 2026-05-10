@@ -18,8 +18,8 @@ and a clean dual-mode architecture that can switch between B.5 and RL without ma
 | G.1 | Signal Generation Pipeline | ✅ **COMPLETE** (2026-05-04) — dry-run validated; state persistence verified | Signal exports run unattended for 5 consecutive days |
 | G.2 | Audit Trail | ✅ **COMPLETE** (2026-05-04) — append-only parquet; wired into G.1 pipeline | Every allocation decision has a queryable record |
 | G.3 | Live Drift Monitoring | ✅ **COMPLETE** (2026-05-05) — 5 flags + alert rule; gate PASS on simulated breach | Dashboard live; alert fires on simulated breach |
-| G.4 | Dual-Mode Allocation | ⏳ **NEXT** | Mode switch validated on 3 historical transition dates |
-| G.5 | Benchmark Dashboard | ⏳ PENDING | Dashboard auto-updates daily |
+| G.4 | Dual-Mode Allocation | ✅ **COMPLETE** (2026-05-10) — 3/3 historical validations PASS | Mode switch validated on 3 historical transition dates |
+| G.5 | Benchmark Dashboard | ⏳ **NEXT** | Dashboard auto-updates daily |
 
 ---
 
@@ -155,6 +155,22 @@ and consider switching to B.5-only mode.
 ---
 
 ## G.4 — Dual-Mode Allocation with Switching Rule
+
+**Status: ✅ COMPLETE (2026-05-10)**
+
+**Implementation:**
+- Core logic: `src/rl/switching_rule.py` — SwitchingRuleEngine with 4 RL→B.5 + 2 B.5→RL triggers
+- 5-day window: `src/rl/drift_monitor.py` — aggregate_flags_5day_window() added
+- Integration: `scripts/run_prod_signal.py` — switching rule evaluated before allocation (--mode-override flag)
+- NAV utilities: `src/rl/nav_generator.py` + `scripts/compute_b5_nav_for_g4.py` + `scripts/compute_rl_nav_for_g4.py`
+- Validation: `scripts/validate_g4_historical_transitions.py`
+- B.5 NAV backtest: `data/switching/nav_b5_backtest.parquet` (1838 records, 2019-01-02 to 2026-04-24)
+- RL NAV backtest: `data/switching/nav_rl_backtest.parquet` (1811 records, 2019-01-22 to 2026-04-06)
+
+**Gate results (3/3 PASS):**
+- ✅ 2020-03 COVID: RL outperformed B.5 (Sharpe delta +0.414) — correctly stayed in rl_e7 mode (no degradation)
+- ✅ 2022-01 Rate shock: Sharpe degradation trigger fired (rolling 63d Sharpe −0.723 vs floor 1.196) — correctly switched to b5_only
+- ✅ 2025-04 Recovery: Flags quiescent (181d) + RL recovered (Sharpe delta +0.046) — correctly switched from b5_only → rl_e7
 
 **Objective:** The production system can operate in two modes — B.5-only and RL — and can switch
 between them based on a quantitative rule. This ensures continuity if the RL policy degrades or
