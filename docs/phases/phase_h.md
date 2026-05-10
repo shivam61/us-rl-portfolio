@@ -42,109 +42,131 @@ Extend to 12 weeks if mid-point review flags concerns.
 
 ## H.0 — Setup
 
-> **Status: COMPLETE** — Config frozen at `config/paper_trading.yaml` v H.0.0 (2026-05-10).
-> Scripts: `compute_paper_orders.py`, `log_paper_fills.py`, `run_daily_paper_ops.py`.
+> **Status: COMPLETE** — Config frozen at `config/paper_trading.yaml` v H.0.0 (2026-05-09).
+> T=0 bootstrap executed 2026-05-09 with RL model `rl_e7_clean_promoted` firing its action.
 > Initial NAV: **$50,000** | Broker: Alpaca paper | Fractional shares: enabled.
+> Allocation: Equity 25.00% / Trend 62.14% (UUP 53.1% + GLD 9.0%) / Cash 12.86%.
 
 ### Broker Choice
 
 | Option | Best for | Notes |
 |--------|----------|-------|
-| **Alpaca** | $0–$100K, paper trading native support | Free paper trading API; easy Python SDK; no PDT rule for $0 account; good for development |
-| **Interactive Brokers (IBKR)** | $50K+ | Industry standard; better fill quality; TWS API more complex; real paper account mirrors live |
-| **TD Ameritrade / Schwab thinkorswim** | Any size | PaperMoney platform; good simulation; no programmatic API as clean as Alpaca/IBKR |
+| **Alpaca** | $0–$100K, paper trading native support | Free paper trading API; Python-native; good for Phase H simulation |
+| **Interactive Brokers (IBKR)** | $50K+ | Industry standard; better fill quality; use for Phase PROD |
+| **TD Ameritrade / Schwab thinkorswim** | Any size | PaperMoney platform; no clean programmatic API |
 
-**Recommendation for Phase H:** Start with Alpaca paper trading (zero friction, Python-native).
-Before Phase PROD, migrate to the actual broker you'll use with real capital.
+**Phase H uses Alpaca paper (simulation only). Phase PROD will migrate to the real broker.**
 
-### Initial Paper Allocation
+### T=0 Bootstrap (one-time, already done)
 
-1. Run full G.1 signal pipeline to get current target allocation
-2. Load paper account with simulated NAV = planned Phase PROD capital ($50,000)
-3. Submit paper orders at today's close prices using target weights
-4. This becomes the paper portfolio baseline (T=0 NAV)
+```bash
+# Already executed. Do not re-run unless resetting the paper portfolio from scratch.
+.venv/bin/python scripts/run_daily_paper_ops.py --date 2026-05-09 --initial
+```
+
+The `--initial` flag does two things:
+1. Passes `--force-rebalance` to `run_prod_signal.py` so the RL model fires its action
+   (without this, the signal falls back to B.5 defaults and cash is wrong)
+2. Treats all current positions as zero (starting from empty)
 
 ---
 
 ## H.1–H.4 — Live Paper Trading Loop
 
 > **Rebalance cadence: every 14 calendar days.**
-> The pipeline runs every trading day but most days it is read-only (signal + drift check only).
-> Orders and fills only happen on the ~4 rebalance days across the 8-week window.
+> The pipeline runs every trading day. On most days it is read-only (data refresh + signal + drift check).
+> Orders and fills only execute on rebalance days (~every 14 days).
 
 ---
 
-### Every trading day — required (~5 min)
-
-Run after 16:05 ET (market close):
+### Every trading day — required (~5 min, after 16:05 ET)
 
 ```bash
 .venv/bin/python scripts/run_daily_paper_ops.py --date YYYY-MM-DD
 ```
 
-What this does internally (7 steps, fully automated):
+8 steps run automatically:
 
 | Step | Script | Action | Output |
 |------|--------|--------|--------|
-| 0 | `refresh_market_data.py` | Incremental price append + feature rebuild | `data/raw/*.parquet` + `data/features/*.parquet` |
-| 1 | `run_prod_signal.py` | Runs RL signal on fresh features, computes allocation | `data/allocations/{date}.json` |
-| 2 | `run_drift_monitor_g3.py` | Checks feature drift, model health | `data/drift/flags.parquet` |
-| 3 | `compute_paper_orders.py` | Computes fractional share orders (rebalance days only; hold-only otherwise) | `data/paper_trading/orders_{date}.csv` |
-| 4 | `log_paper_fills.py` | Simulates T+1 fills at next open prices, logs slippage | `data/paper_trading/fills_{date}.csv` + `positions_latest.parquet` |
+| 0 | `refresh_market_data.py` | Incremental price append for all tickers; rebuilds features only if stale | `data/raw/*.parquet` + `data/features/*.parquet` |
+| 1 | `run_prod_signal.py` | RL signal on fresh features → target allocation | `data/allocations/{date}.json` |
+| 2 | `run_drift_monitor_g3.py` | Feature drift + model health check | `data/drift/flags.parquet` |
+| 3 | `compute_paper_orders.py` | Fractional share orders (buys/sells on rebalance days; hold-only otherwise) | `data/paper_trading/orders_{date}.csv` |
+| 4 | `log_paper_fills.py` | T+1 fill simulation at adj_close; updates portfolio snapshot | `fills_{date}.csv` + `positions_latest.parquet` |
 | 5 | `run_benchmark_dashboard_g5.py` | Refreshes performance vs B.5 / SPY | `artifacts/reports/benchmark_dashboard.html` |
-| 6 | `generate_paper_journal.py` | Writes human-readable day entry | `docs/paper_trading_journal.md` |
-| 7 | `append_experience_log.py` | Logs full transition for offline RL (rebalance days only) | `data/paper_trading/experience_log.parquet` |
+| 6 | `generate_paper_journal.py` | Writes day entry to dated file + rolling journal | `docs/paper_trading/YYYY-MM-DD.md` + `docs/paper_trading_journal.md` |
+| 7 | `append_experience_log.py` | Logs full transition tuple for offline RL (rebalance days only) | `data/paper_trading/experience_log.parquet` |
 
-**On non-rebalance days:** Steps 3, 4, 7 produce no orders/fills but still run to confirm
-data freshness and catch pipeline failures early.
+**On non-rebalance days:** Steps 3, 4, 7 still run but produce hold-only orders and no fills.
+This catches data freshness failures early rather than discovering them on rebalance day.
+
+**What populates the data:** Step 0 is the data population step. It appends only the missing
+trading days to each `data/raw/{ticker}.parquet` file (incremental, not a full re-download),
+then rebuilds `data/features/` if any ticker was updated. Features lag price by 1 business day
+(point-in-time safe). Running the daily command every trading day keeps features always current.
 
 ---
 
 ### Rebalance days — additional review (~15 min, every 14 days)
 
-Next rebalance: **~2026-05-24** (14 days from T=0 on 2026-05-10).
+**The daily command handles rebalance automatically** — no separate command needed.
+The signal pipeline detects that 14+ days have elapsed since the last rebalance and fires
+the RL model action, sizing new orders rather than producing hold-only output.
 
-After the daily command completes, check:
+**Rebalance schedule:**
 
-1. **Read the journal entry** — `docs/paper_trading_journal.md` (top section = today)
-   - Orders table: confirm tickers/notional look reasonable
+| # | Target date | Notes |
+|---|-------------|-------|
+| T=0 | 2026-05-09 | ✅ Bootstrap complete. RL action: equity 25% / trend 62.14% / cash 12.86% |
+| R1 | ~2026-05-23 | First live rebalance |
+| R2 | ~2026-06-06 | |
+| R3 | ~2026-06-20 | |
+| R4 | ~2026-07-04 | |
+| Mid-point review | ~2026-06-14 | After R3 — run cumulative stats (see below) |
+| Exit gate | Week 11+ (~2026-07-18) | All 8 H-gates must pass |
+
+**After the daily command completes on a rebalance day, review:**
+
+1. **Read the journal** — `docs/paper_trading/YYYY-MM-DD.md`
+   - Allocation section: are equity/trend/cash sleeve fractions reasonable?
+   - Orders table: confirm tickers and notional look right
    - Slippage table: any trades flagged > 30 bps?
    - H-gate status block: all green?
 
-2. **Check turnover** — should be < 35% (H-3 gate). Journal shows estimated turnover %.
+2. **Check turnover** — journal shows estimated turnover %. Must be < 35% (H-3 gate).
 
 3. **Check weight drift** — max drift < 5pp across all positions (H-4 gate).
 
-4. **Check RL mode** — journal shows `mode: rl_e7` or `b5_only`. If stuck in `b5_only`
-   for 2+ consecutive rebalances, investigate G.4 switching rule thresholds.
+4. **Check RL mode** — should show `rl_e7`. If stuck in `b5_only` for 2+ consecutive
+   rebalances, investigate G.4 switching rule thresholds in `src/rl/switching_rule.py`.
 
 5. **Check drift flags** — if ≥ 2 flags active, read `data/drift/flags.parquet` and
-   open `artifacts/reports/phase_g3_drift_report.md` for context.
+   check `artifacts/reports/phase_g3_drift_report.md`.
 
 ---
 
 ### Week 5 — Mid-point review (~30 min, ~2026-06-14)
 
-Run after the week-5 rebalance completes. Check cumulative stats across all rebalances so far:
+Run after the R3 rebalance (week 5). Check cumulative stats across all rebalances so far:
 
 ```bash
 .venv/bin/python -c "
-import pandas as pd
+import pandas as pd, json
 fills = pd.read_csv('data/paper_trading/slippage_summary.csv')
 print('Avg slippage:', fills['actual_slippage_bps'].abs().mean().round(1), 'bps')
 print('Flagged trades:', fills['slippage_flagged'].sum(), '/', len(fills))
-ops = [__import__('json').loads(l) for l in open('data/paper_trading/daily_ops_log.jsonl')]
+ops = [json.loads(l) for l in open('data/paper_trading/daily_ops_log.jsonl')]
 errors = sum(len(e['pipeline_errors']) for e in ops)
 print('Total pipeline errors:', errors)
-print('RL mode days:', sum(1 for e in ops if e['mode']=='rl_e7'))
+print('RL mode days:', sum(1 for e in ops if e['mode'] == 'rl_e7'))
 "
 ```
 
 Decision tree:
-
 ```
-avg slippage < 20 bps?  YES → continue   NO → diagnose order timing / data source
-pipeline errors < 2?    YES → continue   NO → fix G.1 reliability before proceeding
+avg slippage < 20 bps?      YES → continue   NO → diagnose order timing / data source
+pipeline errors < 2?        YES → continue   NO → fix G.1 reliability before proceeding
 RL mode seen at least once? YES → continue   NO → diagnose G.4 switching thresholds
 ```
 
@@ -152,14 +174,14 @@ If any critical issue: pause paper trading, fix, restart the 8-week clock.
 
 ---
 
-### What to track (automated — journal does this for you)
+### What to track (journal does this automatically)
 
 | Metric | Flag threshold | Gate |
 |--------|---------------|------|
 | Avg fill slippage | > 20 bps cumulative avg | H-2 |
 | Rebalance turnover | > 35% on any rebalance | H-3 |
 | Max weight drift | > 5pp on any position for > 2 days | H-4 |
-| RL mode | stuck in b5_only for 2+ rebalances | H-5 |
+| RL mode | stuck in `b5_only` for 2+ rebalances | H-5 |
 | Pipeline errors | any unrecovered failure | H-1 |
 | Drift flags active | ≥ 2 simultaneously | H-7 |
 
