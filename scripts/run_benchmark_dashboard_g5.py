@@ -147,6 +147,7 @@ def build_report(
     audit_df: pd.DataFrame,
     flags_df: pd.DataFrame,
     start_date: str,
+    freshness: list[dict] | None = None,
 ) -> str:
     ts       = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     as_of    = max(nav.index.max() for nav in navs.values()).date()
@@ -161,7 +162,29 @@ def build_report(
         "",
         "---",
         "",
-        "## Performance Summary (Full Period)",
+        "## Data Freshness",
+        "",
+        "| Series | Start | End | Rows | Source | Stale? |",
+        "|--------|-------|-----|------|--------|--------|",
+    ]
+    today = datetime.now(timezone.utc).date()
+    if freshness:
+        for row in freshness:
+            end_date = row["end"]
+            if isinstance(end_date, str):
+                stale = "N/A"
+            else:
+                lag = (today - end_date).days
+                stale = "⚠️ Yes" if lag > 5 else "✅ No"
+            lines.append(
+                f"| {row['series']} | {row['start']} | {end_date} | {row['rows']} | `{row['source']}` | {stale} |"
+            )
+
+    lines += [
+        "",
+        "---",
+        "",
+        "## Performance Summary (Chart Window)",
         "",
         "| Series | Start | End | Total Return | Ann. Return | Ann. Vol | Sharpe | Max DD |",
         "|--------|-------|-----|-------------|------------|---------|--------|--------|",
@@ -318,8 +341,48 @@ def main() -> int:
     else:
         flags_df = pd.DataFrame()
 
+    # ── Data freshness metadata ───────────────────────────────────────────────
+    audit_end = audit_df["as_of_date"].max().date() if not audit_df.empty else None
+    freshness = [
+        {
+            "series": "RL (E.7) backtest",
+            "start":  rl_nav_bt.index.min().date(),
+            "end":    rl_nav_bt.index.max().date(),
+            "rows":   len(rl_nav_bt),
+            "source": "data/switching/nav_rl_backtest.parquet",
+        },
+        {
+            "series": "B.5-only backtest",
+            "start":  b5_nav.index.min().date(),
+            "end":    b5_nav.index.max().date(),
+            "rows":   len(b5_nav),
+            "source": "data/switching/nav_b5_backtest.parquet",
+        },
+        {
+            "series": "SPY prices",
+            "start":  spy_prices.index.min().date(),
+            "end":    spy_prices.index.max().date(),
+            "rows":   len(spy_prices),
+            "source": "data/raw/SPY.parquet",
+        },
+        {
+            "series": "TLT prices",
+            "start":  tlt_prices.index.min().date(),
+            "end":    tlt_prices.index.max().date(),
+            "rows":   len(tlt_prices),
+            "source": "data/raw/TLT.parquet",
+        },
+        {
+            "series": "Audit trail (live)",
+            "start":  audit_df["as_of_date"].min().date() if not audit_df.empty else "—",
+            "end":    audit_end if audit_end else "—",
+            "rows":   len(audit_df),
+            "source": "data/audit/decisions.parquet",
+        },
+    ]
+
     # ── Build and emit report ─────────────────────────────────────────────────
-    report = build_report(navs, roll_sharpe, roll_maxdd, audit_df, flags_df, args.start_date)
+    report = build_report(navs, roll_sharpe, roll_maxdd, audit_df, flags_df, args.start_date, freshness)
 
     if args.dry_run:
         print(report)

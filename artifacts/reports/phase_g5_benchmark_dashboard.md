@@ -1,12 +1,24 @@
 # Phase G.5 — Benchmark Dashboard
 
 **As-of:** 2026-04-06  
-**Generated:** 2026-05-10T06:08:35Z  
+**Generated:** 2026-05-10T06:15:16Z  
 **Chart window:** 2020-01-01 →  
 
 ---
 
-## Performance Summary (Full Period)
+## Data Freshness
+
+| Series | Start | End | Rows | Source | Stale? |
+|--------|-------|-----|------|--------|--------|
+| RL (E.7) backtest | 2019-01-22 | 2026-04-06 | 1811 | `data/switching/nav_rl_backtest.parquet` | ⚠️ Yes |
+| B.5-only backtest | 2019-01-02 | 2026-04-24 | 1838 | `data/switching/nav_b5_backtest.parquet` | ⚠️ Yes |
+| SPY prices | 2006-01-03 | 2026-04-24 | 5109 | `data/raw/SPY.parquet` | ⚠️ Yes |
+| TLT prices | 2006-01-03 | 2026-04-29 | 5112 | `data/raw/TLT.parquet` | ⚠️ Yes |
+| Audit trail (live) | — | — | 0 | `data/audit/decisions.parquet` | N/A |
+
+---
+
+## Performance Summary (Chart Window)
 
 | Series | Start | End | Total Return | Ann. Return | Ann. Vol | Sharpe | Max DD |
 |--------|-------|-----|-------------|------------|---------|--------|--------|
