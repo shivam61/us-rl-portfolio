@@ -86,7 +86,8 @@ What this does internally (7 steps, fully automated):
 
 | Step | Script | Action | Output |
 |------|--------|--------|--------|
-| 1 | `run_prod_signal.py` | Runs RL signal, computes allocation | `data/allocations/{date}.json` |
+| 0 | `refresh_market_data.py` | Incremental price append + feature rebuild | `data/raw/*.parquet` + `data/features/*.parquet` |
+| 1 | `run_prod_signal.py` | Runs RL signal on fresh features, computes allocation | `data/allocations/{date}.json` |
 | 2 | `run_drift_monitor_g3.py` | Checks feature drift, model health | `data/drift/flags.parquet` |
 | 3 | `compute_paper_orders.py` | Computes fractional share orders (rebalance days only; hold-only otherwise) | `data/paper_trading/orders_{date}.csv` |
 | 4 | `log_paper_fills.py` | Simulates T+1 fills at next open prices, logs slippage | `data/paper_trading/fills_{date}.csv` + `positions_latest.parquet` |

@@ -1,6 +1,7 @@
 """Phase H — Daily Paper Trading Operations Orchestrator.
 
 Runs the full nightly paper trading loop in sequence:
+  0. Data refresh               → data/raw/*.parquet + data/features/*.parquet (incremental)
   1. G.1 signal generation      → data/allocations/{date}.json
   2. G.3 drift monitoring       → data/drift/flags.parquet
   3. Order computation          → data/paper_trading/orders_{date}.csv
@@ -150,6 +151,16 @@ def main() -> None:
                 args.date, cfg["version"], cfg["capital"]["initial_nav"])
 
     errors: list[str] = []
+
+    # Step 0: Incremental market data + feature refresh
+    if not args.dry_run:
+        data_cmd = [PYTHON, str(SCRIPTS_DIR / "refresh_market_data.py"), "--as-of", args.date]
+        ok, err = run_step("data refresh", data_cmd)
+        if not ok:
+            errors.append(f"data refresh: {err}")
+            logger.warning("Data refresh failed — signal will use existing (possibly stale) features")
+    else:
+        logger.info("[data refresh] skipped (--dry-run)")
 
     # Step 1: G.1 signal generation
     signal_cmd = [PYTHON, str(SCRIPTS_DIR / "run_prod_signal.py"), "--as-of", args.date]
