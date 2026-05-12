@@ -42,10 +42,10 @@ Extend to 12 weeks if mid-point review flags concerns.
 
 ## H.0 — Setup
 
-> **Status: COMPLETE** — Config frozen at `config/paper_trading.yaml` v H.0.0 (2026-05-09).
-> T=0 bootstrap executed 2026-05-09 with RL model `rl_e7_clean_promoted` firing its action.
+> **Status: COMPLETE** — Config frozen at `config/paper_trading.yaml` v H.0.0 (2026-05-12).
+> T=0 bootstrap executed 2026-05-12 with RL model `rl_e7_clean_promoted` firing its action.
 > Initial NAV: **$50,000** | Broker: Alpaca paper | Fractional shares: enabled.
-> Allocation: Equity 25.00% / Trend 62.14% (UUP 53.1% + GLD 9.0%) / Cash 12.86%.
+> Allocation: Equity 25.00% / Trend 67.91% (UUP 58.05% + GLD 9.86%) / Cash 7.09%.
 
 ### Broker Choice
 
@@ -118,13 +118,13 @@ the RL model action, sizing new orders rather than producing hold-only output.
 
 | # | Target date | Notes |
 |---|-------------|-------|
-| T=0 | 2026-05-09 | ✅ Bootstrap complete. RL action: equity 25% / trend 62.14% / cash 12.86% |
-| R1 | ~2026-05-23 | First live rebalance |
-| R2 | ~2026-06-06 | |
-| R3 | ~2026-06-20 | |
-| R4 | ~2026-07-04 | |
-| Mid-point review | ~2026-06-14 | After R3 — run cumulative stats (see below) |
-| Exit gate | Week 11+ (~2026-07-18) | All 8 H-gates must pass |
+| T=0 | 2026-05-12 | ✅ Bootstrap complete. RL action: equity 25% / trend 67.91% / cash 7.09% |
+| R1 | ~2026-05-26 | First live rebalance |
+| R2 | ~2026-06-09 | |
+| R3 | ~2026-06-23 | |
+| R4 | ~2026-07-07 | |
+| Mid-point review | ~2026-06-17 | After R3 — run cumulative stats (see below) |
+| Exit gate | Week 11+ (~2026-07-21) | All 8 H-gates must pass |
 
 **After the daily command completes on a rebalance day, review:**
 

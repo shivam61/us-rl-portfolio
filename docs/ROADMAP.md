@@ -7,12 +7,12 @@ RL is an overlay only. It cannot replace vol_score, trend sleeve, stress blend, 
 
 ---
 
-## Current State — 2026-05-10
+## Current State — 2026-05-12
 
 | | |
 |---|---|
 | Active phase | **Phase H — Paper Trading** |
-| Current step | **H.0 COMPLETE + T=0 bootstrap done (2026-05-09)** — $50K NAV deployed, 22 positions live (mode: `rl_e7`, equity 25% / trend 62.14% / cash 12.86%). RL model fired at T=0 (`rl_e7_clean_promoted`). Next rebalance: **~2026-05-23**. Run daily: `.venv/bin/python scripts/run_daily_paper_ops.py --date YYYY-MM-DD` |
+| Current step | **H.0 COMPLETE + T=0 bootstrap done (2026-05-12)** — $50K NAV deployed, 22 positions live (mode: `rl_e7`, equity 25% / trend 67.91% / cash 7.09%). RL model fired at T=0 (`rl_e7_clean_promoted`). Next rebalance: **~2026-05-26**. Run daily: `.venv/bin/python scripts/run_daily_paper_ops.py --date YYYY-MM-DD` |
 | Locked production system | **B.5 `b4_stress_cap_trend_boost`** — vol_score signal, dynamic beta cap `0.90 − 0.20 × stress`, floor 0.50, trend sleeve, stress blend |
 | Current headline metrics (sp500, 2008–2026, 10 bps) | CAGR `16.04%`, Sharpe `1.078`, MaxDD `−32.98%`, turnover `84.12`; 50 bps Sharpe `0.934` |
 | Holdout metrics (sp500, 2019–2026-04-24, 10 bps) | CAGR `20.69%`, Sharpe `1.270`, MaxDD `−32.98%`, 50 bps Sharpe `1.135` |
