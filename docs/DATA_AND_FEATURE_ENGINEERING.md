@@ -202,6 +202,100 @@ Outputs:
 
 The audit should be run before any experiment that depends on new fundamental or alternative data.
 
+## Phase H — Live Paper Trading Data And Features
+
+This section documents what data and features the live `rl_e7` policy actually consumes during
+Phase H paper trading. It is intentionally separate from the research/backtest sections above
+because the live pipeline has tighter freshness requirements and a narrower feature scope.
+
+### Live Data Sources
+
+| Source | Provider | Fetch cadence | Output |
+|---|---|---|---|
+| Prices / volume (all tickers + SPY + TLT) | `yfinance` via `src/data/providers/yfinance_provider.py` | Daily incremental append after 16:05 ET | `data/raw/{ticker}.parquet` |
+| Sector ETF prices (vol_score inputs) | Same yfinance provider | Same daily append | `data/raw/{sector_etf}.parquet` |
+| Drift flags (model health) | `run_drift_monitor_g3.py` | Daily | `data/drift/flags.parquet` |
+
+**No fundamentals in the live signal.** The `rl_e7` policy state vector is built entirely from
+price-derived features. Fundamental features exist in the research pipeline
+(`canonical_fundamental_provider.py`) but are not wired into `run_prod_signal.py`.
+
+### Live Feature Build
+
+Step 0 of the daily ops loop (`refresh_market_data.py`) appends only missing trading days to
+each `data/raw/{ticker}.parquet`, then calls `build_features.py` if any ticker was updated.
+Three feature files are written:
+
+| Artifact | Generator class | Content |
+|---|---|---|
+| `data/features/stock_features.parquet` | `StockFeatureGenerator` | Per-ticker price features (see table below) |
+| `data/features/sector_features.parquet` | `SectorFeatureGenerator` | Per-sector vol_score and momentum |
+| `data/features/macro_features.parquet` | `MacroFeatureGenerator` | SPY-level regime and vol features |
+
+All features are shifted by 1 business day inside `StockFeatureGenerator` (leakage guard).
+Features built on day T use prices through T-1 and are safe for signal generation on T.
+
+### Stock Features (`data/features/stock_features.parquet`)
+
+| Feature | Window | Description |
+|---|---|---|
+| `ret_1m`, `ret_3m`, `ret_6m` | 21 / 63 / 126d | Price momentum |
+| `volatility_21d`, `volatility_63d` | 21 / 63d | Annualised realised vol |
+| `max_drawdown_63d` | 63d rolling | Drawdown from rolling max |
+| `beta_to_spy_63d` | 63d | Rolling beta vs SPY |
+| `rs_vs_spy` | 63d | Relative strength vs SPY |
+| `ret_zscore_21d` | 21d | Short-term mean-reversion z-score |
+| `gap_overnight` | 1d | Open-vs-prior-close gap |
+| `mom_stability_3m` | 63d | Fraction of positive daily returns |
+| `sector_rel_momentum_3m`, `sector_rel_momentum_6m` | 63 / 126d | Return minus sector median |
+
+### Macro Features (`data/features/macro_features.parquet`)
+
+| Feature | Description |
+|---|---|
+| `spy_ret_1m`, `spy_ret_6m` | SPY 1-month and 6-month returns |
+| `spy_drawdown` | SPY drawdown from 252d rolling max |
+| `realized_market_vol_63d` | SPY 63d annualised vol |
+| `market_regime` | Categorical: CRASH / HIGH_VOL / TRENDING / SIDEWAYS |
+
+### RL State Vector (42 elements — `rl_e7` policy input)
+
+Built by `src/rl/state_builder.py::build_state_v2` at signal time. No additional fetch occurs
+at state-build time — all inputs come from already-refreshed parquet files.
+
+| Index | Feature | Source |
+|---|---|---|
+| 0 | `vol_score` (portfolio-level) | `data/features/stock_features.parquet` |
+| 1 | SPY 252d drawdown from rolling max | Price series (computed inline) |
+| 2 | Yield curve proxy: z-scored TLT−SPY 63d momentum | Price series (computed inline) |
+| 3 | Stress score | `build_stress_series` (inline from prices) |
+| 4–14 | Median `volatility_score` per GICS sector (11 sectors) | `data/features/sector_features.parquet` |
+| 15–25 | B.5 stock-sleeve weight summed per sector, normalised (11 sectors) | Allocation state |
+| 26 | Current NAV drawdown from peak | `data/paper_trading/positions_latest.parquet` |
+| 27–41 | (reserved / padding to 42) | — |
+
+### Data Freshness Requirements
+
+| Check | Requirement | Where enforced |
+|---|---|---|
+| Prices must cover signal date T | `data/raw/{ticker}.parquet` max date == T | `refresh_market_data.py` Step 0 |
+| Features must be rebuilt after any price append | `data/features/stock_features.parquet` mtime ≥ last price file mtime | `refresh_market_data.py` Step 0 |
+| Signal must run after 16:05 ET | T close prices available | `config/paper_trading.yaml` `signal_time_et` |
+| Orders submitted before 09:35 ET T+1 | Fills simulate T+1 open | `config/paper_trading.yaml` `order_submit_time_et` |
+
+Running `scripts/run_daily_paper_ops.py --date YYYY-MM-DD` after 16:05 ET satisfies all four
+requirements automatically. Do not skip Step 0 or run the signal before market close.
+
+### What Is Not In The Live Signal
+
+- **Fundamentals:** Not fetched during daily ops. `canonical_fundamental_provider.py` and
+  `simulated_fundamental_provider.py` are research-only. Adding fundamentals to the live signal
+  requires wiring a real-time source, adding lag handling, and a separate H-gate coverage audit.
+- **Alternative data:** No sentiment, news, or options flow in Phase H.
+- **Intraday prices:** All fills simulate at next-day adjusted close. No intraday data is used.
+
+---
+
 ## Long-Horizon Backtests And RL Scope
 
 Current backtests start in 2006 and use a two-year warmup, so the effective evaluated period starts around 2008. That gives exposure to the global financial crisis, 2011, 2018 Q4, COVID, 2022, and the 2023-2026 recovery/AI cycle.

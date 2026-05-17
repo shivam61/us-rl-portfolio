@@ -59,7 +59,7 @@ RL is an overlay only. It cannot replace vol_score, trend sleeve, stress blend, 
 | **E** | RL Regime Controller v2: equity/trend/cash exposure mix | ✅ **PROMOTE** (2026-05-03 E.7) — Sharpe `1.296` / MaxDD `−24.48%`; all gates pass incl. p75 | [phases/phase_e.md](phases/phase_e.md) |
 | **F** | RL policy hardening: Top-N sensitivity + clean E.7 retrain | ✅ **COMPLETE** — F.1 Top-20 locked; F.2 E.7 retrain Sharpe `1.296` / MaxDD `−24.48%` | [phases/phase_f.md](phases/phase_f.md) |
 | **G** | Production infrastructure: feature parity, signal pipeline, audit trail, drift monitoring, dual-mode switching | ✅ **COMPLETE** — G.0–G.5 all gates pass (2026-05-10) | [phases/phase_g.md](phases/phase_g.md) |
-| **H** | Paper trading: 8–12 week forward test with live data, simulated fills, 8 exit gates | 🔄 **ACTIVE** — T=0 live (2026-05-10); 22 positions, rl_e7 mode; next rebalance ~2026-05-24; 8 gates pending | [phases/phase_h.md](phases/phase_h.md) |
+| **H** | Paper trading: 8–12 week forward test with live data, simulated fills, 8 exit gates | 🔄 **ACTIVE** — T=0 live (2026-05-12); 22 positions, rl_e7 mode; next rebalance ~2026-05-26; 8 gates pending | [phases/phase_h.md](phases/phase_h.md) |
 | **PROD** | Live deployment: real capital, 4-week ramp, circuit breakers, steady-state ops, quarterly retrain gate | ⏳ **PENDING** — begins after all Phase H exit gates pass | [phases/phase_prod.md](phases/phase_prod.md) |
 
 ### Phase Gates
