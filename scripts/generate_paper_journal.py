@@ -172,7 +172,10 @@ def build_day_section(run_date: str) -> str:
     # --- Fills & slippage ---
     fills_path = PT_DIR / f"fills_{run_date}.csv"
     if fills_path.exists():
-        fills = pd.read_csv(fills_path)
+        try:
+            fills = pd.read_csv(fills_path)
+        except pd.errors.EmptyDataError:
+            fills = pd.DataFrame()
         if not fills.empty:
             avg_slip = fills["actual_slippage_bps"].abs().mean()
             flagged = int(fills["slippage_flagged"].sum())
