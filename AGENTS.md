@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-05-10T13:23:55+00:00
+## Current State — 2026-06-05T11:33:08+00:00
 - Branch: `main`
-- Working tree: 9 changed path(s)
-- Dirty paths sample: `M CLAUDE.md`, ` M docs/agent_handoff.md`, `?? artifacts/models/rl_e_ppo_ep0100.zip`, `?? artifacts/reports/phase_c1_run.log`, `?? artifacts/reports/phase_c1_run2.log`
-- Latest commit: `a2339c02 2026-05-10 Add token efficiency rules to AGENTS.md and agent memory`
+- Working tree: 13 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M artifacts/reports/phase_g3_drift_report.md`, ` M artifacts/reports/phase_g5_benchmark_dashboard.md`, ` M docs/agent_handoff.md`
+- Latest commit: `86624811 2026-06-05 Consolidate paper trading journal into single file`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

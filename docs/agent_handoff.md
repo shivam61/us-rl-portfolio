@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-05-10T13:23:55+00:00
+Last updated: 2026-06-28T19:25:00+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -22,6 +22,43 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
 1. Read `AGENTS.md`.
 2. Read `docs/ROADMAP.md`.
 3. Read this file only if prior experiment history or handoff detail is needed.
+
+## Phase H Paper Trading — Status 2026-06-28
+
+**Last session: 2026-06-28 19:00 UTC**
+
+### Backfill Progress
+- ✅ **10 trading days completed**: 2026-06-08 through 2026-06-19
+- ✅ **R2 Rebalance (2026-06-09)**: Executed successfully, 21 orders filled, portfolio reallocated to Equity 25%, Trend 72.3%, Cash 2.7%
+- ✅ **Market data refreshed**: All 23 missing trading days pulled from yfinance, feature store rebuilt
+- ⚠️ **Incomplete**: Still need 2026-06-22, 23 (R3 rebalance), 24, 25, 26, 28
+
+### Latest Portfolio State
+- **NAV**: ~$50k (as of 2026-06-19)
+- **Last rebalance**: 2026-06-09 (R2)
+- **Next rebalance due**: 2026-06-23 (R3, +14d from R2) — **OVERDUE by 5 calendar days**
+- **Allocation**: Equity 25%, Trend 72.3%, Cash 2.7%
+- **Signal status**: ✅ OK (0 drift flags, 0 pipeline errors through 06-19)
+- **Trading journal**: Updated through 2026-06-19 in `docs/trading_journal.md`
+
+### Remaining Work
+Resume backfill for final 6 trading days:
+```bash
+for DATE in 2026-06-22 2026-06-23 2026-06-24 2026-06-25 2026-06-26 2026-06-28; do
+  .venv/bin/python scripts/run_daily_paper_ops.py --date $DATE
+done
+```
+
+Then:
+1. Run `bash scripts/refresh_session_context.sh`
+2. Update this handoff with final R3 rebalance details
+3. Commit with message: "Phase H: Backfill 2026-06-22 through 2026-06-28 (R3 rebalance + final ops)"
+
+### Command Reference
+- Resume partial backfill: `for DATE in 2026-06-22 2026-06-23 2026-06-24 2026-06-25 2026-06-26 2026-06-28; do .venv/bin/python scripts/run_daily_paper_ops.py --date $DATE; done`
+- Check journal: `tail -50 docs/trading_journal.md`
+- Check ops log: `tail -20 data/paper_trading/daily_ops_log.jsonl | python3 -c "import sys,json; [print(json.loads(l)['date']) for l in sys.stdin]"`
+- Check portfolio state: `cat data/prod_state/current_state.json | jq '.last_rebalance_date, .last_run_date'`
 
 ## Legacy Sessions
 

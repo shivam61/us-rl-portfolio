@@ -1,0 +1,814 @@
+{
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_regime_switch_strategy.py": {
+    "mtime": 1777369040.4721432,
+    "hash": "352f39764acccc350a9ede43e393895f"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_prod_signal.py": {
+    "mtime": 1778049303.4948375,
+    "hash": "091ef206e53dafed6daab2ccde3956e4"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_b4_risk_engine.py": {
+    "mtime": 1777613881.1080244,
+    "hash": "b9c6cb6e6be1c97b2f56e43af2927225"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_rl_backtest_v2.py": {
+    "mtime": 1777788221.9756994,
+    "hash": "6e62c40c2a096d0f4b1eb25787ef2bfd"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/refresh_market_data.py": {
+    "mtime": 1778414736.3165255,
+    "hash": "21d570e9af5f5312ef08cc7f8fa6e851"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/build_sec_fundamentals_poc.py": {
+    "mtime": 1777479029.573061,
+    "hash": "fa85edc5f2dfeedcb4484e9803bf46c2"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_b2_turnover_control.py": {
+    "mtime": 1777606527.9590971,
+    "hash": "40f57a83e6a7caf38c1bc55e8830bf05"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_drift_monitor_g3.py": {
+    "mtime": 1777994244.9222717,
+    "hash": "952779556954a4b57807964b85da38f3"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_benchmark_dashboard_g5.py": {
+    "mtime": 1778393704.8887632,
+    "hash": "b95ef47da59972be8132cc2b912406b1"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_optimizer_stability_report.py": {
+    "mtime": 1777380631.062562,
+    "hash": "f814b8aefefcc6ac771c3648c8e3aee6"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_backtest.py": {
+    "mtime": 1777378702.4068515,
+    "hash": "889aa52abe656be0064154a8ed457a70"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/train_rl.py": {
+    "mtime": 1777691575.3922956,
+    "hash": "d64414834f1eed738f469a4b2a2843e3"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_a4_1_crisis_diversifier_v2.py": {
+    "mtime": 1777482117.1858969,
+    "hash": "4c1932d0872b81cfbbe65c26ad2a1dd3"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/compute_rl_nav_for_g4.py": {
+    "mtime": 1778392355.1224344,
+    "hash": "24d23812c4548ff6e6af58908c9bee50"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_intraperiod_risk_control.py": {
+    "mtime": 1777387956.1922424,
+    "hash": "5aca3586077398e6a4721e7a4c927fa3"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_c3_portfolio_validation.py": {
+    "mtime": 1777636786.8732634,
+    "hash": "af819d7525775a5ac0dc351822bfa9ab"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_a7_trend_overlay.py": {
+    "mtime": 1777484065.268474,
+    "hash": "3f9aad14136d9cf4224a0fa93e55129b"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_c2_feature_attribution.py": {
+    "mtime": 1777635799.7945454,
+    "hash": "969496a947ebbbfc0cc2fd2aa33d42b6"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_b3_exposure_control.py": {
+    "mtime": 1777612269.5322657,
+    "hash": "b2fc2bdbe786aa366f1dfcf17b456898"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_a7_3_membership_coverage_artifacts.py": {
+    "mtime": 1777532088.4983826,
+    "hash": "096d04e13e4bae3e65cfa62c43872131"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_momentum_vol_combo.py": {
+    "mtime": 1777355593.2985833,
+    "hash": "4df36490710654c7e238d0c832613c33"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_daily_paper_ops.py": {
+    "mtime": 1778417681.5331078,
+    "hash": "43ba8ed19adb0ec4503114b86f563100"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_beta_analysis.py": {
+    "mtime": 1777358046.6195633,
+    "hash": "7e1bc590a2a4a0e22acc535db0a2de02"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_a1_volatility_robustness.py": {
+    "mtime": 1777397360.201204,
+    "hash": "df0b57d452c23150fc272c87ec2cb49d"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_b0_baseline_guard.py": {
+    "mtime": 1777533259.7506497,
+    "hash": "8c34f6b2e9537a8860c8e56f3f20ed0a"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_a2_portfolio_expression.py": {
+    "mtime": 1777403958.368648,
+    "hash": "329d4288bba05131bc32bb221e8dc435"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/append_experience_log.py": {
+    "mtime": 1778413099.5494914,
+    "hash": "c1bcb653f86f27fcd342b7b53ae1bbfa"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/build_pit_universe.py": {
+    "mtime": 1777233775.2663832,
+    "hash": "4bee0fcf4cd2fab5901c385cd1216c6b"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/current_portfolio.py": {
+    "mtime": 1777193990.8512998,
+    "hash": "3fc09099f8b8b0e93c88f7e6b27aefdd"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_crash_onset_control.py": {
+    "mtime": 1777382552.9362206,
+    "hash": "f01eeb537b9afbfe7a28c9397afa552d"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/check_feature_parity_g0.py": {
+    "mtime": 1777889615.7372675,
+    "hash": "af2afc40f39e981c0aba5cc54dde631a"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_f1_topn_sensitivity.py": {
+    "mtime": 1777833964.4910178,
+    "hash": "b1d124a56ce2c71550b9983d4d528eb7"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_intraperiod_overlay_hysteresis.py": {
+    "mtime": 1777393008.2214015,
+    "hash": "389eea9a00f0237bf63e4626aa37769d"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_b1_simulator_reproduction.py": {
+    "mtime": 1777535322.7996998,
+    "hash": "0651c7cfcaa9a702308ab3521120466f"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/build_universe_config.py": {
+    "mtime": 1777230467.3019679,
+    "hash": "1a7b490d96b3bde34aaad0c58ba48744"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_d0_holdout_baseline.py": {
+    "mtime": 1777653472.2105446,
+    "hash": "8ea1f4f620ebb3542d6bbce810f9f467"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_stress_conditioned_alpha.py": {
+    "mtime": 1777381952.4743285,
+    "hash": "2caef66ffbdd8265c715f9732f570a8d"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/log_paper_fills.py": {
+    "mtime": 1778415773.550029,
+    "hash": "3486410c2e49bc278e7f5e8b3bcf1e01"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_a7_1_drawdown_control.py": {
+    "mtime": 1777485456.863458,
+    "hash": "c709b44a657a0bcfd0945a05a5c34126"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/build_features.py": {
+    "mtime": 1777442576.708513,
+    "hash": "e7dd6d3b9f0ae09ec6ed1a003a3d2817"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_production_intraperiod_overlay.py": {
+    "mtime": 1777390008.9589663,
+    "hash": "3a46c85d1d409c381ff7fcf549dd3e45"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_drawdown_attribution.py": {
+    "mtime": 1777381014.7016878,
+    "hash": "bb8ae516cf2d8faad0d6106feab85afd"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_diagnostics.py": {
+    "mtime": 1777295701.8157983,
+    "hash": "561f6bcd3bfa5a3ecd838fc1f20654ff"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_rl_backtest.py": {
+    "mtime": 1777692653.2187061,
+    "hash": "7934908139c89825d605037c5400b6bc"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/compute_b5_nav_for_g4.py": {
+    "mtime": 1778049328.9628155,
+    "hash": "c678b8af8c849ab4370daef14f4618d6"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/prepare_canonical_fundamentals.py": {
+    "mtime": 1777443269.1670878,
+    "hash": "a2b37ed710482d0cb775e54745e2ba1a"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_a3_multi_sleeve_alpha.py": {
+    "mtime": 1777442613.6425436,
+    "hash": "164b285ba70f50cee1ee117127846209"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/train_rl_v2.py": {
+    "mtime": 1777835830.2924185,
+    "hash": "cf321d531b8d2de44f920c1d8996fddd"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_c1_lgbm_tuning.py": {
+    "mtime": 1777634027.8376665,
+    "hash": "a2f99ac5d6b12e3015dd9c861ae1eb47"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_volatility_alpha_production.py": {
+    "mtime": 1777379136.9213896,
+    "hash": "cb887fbb9b3c7342317e2c4ea25b942a"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_b5_final_gate.py": {
+    "mtime": 1777615735.011803,
+    "hash": "c164441b099bc23fb2b2216818e04b05"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_a5_data_feature_audit.py": {
+    "mtime": 1777442632.8785596,
+    "hash": "d4b9a8ec74050874de441993154a48ea"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_momentum_v2.py": {
+    "mtime": 1777361441.5092263,
+    "hash": "6d1560629b56b87915dc90b7074d882e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_alpha_research.py": {
+    "mtime": 1777315521.0444143,
+    "hash": "8ed792cde526affb13b812e2100c3e78"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/validate_g4_historical_transitions.py": {
+    "mtime": 1778392536.7796874,
+    "hash": "4de5caacf20b727fde65a778de7130c4"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_a7_2_robustness.py": {
+    "mtime": 1777530963.8883579,
+    "hash": "3ccf1ed8c6d14cbb826a4858cab9cbe2"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/compute_paper_orders.py": {
+    "mtime": 1778418111.7654989,
+    "hash": "7c9ef551c3cbbd52b04ce9068a2a1315"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/generate_paper_journal.py": {
+    "mtime": 1778418159.0661697,
+    "hash": "6dad4296aee5986c669d9427d85141b8"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/refresh_session_context.py": {
+    "mtime": 1777366344.9441793,
+    "hash": "0e278d486426bf5f379e991b25f3c024"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/run_phase_a4_defensive_sleeve.py": {
+    "mtime": 1777442622.2065506,
+    "hash": "f83a677fbdbc4d9f2be1fa7bd5c3f195"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/scripts/download_data.py": {
+    "mtime": 1777442601.4295335,
+    "hash": "5cae2f984631f7402190546091b32838"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/__init__.py": {
+    "mtime": 1777193855.8546543,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/features/fundamental_features.py": {
+    "mtime": 1777440356.626677,
+    "hash": "a67a64d2c70d1d14b3097c991f27160d"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/features/macro_features.py": {
+    "mtime": 1777193905.7673297,
+    "hash": "65aa0bf4c62f36fea4d911f5da226f9d"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/features/stock_features.py": {
+    "mtime": 1777368434.7832081,
+    "hash": "1515bb5c9fa42d74c20dbe08048b3f09"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/features/sector_features.py": {
+    "mtime": 1777193905.7673297,
+    "hash": "288c5762df44e004f6f5af879a738e04"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/features/base.py": {
+    "mtime": 1777193905.7663298,
+    "hash": "f2e5499b527e48557b27419f7c90e301"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/features/__init__.py": {
+    "mtime": 1777193855.859655,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/attribution/__init__.py": {
+    "mtime": 1777193855.8656554,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/config/loader.py": {
+    "mtime": 1777442472.6074266,
+    "hash": "c3ad9befae06f45e540353095f5a0b42"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/config/__init__.py": {
+    "mtime": 1777193855.8706558,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/utils/threading.py": {
+    "mtime": 1777315449.8766696,
+    "hash": "0d07d485adea52a812f27d9449ebd62c"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/utils/__init__.py": {
+    "mtime": 1777193855.8736563,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/reporting/metrics.py": {
+    "mtime": 1777195813.0039854,
+    "hash": "b03ea17e7a625ce27db0357cd810c0b6"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/reporting/__init__.py": {
+    "mtime": 1777193855.8786566,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/data/calendar.py": {
+    "mtime": 1777193883.8482766,
+    "hash": "dcf9d302b664514b5ab12f184ac057aa"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/data/ingestion.py": {
+    "mtime": 1777442553.3234935,
+    "hash": "08cfb2a0a4b436414cf1b23c8d77d2ff"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/data/__init__.py": {
+    "mtime": 1777193855.8836572,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/data/providers/yfinance_provider.py": {
+    "mtime": 1777193883.8482766,
+    "hash": "8636ae30bd536c059cb37edb01c407e1"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/data/providers/fundamental_provider.py": {
+    "mtime": 1777440339.423662,
+    "hash": "b1babba16bd900a6dc6d8ae9cbfd72e5"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/data/providers/__init__.py": {
+    "mtime": 1777193855.8886576,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/data/providers/canonical_fundamental_provider.py": {
+    "mtime": 1777442524.021469,
+    "hash": "186dd0b7e99e0bbae87dcc8094ad7015"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/events/__init__.py": {
+    "mtime": 1777193855.8936582,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/labels/targets.py": {
+    "mtime": 1777311894.2095904,
+    "hash": "15717e4cfd41fdc3096e1acf1dd8eb6a"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/labels/__init__.py": {
+    "mtime": 1777193855.902659,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/alpha/volatility_score.py": {
+    "mtime": 1777378130.0161905,
+    "hash": "d60932bf99fcd4cc3653aaee68468dcd"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/alpha/__init__.py": {
+    "mtime": 1777369530.5871363,
+    "hash": "ee46512bc122c129996b198dd872c518"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/backtest/baselines.py": {
+    "mtime": 1777195499.0865798,
+    "hash": "63c1c8183d50330f60cbfb3e2cc4fc8c"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/backtest/walk_forward.py": {
+    "mtime": 1777393686.79793,
+    "hash": "805b7393958ef9d73f56fd726869d642"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/backtest/simulator.py": {
+    "mtime": 1777216886.0679653,
+    "hash": "a9e87bbe4bf288dcbf3b93f1f07c365f"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/backtest/__init__.py": {
+    "mtime": 1777193855.904659,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/optimizer/covariance.py": {
+    "mtime": 1777380368.9384263,
+    "hash": "a271a73b1a8485d5768a17404245525b"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/optimizer/portfolio_optimizer.py": {
+    "mtime": 1777399503.7140262,
+    "hash": "39436be756d28e1303b2fe4d9fab2c34"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/optimizer/__init__.py": {
+    "mtime": 1777193855.9076593,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/models/stock_ranker.py": {
+    "mtime": 1777315459.3533015,
+    "hash": "272814acdc82b4bf3f09e665ace6ab92"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/models/__init__.py": {
+    "mtime": 1777193855.9136598,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/models/sector_scorer.py": {
+    "mtime": 1777315465.9527414,
+    "hash": "643c73c9154808f772d1f0a573dca42c"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/rl/state_builder_v2.py": {
+    "mtime": 1777718053.9866593,
+    "hash": "b6685db5c2132f075e888834ea9ac27f"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/rl/audit_trail.py": {
+    "mtime": 1777890030.370174,
+    "hash": "ea69637a1d94db3e363a98b5d4d18057"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/rl/switching_rule.py": {
+    "mtime": 1778049241.4000154,
+    "hash": "acf89121b7ded368ab0a1b99a95dbe4c"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/rl/tilts.py": {
+    "mtime": 1777653544.1188262,
+    "hash": "593ed59d6f66c6d074297c2d71898ae4"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/rl/environment_v2.py": {
+    "mtime": 1777718171.3261619,
+    "hash": "de2aee4f2577a2f0acff4fce7870dc6d"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/rl/exposure_mix.py": {
+    "mtime": 1777790094.4803536,
+    "hash": "36e310af46513458c0d2469daeac03bf"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/rl/drift_monitor.py": {
+    "mtime": 1778049265.1928632,
+    "hash": "a98f94bb16b8ccf411172eb727e2c0f8"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/rl/reward.py": {
+    "mtime": 1777653481.9075825,
+    "hash": "f6debf6729081c64eb5c48c2fc8dc3e8"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/rl/environment.py": {
+    "mtime": 1777692233.607874,
+    "hash": "5132b967b1ae65a2b45176ebc1a6b12c"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/rl/reward_v2.py": {
+    "mtime": 1777826508.385114,
+    "hash": "0244f26b21ac6af252f79f1a9eb628b1"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/rl/nav_generator.py": {
+    "mtime": 1778049351.9415998,
+    "hash": "883cf8a503ac753245c6131550f3cb82"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/rl/state_builder.py": {
+    "mtime": 1777690324.6708858,
+    "hash": "730d2f68ed8b6427dc62eb27ab2f4912"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/rl/__init__.py": {
+    "mtime": 1777193855.9176602,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/rl/fallback_policy.py": {
+    "mtime": 1777193990.8192968,
+    "hash": "c5c1e1b3bfa06e31b460a41396817a8e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/risk/__init__.py": {
+    "mtime": 1777193855.9216607,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/src/risk/risk_engine.py": {
+    "mtime": 1777204995.1480205,
+    "hash": "6d8a757d8ce8ad139ee4c8080fb20a0a"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/tests/test_volatility_alpha.py": {
+    "mtime": 1777378818.523797,
+    "hash": "3b7992919133ab56285d0bed2bdb83fd"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/tests/test_leakage_guards.py": {
+    "mtime": 1777389887.3869758,
+    "hash": "b9c9f36a1d7df46ddb55a6cfd4eea906"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/tests/test_optimizer_stability.py": {
+    "mtime": 1777380595.8732753,
+    "hash": "ea3bafad7311c0c27ec3e8233c5e0606"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/AGENTS.md": {
+    "mtime": 1778606588.3471625,
+    "hash": "a7d7532ebbbdd3595c0b8075563e2d7a"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/GEMINI.md": {
+    "mtime": 1777197988.2657607,
+    "hash": "3991745013dbfaeaf1e162d416f3c483"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/README.md": {
+    "mtime": 1778418903.4669428,
+    "hash": "539df07707086cbc8afcabafc3641fc1"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/CLAUDE.md": {
+    "mtime": 1778606588.3474076,
+    "hash": "0c78da83e2908b2803a368794016f07f"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/requirements.txt": {
+    "mtime": 1777193855.411613,
+    "hash": "fe4a869e44cc843b7270a88ec0b3aea0"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/config/paper_trading.yaml": {
+    "mtime": 1778396802.528637,
+    "hash": "b887fe657ce0cca78c2b4bae99730a67"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/config/baseline_v1_volatility_score_sp100.yaml": {
+    "mtime": 1777380193.2279947,
+    "hash": "9c2b8575608735e82b57cb5b1dd6893a"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/config/baseline_v1_intraperiod_overlay_sp100.yaml": {
+    "mtime": 1777389801.259274,
+    "hash": "e39a81698975fb61d4e0938341ab05e5"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/config/base.yaml": {
+    "mtime": 1777442479.4024322,
+    "hash": "dbda7af10ffc6c335f7fc45ad6610467"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/config/universes/sp100.yaml": {
+    "mtime": 1777199891.9640808,
+    "hash": "4608ea83ee3a702fea87f2e603161015"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/config/universes/sp500.yaml": {
+    "mtime": 1777230475.8399858,
+    "hash": "f25920f2ab8deb65d90b3d667764c2d2"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/data/artifacts/reports/universe_expansion_results.md": {
+    "mtime": 1777290756.7589047,
+    "hash": "8c1de09063b6e13e886c01c2ec70303f"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/data/artifacts/runs/20260426_101357/report.md": {
+    "mtime": 1777198895.9041502,
+    "hash": "5af28d5696602a8d39b24bb2a7ba188a"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/data/artifacts/runs/20260426_103920/report.md": {
+    "mtime": 1777200405.2906446,
+    "hash": "e41619436e46c35d701c7a04e4f827b0"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/data/artifacts/runs/20260426_093030/report.md": {
+    "mtime": 1777196103.9385872,
+    "hash": "8f3011db9becdf9dbaa32cfde491b92f"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/data/artifacts/runs/20260426_170301/report.md": {
+    "mtime": 1777223042.3058612,
+    "hash": "026d31a414bfb08c9f12fae74aeb951c"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/data/artifacts/runs/20260426_113415/report.md": {
+    "mtime": 1777203444.9829118,
+    "hash": "20b7d5dab7040856645232b0e1b9ab78"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/data/artifacts/diagnostics/20260427_020457/diagnostic_summary.md": {
+    "mtime": 1777282073.6764555,
+    "hash": "572273e6a2221063c9be78cff6435cf6"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/data/artifacts/diagnostics/20260426_152434/diagnostic_summary.md": {
+    "mtime": 1777217481.351798,
+    "hash": "4ed1616209b67c7c3b0c67c94f5dccfa"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/data/artifacts/diagnostics/20260426_141925/diagnostic_summary.md": {
+    "mtime": 1777213610.168077,
+    "hash": "baeb04591977568748ef2935be62a49e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/agent_handoff.md": {
+    "mtime": 1778606588.3480632,
+    "hash": "14fe43d09b81b9f68349191823fecd73"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/paper_trading_journal.md": {
+    "mtime": 1779037584.764331,
+    "hash": "4295f1929909329ab10878619845376f"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/ARCHITECTURE.md": {
+    "mtime": 1777441279.7454429,
+    "hash": "83562f302aca3d14d5acb78f6ed38579"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/session_handoff.md": {
+    "mtime": 1777367921.2130237,
+    "hash": "f82a2f46e786bc470da2d21824a42e8e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/DATA_AND_FEATURE_ENGINEERING.md": {
+    "mtime": 1779037332.4622977,
+    "hash": "749f2f80a9a9cecb02867e74576ed0fc"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/ROADMAP.md": {
+    "mtime": 1779037683.2495978,
+    "hash": "2b19c5eb65a32abca439863380855551"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/phases/phase_h.md": {
+    "mtime": 1778606084.3431993,
+    "hash": "8cdf77e78a154f2456731059d348f94c"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/phases/phase_e.md": {
+    "mtime": 1777826528.9881282,
+    "hash": "ed1cd2231521b96122b043d4ed8c3753"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/phases/phase_g.md": {
+    "mtime": 1778393329.992286,
+    "hash": "c8bce70cf358b29aa61ec352532f7bf7"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/phases/phase_c.md": {
+    "mtime": 1777651610.2562578,
+    "hash": "1aac7a8373dd01a6a91df5002e84c627"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/phases/phase_f.md": {
+    "mtime": 1777888473.4408584,
+    "hash": "4eff9b43ffb3a519dbbe581e40e80b9c"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/phases/phase_a.md": {
+    "mtime": 1777532179.4898698,
+    "hash": "47e1f0793b1b8d276ef464059ddebda1"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/phases/phase_b.md": {
+    "mtime": 1777615816.7459054,
+    "hash": "911c66eacf99ac883aa9f839ae489135"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/phases/phase_d_implementation_plan.md": {
+    "mtime": 1777652908.228336,
+    "hash": "12f45f5faa17be6d6dc79a48c7656660"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/phases/phase_d.md": {
+    "mtime": 1777715866.14583,
+    "hash": "d402a68bbeed430f95769d4ae8bb52ac"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/phases/phase_prod.md": {
+    "mtime": 1777877626.6219969,
+    "hash": "9477649d82c04755b2b812836ea855ab"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/paper_trading/2026-05-15.md": {
+    "mtime": 1779037584.7647128,
+    "hash": "4cbb8d09af295294abb55f03b45b2c8c"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/paper_trading/2026-05-14.md": {
+    "mtime": 1779037584.7527251,
+    "hash": "9111d9ad23237bde005d08276d9cd46c"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/paper_trading/2026-05-13.md": {
+    "mtime": 1779037584.7404535,
+    "hash": "4000749f5dd091db07a2acb7c6cba482"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/docs/paper_trading/2026-05-12.md": {
+    "mtime": 1779037584.727782,
+    "hash": "d381b888ebb957e1a5999d24bfcbf040"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/beta_analysis.md": {
+    "mtime": 1777358057.3966513,
+    "hash": "5639c5fca35d1b2cd428bcfde4678b4b"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/production_intraperiod_overlay.md": {
+    "mtime": 1777390063.1997888,
+    "hash": "bfcd66b26fb4dd6a18fbcdb36a130bdd"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/momentum_vol_combo.md": {
+    "mtime": 1777355892.0440161,
+    "hash": "c76ea93a35e80d296b58555d2f31cc1d"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_e8_rl_evaluation.md": {
+    "mtime": 1777826511.4189363,
+    "hash": "35b51f743e35133ab1e1aa5291876ea2"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/intraperiod_overlay_hysteresis.md": {
+    "mtime": 1777393023.1005228,
+    "hash": "07d48e23573664e32eb22fcdc6cf3a3d"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_b4_risk_engine.md": {
+    "mtime": 1777613961.587141,
+    "hash": "bb8ae7ec943c7f0921fcc3e45cd230dd"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_c2_feature_attribution.md": {
+    "mtime": 1777635805.9115624,
+    "hash": "1c5a9507855571e67f9d80439c7a5396"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_a4_defensive_sleeve_results.md": {
+    "mtime": 1777480651.256702,
+    "hash": "738a4086685008ba0d6f9f98c5613bfc"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_a7_3_membership_coverage_artifacts.md": {
+    "mtime": 1777532139.5076041,
+    "hash": "20320e39325566b91433c916b82ae020"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_b5_final_gate.md": {
+    "mtime": 1777615786.5970516,
+    "hash": "caa9e7708ae8fa3c14d44ca844b8ffda"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_a1_volatility_robustness.md": {
+    "mtime": 1777402086.7188065,
+    "hash": "768c78e186466df40a3897e8fb5e9b6b"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_c1_lgbm_tuning.md": {
+    "mtime": 1777634510.2626483,
+    "hash": "c50144d2323e497ba66f6f7c080e1fd7"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/drawdown_attribution.md": {
+    "mtime": 1777381076.2245622,
+    "hash": "aacc1accfdaf865526879a0b813682e2"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/baseline_v1_volatility_score_sp100.md": {
+    "mtime": 1777380255.977506,
+    "hash": "004fb1b666b13853ff4fbafde8bde4e5"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_a5_data_feature_audit.md": {
+    "mtime": 1777480651.273702,
+    "hash": "0694662efad7ef51afb86d75cada7885"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_b2_turnover_control.md": {
+    "mtime": 1777606534.219718,
+    "hash": "ad8586c6f332c4897b4f59bb309df110"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_e6_rl_evaluation.md": {
+    "mtime": 1777887875.2095249,
+    "hash": "9474be8e1adea421b90ee659c516308d"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_g4_validation.md": {
+    "mtime": 1778392546.3731217,
+    "hash": "7bbf2fdf7b55515e1a62365b34b48108"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_b3_exposure_control.md": {
+    "mtime": 1777612405.897193,
+    "hash": "b784199488843a7e54d635477638968b"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_a7_1_drawdown_control_results.md": {
+    "mtime": 1777485879.9573548,
+    "hash": "c9b99b6adcf753bc5f8e8dfb52cdd109"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/feature_family_ic.md": {
+    "mtime": 1777315938.8442771,
+    "hash": "0403bcde95efb35ac114b57fe9dc7f9c"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/volatility_alpha_production.md": {
+    "mtime": 1777379142.9254384,
+    "hash": "568c85f3e6167f3cf8c837eeb4647b03"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/universe_expansion_results.md": {
+    "mtime": 1777297688.5557215,
+    "hash": "c7aa7c4243f1e92ba77a8705611dae9a"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_a7_2_robustness.md": {
+    "mtime": 1777531046.3924804,
+    "hash": "2c22e909235ace354bdb22458c935e6d"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_d0_holdout_baseline.md": {
+    "mtime": 1777689951.4905186,
+    "hash": "3646d20744c2f160f2f2345a0a0395aa"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_g0_feature_parity.md": {
+    "mtime": 1777889680.0395257,
+    "hash": "e66e3fde26d43f21b5614e5c31330387"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_f1_topn_sensitivity.md": {
+    "mtime": 1777835255.1461926,
+    "hash": "a965a5a868602e9de9dc6e3b65ada889"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_c3_signal_validation.md": {
+    "mtime": 1777637996.632216,
+    "hash": "d209010a8cc134ec22d4d950c1610ceb"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/regime_switch_results.md": {
+    "mtime": 1777369001.10489,
+    "hash": "0fd95dfe67403c70546483c2ccc179dc"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_e7_rl_evaluation.md": {
+    "mtime": 1777800839.0183575,
+    "hash": "07226a7ec6496a6cef6fd54055c15034"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/portfolio_expression_results.md": {
+    "mtime": 1777431515.4919662,
+    "hash": "eb8eb51afdef76572fe43a14a05d7099"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_d6_rl_evaluation.md": {
+    "mtime": 1777714053.7862303,
+    "hash": "201b8f360bdd1e6a7159b3af83a178d6"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/stress_conditioned_alpha.md": {
+    "mtime": 1777381962.6854117,
+    "hash": "17b4c067843a592d5077ca349e95ff8d"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_a6_1_sec_fundamentals_poc.md": {
+    "mtime": 1777479982.2463355,
+    "hash": "2e9885a1849e304691cd919e3a5af09f"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_b0_baseline_guard.md": {
+    "mtime": 1777533284.2105067,
+    "hash": "09f1ed29b38065c78a462af6a4adc9c0"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/defensive_v2_results.md": {
+    "mtime": 1777482189.39499,
+    "hash": "952d03d2ae21b5a167c1348e2c40c0c0"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_g3_drift_report.md": {
+    "mtime": 1778606339.7533476,
+    "hash": "c14cf91cb3b2b956ff34bddecf132db4"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/momentum_v2.md": {
+    "mtime": 1777361616.6257262,
+    "hash": "87c9043bb1bb6d76e75cd4db1138bd62"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/crash_onset_control.md": {
+    "mtime": 1777382724.496761,
+    "hash": "9b628b23d840ab8a008d76114b430ffe"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_a7_trend_results.md": {
+    "mtime": 1777484224.7508812,
+    "hash": "25de29de2600fb7141094970c2cbee75"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/optimizer_stability.md": {
+    "mtime": 1777380709.5178568,
+    "hash": "8412e7d5d2be50e3077b60bbb83b5137"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_a6_1_sec_poc_a4_summary.md": {
+    "mtime": 1777480627.6206343,
+    "hash": "6850c3a43fb7f12e5cad5a8212f85e1e"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_b1_simulator_reproduction.md": {
+    "mtime": 1777535597.4038856,
+    "hash": "00ac38d1f72ca99796981cb3596fca00"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/phase_g5_benchmark_dashboard.md": {
+    "mtime": 1778606352.1255054,
+    "hash": "784e8e7160848ad86aa90e20b63236ce"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/multi_sleeve_results.md": {
+    "mtime": 1777432741.0390728,
+    "hash": "965f8427da39f6fe64e9897751383eea"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/reports/intraperiod_risk_control.md": {
+    "mtime": 1777388008.3154545,
+    "hash": "d76181d8d34a5ad22e656387246b35b0"
+  },
+  "/home/shivamguptanit/github/us-rl-portfolio/artifacts/diagnostics/20260427_131529/diagnostic_summary.md": {
+    "mtime": 1777296695.505901,
+    "hash": "c898bd236d119a3f5cc661df19a6575a"
+  }
+}

@@ -1,0 +1,114 @@
+2026-05-03 18:53:26,263 INFO Loading inputs …
+2026-05-03 18:53:38,080 INFO StockFeatureGenerator: 32 features, 520 tickers, 5112 dates
+2026-05-03 18:53:42,013 INFO Building beta/stress (shared across all Top-N) …
+2026-05-03 18:53:42,705 INFO Loading sector features …
+2026-05-03 18:53:42,714 INFO Top-N variants to test: [10, 15, 20, 30]
+2026-05-03 18:53:42,714 INFO === Top-10: building promoted weights ===
+2026-05-03 18:54:07,224 INFO Top-10: weights built, 120 control dates
+2026-05-03 18:54:17,422 INFO Top-10 RL: Sharpe=1.217 MaxDD=-25.69% CAGR=18.39% avgEQ=0.396
+2026-05-03 18:54:24,891 INFO Top-10 random seed 1/20: Sharpe=1.201
+2026-05-03 18:54:32,111 INFO Top-10 random seed 2/20: Sharpe=1.163
+2026-05-03 18:54:39,642 INFO Top-10 random seed 3/20: Sharpe=1.127
+2026-05-03 18:54:46,935 INFO Top-10 random seed 4/20: Sharpe=1.031
+2026-05-03 18:54:54,508 INFO Top-10 random seed 5/20: Sharpe=1.020
+2026-05-03 18:55:02,080 INFO Top-10 random seed 6/20: Sharpe=1.226
+2026-05-03 18:55:09,418 INFO Top-10 random seed 7/20: Sharpe=1.136
+2026-05-03 18:55:16,991 INFO Top-10 random seed 8/20: Sharpe=1.235
+2026-05-03 18:55:24,343 INFO Top-10 random seed 9/20: Sharpe=1.144
+2026-05-03 18:55:31,933 INFO Top-10 random seed 10/20: Sharpe=1.084
+2026-05-03 18:55:39,476 INFO Top-10 random seed 11/20: Sharpe=1.054
+2026-05-03 18:55:46,753 INFO Top-10 random seed 12/20: Sharpe=1.443
+2026-05-03 18:55:54,379 INFO Top-10 random seed 13/20: Sharpe=0.940
+2026-05-03 18:56:01,693 INFO Top-10 random seed 14/20: Sharpe=1.146
+2026-05-03 18:56:09,263 INFO Top-10 random seed 15/20: Sharpe=1.078
+2026-05-03 18:56:16,802 INFO Top-10 random seed 16/20: Sharpe=1.123
+2026-05-03 18:56:24,072 INFO Top-10 random seed 17/20: Sharpe=1.091
+2026-05-03 18:56:31,625 INFO Top-10 random seed 18/20: Sharpe=1.121
+2026-05-03 18:56:39,185 INFO Top-10 random seed 19/20: Sharpe=1.208
+2026-05-03 18:56:46,480 INFO Top-10 random seed 20/20: Sharpe=1.192
+2026-05-03 18:56:46,510 INFO === Top-15: building promoted weights ===
+2026-05-03 18:57:11,542 INFO Top-15: weights built, 120 control dates
+2026-05-03 18:57:19,155 INFO Top-15 RL: Sharpe=1.199 MaxDD=-27.48% CAGR=17.43% avgEQ=0.395
+2026-05-03 18:57:26,746 INFO Top-15 random seed 1/20: Sharpe=1.196
+2026-05-03 18:57:34,350 INFO Top-15 random seed 2/20: Sharpe=1.195
+2026-05-03 18:57:41,745 INFO Top-15 random seed 3/20: Sharpe=1.121
+2026-05-03 18:57:49,351 INFO Top-15 random seed 4/20: Sharpe=1.002
+2026-05-03 18:57:57,011 INFO Top-15 random seed 5/20: Sharpe=0.975
+2026-05-03 18:58:04,531 INFO Top-15 random seed 6/20: Sharpe=1.224
+2026-05-03 18:58:12,201 INFO Top-15 random seed 7/20: Sharpe=1.126
+2026-05-03 18:58:19,912 INFO Top-15 random seed 8/20: Sharpe=1.241
+2026-05-03 18:58:27,402 INFO Top-15 random seed 9/20: Sharpe=1.141
+2026-05-03 18:58:35,100 INFO Top-15 random seed 10/20: Sharpe=1.097
+2026-05-03 18:58:42,754 INFO Top-15 random seed 11/20: Sharpe=1.035
+2026-05-03 18:58:50,233 INFO Top-15 random seed 12/20: Sharpe=1.467
+2026-05-03 18:58:57,961 INFO Top-15 random seed 13/20: Sharpe=0.941
+2026-05-03 18:59:05,691 INFO Top-15 random seed 14/20: Sharpe=1.156
+2026-05-03 18:59:13,270 INFO Top-15 random seed 15/20: Sharpe=1.049
+2026-05-03 18:59:20,983 INFO Top-15 random seed 16/20: Sharpe=1.127
+2026-05-03 18:59:28,599 INFO Top-15 random seed 17/20: Sharpe=1.097
+2026-05-03 18:59:36,045 INFO Top-15 random seed 18/20: Sharpe=1.117
+2026-05-03 18:59:43,636 INFO Top-15 random seed 19/20: Sharpe=1.203
+2026-05-03 18:59:51,210 INFO Top-15 random seed 20/20: Sharpe=1.188
+2026-05-03 18:59:51,243 INFO === Top-20: building promoted weights ===
+2026-05-03 19:00:16,540 INFO Top-20: weights built, 120 control dates
+2026-05-03 19:00:24,408 INFO Top-20 RL: Sharpe=1.277 MaxDD=-24.54% CAGR=17.72% avgEQ=0.396
+2026-05-03 19:00:31,923 INFO Top-20 random seed 1/20: Sharpe=1.276
+2026-05-03 19:00:39,629 INFO Top-20 random seed 2/20: Sharpe=1.274
+2026-05-03 19:00:47,306 INFO Top-20 random seed 3/20: Sharpe=1.181
+2026-05-03 19:00:55,017 INFO Top-20 random seed 4/20: Sharpe=1.089
+2026-05-03 19:01:02,627 INFO Top-20 random seed 5/20: Sharpe=1.057
+2026-05-03 19:01:10,360 INFO Top-20 random seed 6/20: Sharpe=1.295
+2026-05-03 19:01:18,146 INFO Top-20 random seed 7/20: Sharpe=1.220
+2026-05-03 19:01:25,582 INFO Top-20 random seed 8/20: Sharpe=1.348
+2026-05-03 19:01:33,265 INFO Top-20 random seed 9/20: Sharpe=1.226
+2026-05-03 19:01:41,008 INFO Top-20 random seed 10/20: Sharpe=1.188
+2026-05-03 19:01:48,495 INFO Top-20 random seed 11/20: Sharpe=1.143
+2026-05-03 19:01:56,139 INFO Top-20 random seed 12/20: Sharpe=1.568
+2026-05-03 19:02:03,816 INFO Top-20 random seed 13/20: Sharpe=1.043
+2026-05-03 19:02:11,344 INFO Top-20 random seed 14/20: Sharpe=1.238
+2026-05-03 19:02:19,063 INFO Top-20 random seed 15/20: Sharpe=1.132
+2026-05-03 19:02:26,755 INFO Top-20 random seed 16/20: Sharpe=1.232
+2026-05-03 19:02:34,473 INFO Top-20 random seed 17/20: Sharpe=1.177
+2026-05-03 19:02:41,969 INFO Top-20 random seed 18/20: Sharpe=1.219
+2026-05-03 19:02:49,658 INFO Top-20 random seed 19/20: Sharpe=1.306
+2026-05-03 19:02:57,315 INFO Top-20 random seed 20/20: Sharpe=1.257
+2026-05-03 19:02:57,353 INFO === Top-30: building promoted weights ===
+2026-05-03 19:03:23,019 INFO Top-30: weights built, 120 control dates
+2026-05-03 19:03:30,974 INFO Top-30 RL: Sharpe=1.209 MaxDD=-24.14% CAGR=16.19% avgEQ=0.396
+2026-05-03 19:03:38,846 INFO Top-30 random seed 1/20: Sharpe=1.223
+2026-05-03 19:03:46,661 INFO Top-30 random seed 2/20: Sharpe=1.211
+2026-05-03 19:03:54,420 INFO Top-30 random seed 3/20: Sharpe=1.111
+2026-05-03 19:04:01,980 INFO Top-30 random seed 4/20: Sharpe=1.045
+2026-05-03 19:04:09,785 INFO Top-30 random seed 5/20: Sharpe=1.008
+2026-05-03 19:04:17,597 INFO Top-30 random seed 6/20: Sharpe=1.202
+2026-05-03 19:04:25,412 INFO Top-30 random seed 7/20: Sharpe=1.172
+2026-05-03 19:04:33,277 INFO Top-30 random seed 8/20: Sharpe=1.306
+2026-05-03 19:04:41,163 INFO Top-30 random seed 9/20: Sharpe=1.172
+2026-05-03 19:04:48,893 INFO Top-30 random seed 10/20: Sharpe=1.147
+2026-05-03 19:04:56,715 INFO Top-30 random seed 11/20: Sharpe=1.101
+2026-05-03 19:05:04,646 INFO Top-30 random seed 12/20: Sharpe=1.535
+2026-05-03 19:05:12,513 INFO Top-30 random seed 13/20: Sharpe=1.008
+2026-05-03 19:05:20,415 INFO Top-30 random seed 14/20: Sharpe=1.181
+2026-05-03 19:05:28,125 INFO Top-30 random seed 15/20: Sharpe=1.079
+2026-05-03 19:05:36,078 INFO Top-30 random seed 16/20: Sharpe=1.179
+2026-05-03 19:05:44,092 INFO Top-30 random seed 17/20: Sharpe=1.168
+2026-05-03 19:05:52,056 INFO Top-30 random seed 18/20: Sharpe=1.175
+2026-05-03 19:05:59,957 INFO Top-30 random seed 19/20: Sharpe=1.253
+2026-05-03 19:06:07,919 INFO Top-30 random seed 20/20: Sharpe=1.196
+2026-05-03 19:06:07,964 INFO Saved f1_topn_comparison.csv
+2026-05-03 19:06:07,966 INFO Saved f1_regime_breakdown.csv
+2026-05-03 19:06:07,972 INFO Saved f1_sector_concentration.csv
+2026-05-03 19:06:07,982 INFO Report written: phase_f1_topn_sensitivity.md
+2026-05-03 19:06:07,982 INFO Phase F.1 complete in 761.7s
+
+=== Phase F.1 Summary ===
+  Top-10          : RL Sharpe=1.217  MaxDD=-25.69%  CAGR=18.39%  50bps=1.119  avgEQ=0.396  randP75=1.194
+  Top-15          : RL Sharpe=1.199  MaxDD=-27.48%  CAGR=17.43%  50bps=1.095  avgEQ=0.395  randP75=1.196
+  Top-20 (baseline): RL Sharpe=1.277  MaxDD=-24.54%  CAGR=17.72%  50bps=1.165  avgEQ=0.396  randP75=1.275
+  Top-30          : RL Sharpe=1.209  MaxDD=-24.14%  CAGR=16.19%  50bps=1.093  avgEQ=0.396  randP75=1.204
+
+=== Promotion Gates ===
+ top_n verdict  all_gates_pass  retrain_recommended
+    10  REJECT           False                False
+    15  REJECT           False                False
+    30  REJECT           False                False
