@@ -5,11 +5,11 @@ All repo rules, workflow rules, save rules, file lookup order, roadmap-first beh
 Do not treat this file as an independent source of repo instructions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-06-05T11:33:08+00:00
+## Current State — 2026-06-28T19:15:02+00:00
 - Branch: `main`
-- Working tree: 13 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M artifacts/reports/phase_g3_drift_report.md`, ` M artifacts/reports/phase_g5_benchmark_dashboard.md`, ` M docs/agent_handoff.md`
-- Latest commit: `86624811 2026-06-05 Consolidate paper trading journal into single file`
+- Working tree: 3 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/agent_handoff.md`
+- Latest commit: `cef25cb9 2026-06-28 Phase H: Partial backfill 2026-06-08 through 2026-06-19 (R2 rebalance + 10 days ops)`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`
