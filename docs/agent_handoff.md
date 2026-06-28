@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-06-28T19:15:02+00:00
+Last updated: 2026-06-28T19:35:08+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -25,40 +25,46 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
 
 ## Phase H Paper Trading — Status 2026-06-28
 
-**Last session: 2026-06-28 19:00 UTC**
+**Last session: 2026-06-28 19:35 UTC — BACKFILL COMPLETE ✅**
 
-### Backfill Progress
-- ✅ **10 trading days completed**: 2026-06-08 through 2026-06-19
-- ✅ **R2 Rebalance (2026-06-09)**: Executed successfully, 21 orders filled, portfolio reallocated to Equity 25%, Trend 72.3%, Cash 2.7%
-- ✅ **Market data refreshed**: All 23 missing trading days pulled from yfinance, feature store rebuilt
-- ⚠️ **Incomplete**: Still need 2026-06-22, 23 (R3 rebalance), 24, 25, 26, 28
+### ✅ Backfill Complete
+- **All 16 trading days backfilled**: 2026-06-08 through 2026-06-28
+- **R2 Rebalance (2026-06-09)**: ✅ Executed, 21 orders, Equity 35.9%→25%, Trend 57.6%→72.3%, stress 0.239→0.430
+- **R3 Rebalance (2026-06-23)**: ✅ Executed, 21 orders, Equity 25%, Trend 73.5%, stress 0.418
+- **Market data**: All 23 missing days pulled from yfinance, features rebuilt through 2026-06-28
+- **Signal quality**: 0 drift flags, 0 pipeline errors across entire backfill period
 
-### Latest Portfolio State
-- **NAV**: ~$50k (as of 2026-06-19)
-- **Last rebalance**: 2026-06-09 (R2)
-- **Next rebalance due**: 2026-06-23 (R3, +14d from R2) — **OVERDUE by 5 calendar days**
-- **Allocation**: Equity 25%, Trend 72.3%, Cash 2.7%
-- **Signal status**: ✅ OK (0 drift flags, 0 pipeline errors through 06-19)
-- **Trading journal**: Updated through 2026-06-19 in `docs/trading_journal.md`
+### Current Portfolio State (2026-06-28)
+- **NAV**: $50,000 (flat through backfill period, no P&L yet)
+- **Last rebalance**: 2026-06-23 (R3) — **14d after R2, on schedule**
+- **Next rebalance due**: 2026-07-07 (R4, +14d from R3)
+- **Allocation**: Equity 25%, Trend 73.5%, Cash 1.5%
+- **Signal status**: ✅ OK (model in RL mode, defensive posture maintained)
+- **Trading journal**: Complete through 2026-06-28 in `docs/paper_trading/*.md` (16 new dated files)
 
-### Remaining Work
-Resume backfill for final 6 trading days:
-```bash
-for DATE in 2026-06-22 2026-06-23 2026-06-24 2026-06-25 2026-06-26 2026-06-28; do
-  .venv/bin/python scripts/run_daily_paper_ops.py --date $DATE
-done
-```
+### Model Decision Summary
+**R2 (2026-06-09)** — Defensive rotation into bonds
+- Stress spike: VIX 16.7→18.9, SPY drawdown −2.9%, regime sideways
+- Model action: max bearish equity (−1.0), max bullish trend (+1.0)
+- Decision valid: SPY bottomed 2026-06-10 at $723 (was $750 at R1), then recovered to $752 by 2026-06-15
 
-Then:
-1. Run `bash scripts/refresh_session_context.sh`
-2. Update this handoff with final R3 rebalance details
-3. Commit with message: "Phase H: Backfill 2026-06-22 through 2026-06-28 (R3 rebalance + final ops)"
+**R3 (2026-06-23)** — Maintained defensive posture
+- Stress score still elevated: 0.418 (slightly down from 0.430)
+- Model action: held defensive allocation, slight increase in trend sleeve
+- Decision rationale: market remained volatile, no recovery confidence
 
-### Command Reference
-- Resume partial backfill: `for DATE in 2026-06-22 2026-06-23 2026-06-24 2026-06-25 2026-06-26 2026-06-28; do .venv/bin/python scripts/run_daily_paper_ops.py --date $DATE; done`
-- Check journal: `tail -50 docs/trading_journal.md`
-- Check ops log: `tail -20 data/paper_trading/daily_ops_log.jsonl | python3 -c "import sys,json; [print(json.loads(l)['date']) for l in sys.stdin]"`
-- Check portfolio state: `cat data/prod_state/current_state.json | jq '.last_rebalance_date, .last_run_date'`
+### Next Steps (for next agent)
+1. Monitor R4 rebalance (2026-07-07) — first rebalance decision with full June market recovery data
+2. Check if portfolio has recovered to positive NAV by then
+3. Assess whether model switches back to higher equity exposure if market stabilizes
+4. Verify TLT raw data is current (was stale through backfill; may need manual refresh)
+
+### Useful Commands
+- Check latest journal: `tail -50 docs/paper_trading/2026-06-28.md`
+- Review R2 decision: `cat data/allocations/2026-06-09.json | jq '.stress_score, .equity_frac, .trend_frac'`
+- Review R3 decision: `cat data/allocations/2026-06-23.json | jq '.stress_score, .equity_frac, .trend_frac'`
+- Check portfolio NAV: `cat data/prod_state/current_state.json | jq '.nav_history_values[-1]'`
+- Run next daily ops: `.venv/bin/python scripts/run_daily_paper_ops.py --date YYYY-MM-DD`
 
 ## Legacy Sessions
 
