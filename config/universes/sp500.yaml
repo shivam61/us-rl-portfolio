@@ -8,6 +8,9 @@ macro_etfs:
 - SPY
 - QQQ
 - IWM
+- TLT
+- GLD
+- UUP
 sector_etfs:
 - XLK
 - XLF

@@ -23,6 +23,7 @@ class TargetGenerator:
             targets_list.append(t_df)
 
         result = pd.concat(targets_list)
+        result.index.name = "date"
         result.set_index(["ticker"], append=True, inplace=True)
         result = result.reorder_levels(["date", "ticker"]).sort_index()
 
