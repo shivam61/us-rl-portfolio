@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-06-28T19:35:08+00:00
+Last updated: 2026-07-26T17:39:01+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -23,48 +23,46 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
 2. Read `docs/ROADMAP.md`.
 3. Read this file only if prior experiment history or handoff detail is needed.
 
-## Phase H Paper Trading — Status 2026-06-28
+## Phase H Paper Trading — Status 2026-07-25
 
-**Last session: 2026-06-28 19:35 UTC — BACKFILL COMPLETE ✅**
+**Last session: 2026-07-26 17:36 UTC — BACKFILL COMPLETE ✅**
 
-### ✅ Backfill Complete
-- **All 16 trading days backfilled**: 2026-06-08 through 2026-06-28
-- **R2 Rebalance (2026-06-09)**: ✅ Executed, 21 orders, Equity 35.9%→25%, Trend 57.6%→72.3%, stress 0.239→0.430
-- **R3 Rebalance (2026-06-23)**: ✅ Executed, 21 orders, Equity 25%, Trend 73.5%, stress 0.418
-- **Market data**: All 23 missing days pulled from yfinance, features rebuilt through 2026-06-28
-- **Signal quality**: 0 drift flags, 0 pipeline errors across entire backfill period
+### ✅ Backfill Complete (2026-07-26 session)
+- **All 20 trading days backfilled**: 2026-06-29 through 2026-07-25
+- **R4 Rebalance (2026-07-07)**: ✅ Executed, 21 orders, stress 0.167, Equity 25%→46.2%, Trend 73.5%→53.8% (major risk-on pivot)
+- **R5 Rebalance (2026-07-21)**: ✅ Executed, 21 orders, stress 0.248, Equity 46.2%→25%, Trend 53.8%→69.2% (back to defensive)
+- **Market data**: Features rebuilt through 2026-07-25, 0 pipeline errors
+- **Signal quality**: 0 drift flags across all 20 days
 
-### Current Portfolio State (2026-06-28)
-- **NAV**: $50,000 (flat through backfill period, no P&L yet)
-- **Last rebalance**: 2026-06-23 (R3) — **14d after R2, on schedule**
-- **Next rebalance due**: 2026-07-07 (R4, +14d from R3)
-- **Allocation**: Equity 25%, Trend 73.5%, Cash 1.5%
-- **Signal status**: ✅ OK (model in RL mode, defensive posture maintained)
-- **Trading journal**: Complete through 2026-06-28 in `docs/paper_trading/*.md` (16 new dated files)
+### Current Portfolio State (2026-07-25)
+- **NAV**: $50,000 (paper trading flat — no realized P&L tracking yet)
+- **Last rebalance**: 2026-07-21 (R5)
+- **Next rebalance due**: 2026-08-04 (R6, +14d from R5)
+- **Allocation**: Equity 25.0%, Trend 69.16% (TLT), Cash 5.84%
+- **Signal status**: ✅ OK, model in rl_e7 mode, defensive posture
+- **Trading journal**: `docs/trading_journal.md` — consolidated single file, updated through R5
 
-### Model Decision Summary
-**R2 (2026-06-09)** — Defensive rotation into bonds
-- Stress spike: VIX 16.7→18.9, SPY drawdown −2.9%, regime sideways
-- Model action: max bearish equity (−1.0), max bullish trend (+1.0)
-- Decision valid: SPY bottomed 2026-06-10 at $723 (was $750 at R1), then recovered to $752 by 2026-06-15
+### Model Decision Summary (full history)
+| Rebalance | Date | Stress | Equity | Trend | Cash | Action |
+|-----------|------|--------|--------|-------|------|--------|
+| R1 | 2026-05-26 | 0.239 | 35.9% | 57.6% | 6.5% | Initial risk-on |
+| R2 | 2026-06-09 | 0.430 | 25.0% | 72.3% | 2.7% | Max defensive (VIX spike) |
+| R3 | 2026-06-23 | 0.418 | 25.0% | 73.5% | 1.5% | Held defensive |
+| R4 | 2026-07-07 | 0.167 | 46.2% | 53.8% | 0.0% | Major risk-on (stress collapsed) |
+| R5 | 2026-07-21 | 0.248 | 25.0% | 69.2% | 5.8% | Back to defensive (stress rebounded) |
 
-**R3 (2026-06-23)** — Maintained defensive posture
-- Stress score still elevated: 0.418 (slightly down from 0.430)
-- Model action: held defensive allocation, slight increase in trend sleeve
-- Decision rationale: market remained volatile, no recovery confidence
+**Pattern**: Model oscillates between floor equity (25%) and elevated equity (~46%) based on stress score threshold around 0.20. Cash buffer rebuilt on defensive pivots.
 
 ### Next Steps (for next agent)
-1. Monitor R4 rebalance (2026-07-07) — first rebalance decision with full June market recovery data
-2. Check if portfolio has recovered to positive NAV by then
-3. Assess whether model switches back to higher equity exposure if market stabilizes
-4. Verify TLT raw data is current (was stale through backfill; may need manual refresh)
+1. R6 rebalance due **2026-08-04** — check if market stabilizes or stress rises further
+2. Journal and handoff are current through 2026-07-25
+3. Run backfill for any days missed since 2026-07-25
 
 ### Useful Commands
-- Check latest journal: `tail -50 docs/paper_trading/2026-06-28.md`
-- Review R2 decision: `cat data/allocations/2026-06-09.json | jq '.stress_score, .equity_frac, .trend_frac'`
-- Review R3 decision: `cat data/allocations/2026-06-23.json | jq '.stress_score, .equity_frac, .trend_frac'`
-- Check portfolio NAV: `cat data/prod_state/current_state.json | jq '.nav_history_values[-1]'`
-- Run next daily ops: `.venv/bin/python scripts/run_daily_paper_ops.py --date YYYY-MM-DD`
+- Run daily ops: `.venv/bin/python scripts/run_daily_paper_ops.py --date YYYY-MM-DD`
+- Review any allocation: `cat data/allocations/YYYY-MM-DD.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['stress_score'], d['equity_frac'], d['trend_frac'])"`
+- Check journal: `tail -40 docs/trading_journal.md`
+- Check prod state: `cat data/prod_state/current_state.json`
 
 ## Legacy Sessions
 

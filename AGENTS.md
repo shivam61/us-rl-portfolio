@@ -5,11 +5,11 @@ Canonical repo entry point for Codex, Claude, and future agents.
 Keep this file small. Do not turn it into a running notebook of prior sessions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-06-28T19:15:02+00:00
+## Current State — 2026-07-26T17:39:01+00:00
 - Branch: `main`
-- Working tree: 3 changed path(s)
-- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M docs/agent_handoff.md`
-- Latest commit: `cef25cb9 2026-06-28 Phase H: Partial backfill 2026-06-08 through 2026-06-19 (R2 rebalance + 10 days ops)`
+- Working tree: 28 changed path(s)
+- Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M artifacts/reports/phase_g3_drift_report.md`, ` M artifacts/reports/phase_g5_benchmark_dashboard.md`, ` M docs/agent_handoff.md`
+- Latest commit: `858a1f63 2026-06-28 Update agent_handoff: backfill complete through 2026-06-28`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

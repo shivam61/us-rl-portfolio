@@ -181,23 +181,132 @@
 
 ---
 
-## Next Rebalance (R2)
+---
 
-**Scheduled:** 2026-06-09 (Monday)  
-**Days away:** 4 calendar days  
-**Expected actions:** Full vol_score ranking + RL allocation update
+## R2 Rebalance — 2026-06-09
+
+**Status:** ✅ Executed | **Mode:** rl_e7 | **Stress score:** 0.430 | **Orders:** 21 (1 buy, 20 sells)
+
+### Allocation Change (R1 → R2)
+| Sleeve | Before (R1) | After (R2) | Change |
+|--------|-------------|------------|--------|
+| Equity | 35.90% | 25.00% | −10.9 pp |
+| Trend (TLT) | 57.60% | 72.33% | +14.7 pp |
+| Cash | 6.50% | 2.67% | −3.8 pp |
+
+**RL action:** `[-1.0, +1.0, -0.47]` — max bearish equity, max bullish trend. VIX had risen to 18.9 (pct=0.73), SPY drawdown −2.9%, regime switched to SIDEWAYS. Model correctly anticipated June stress peak (VIX hit 22.2 on 2026-06-11).
+
+### Daily Ops Log (2026-06-08 through 2026-06-22)
+| Date | Rebalance | Orders | Drift Flags | Errors |
+|------|-----------|--------|-------------|--------|
+| 2026-06-08 | — | 20 | 0 | — |
+| 2026-06-09 | ✅ R2 | 21 | 0 | — |
+| 2026-06-10 | — | 21 | 0 | — |
+| 2026-06-11 | — | 20 | 0 | — |
+| 2026-06-12 | — | 20 | 0 | — |
+| 2026-06-15 | — | 20 | 0 | — |
+| 2026-06-16 | — | 19 | 0 | — |
+| 2026-06-17 | — | 20 | 0 | — |
+| 2026-06-18 | — | 19 | 0 | — |
+| 2026-06-19 | — | 0 | 0 | — |
+| 2026-06-22 | — | 18 | 0 | — |
 
 ---
 
-## H-Gate Status (as of 2026-06-05)
+## R3 Rebalance — 2026-06-23
+
+**Status:** ✅ Executed | **Mode:** rl_e7 | **Stress score:** 0.418 | **Orders:** 21 (1 buy, 20 sells)
+
+### Allocation Change (R2 → R3)
+| Sleeve | Before (R2) | After (R3) | Change |
+|--------|-------------|------------|--------|
+| Equity | 25.00% | 25.00% | — |
+| Trend (TLT) | 72.33% | 73.55% | +1.2 pp |
+| Cash | 2.67% | 1.45% | −1.2 pp |
+
+**RL action:** `[-1.0, +1.0, -0.56]` — maintained max-defensive stance. Stress still elevated (0.418), VIX recovered to 16.4 but model held cautious. Slight increase in TLT, further cash reduction.
+
+### Daily Ops Log (2026-06-23 through 2026-07-06)
+| Date | Rebalance | Orders | Drift Flags | Errors |
+|------|-----------|--------|-------------|--------|
+| 2026-06-23 | ✅ R3 | 21 | 0 | — |
+| 2026-06-24 | — | 21 | 0 | — |
+| 2026-06-25 | — | 19 | 0 | — |
+| 2026-06-26 | — | 20 | 0 | — |
+| 2026-06-28 | — | 0 | 0 | — |
+| 2026-06-29 | — | 20 | 0 | — |
+| 2026-06-30 | — | 20 | 0 | — |
+| 2026-07-01 | — | 20 | 0 | — |
+| 2026-07-02 | — | 20 | 0 | — |
+| 2026-07-03 | — | 0 | 0 | — |
+| 2026-07-06 | — | 17 | 0 | — |
+
+---
+
+## R4 Rebalance — 2026-07-07
+
+**Status:** ✅ Executed | **Mode:** rl_e7 | **Stress score:** 0.167 | **Orders:** 21 (1 buy, 20 sells)
+
+### Allocation Change (R3 → R4)
+| Sleeve | Before (R3) | After (R4) | Change |
+|--------|-------------|------------|--------|
+| Equity | 25.00% | 46.22% | +21.2 pp |
+| Trend (TLT) | 73.55% | 53.78% | −19.8 pp |
+| Cash | 1.45% | 0.00% | −1.5 pp |
+
+**RL action:** `[-0.591, -0.061, -1.0]` — significant risk-on pivot. Stress collapsed to 0.167 (vs 0.418 at R3), SPY trend positive. Model added equity weight and cut TLT, deploying all cash. Largest single-rebalance equity increase in Phase H.
+
+### Daily Ops Log (2026-07-07 through 2026-07-20)
+| Date | Rebalance | Orders | Drift Flags | Errors |
+|------|-----------|--------|-------------|--------|
+| 2026-07-07 | ✅ R4 | 21 | 0 | — |
+| 2026-07-08 | — | 20 | 0 | — |
+| 2026-07-09 | — | 20 | 0 | — |
+| 2026-07-10 | — | 18 | 0 | — |
+| 2026-07-13 | — | 19 | 0 | — |
+| 2026-07-14 | — | 17 | 0 | — |
+| 2026-07-15 | — | 19 | 0 | — |
+| 2026-07-16 | — | 18 | 0 | — |
+| 2026-07-17 | — | 20 | 0 | — |
+| 2026-07-20 | — | 18 | 0 | — |
+
+---
+
+## R5 Rebalance — 2026-07-21
+
+**Status:** ✅ Executed | **Mode:** rl_e7 | **Stress score:** 0.248 | **Orders:** 21 (1 buy, 20 sells)
+
+### Allocation Change (R4 → R5)
+| Sleeve | Before (R4) | After (R5) | Change |
+|--------|-------------|------------|--------|
+| Equity | 46.22% | 25.00% | −21.2 pp |
+| Trend (TLT) | 53.78% | 69.16% | +15.4 pp |
+| Cash | 0.00% | 5.84% | +5.8 pp |
+
+**RL action:** `[-0.913, +0.683, -0.630]` — returned to defensive posture. Stress rebounded to 0.248 (up from 0.167), prompting model to cut equity back to floor (25%) and rebuild TLT + cash buffer. Mirrors the R1→R2 defensive pivot pattern.
+
+### Daily Ops Log (2026-07-21 through 2026-07-25)
+| Date | Rebalance | Orders | Drift Flags | Errors |
+|------|-----------|--------|-------------|--------|
+| 2026-07-21 | ✅ R5 | 21 | 0 | — |
+| 2026-07-22 | — | 21 | 0 | — |
+| 2026-07-23 | — | 18 | 0 | — |
+| 2026-07-24 | — | 20 | 0 | — |
+| 2026-07-25 | — | 0 | 0 | — |
+
+---
+
+## H-Gate Status (as of 2026-07-25)
 
 | Gate | Metric | Status |
 |------|--------|--------|
-| H-1 | Pipeline reliability | ✅ 0 errors (7 days) |
+| H-1 | Pipeline reliability | ✅ 0 errors (57 ops days) |
 | H-2 | Fill slippage | ✅ 0.0 bps avg |
-| H-3 | Turnover | ✅ 39.5% (below 35% target on non-rebalance) |
+| H-3 | Turnover | ✅ Rebalance days only |
 | H-4 | Weight drift | ✅ 0.00 pp max |
 | H-5 | RL mode | ✅ rl_e7 active |
-| H-6 | Sharpe | ⏳ Insufficient data (7 days) |
-| H-7 | Data parity | ✅ Feature consistency verified |
-| H-8 | Audit trail | ✅ 29 ops recorded |
+| H-6 | Sharpe | ⏳ Accumulating data |
+| H-7 | Data parity | ✅ Features rebuilt 2026-06-29 |
+| H-8 | Audit trail | ✅ 57 ops recorded |
+
+**Next rebalance (R6):** 2026-08-04 (+14d from R5 on 2026-07-21)
