@@ -217,6 +217,7 @@ def compute_allocation(
     )
 
     # Determine action
+    policy_diagnostics: dict = {}
     if mode == "b5_only" or not rebalance:
         raw_action = None
         equity_frac = portfolio_state["equity_frac"]
@@ -229,6 +230,48 @@ def compute_allocation(
         equity_frac = exposure_info["equity_frac"]
         trend_frac  = exposure_info["trend_frac"]
         cash_frac   = exposure_info["cash_frac"]
+
+        # ── PPO policy diagnostics ────────────────────────────────────────
+        # Extracted at inference time. Three things to know about SB3 PPO:
+        #   - value_estimate: V(s) from the critic. State-dependent. Tells how
+        #     good the model thought the current situation was at decision time.
+        #   - action_log_prob / entropy: the policy uses DiagGaussianDistribution
+        #     whose std is a *fixed learned parameter* (not state-dependent).
+        #     These numbers are therefore constant across every run of the same
+        #     model. They are logged here for completeness and to confirm the
+        #     policy's global confidence level, but do NOT vary per-decision.
+        #   - action_std_per_dim: the per-dimension standard deviation of the
+        #     learned Gaussian. Close to 1.0 = policy never became confident.
+        #     Close to 0.0 = policy locked in a near-deterministic mapping.
+        # The useful per-decision signal is value_estimate and offline_advantage
+        # (value_estimate - realized_reward), computed in append_experience_log.
+        try:
+            import torch as _torch
+            _policy = model.policy
+            _policy.set_training_mode(False)
+            _obs_t = _torch.as_tensor(
+                rl_state.reshape(1, -1).astype(np.float32), device=_policy.device
+            )
+            with _torch.no_grad():
+                _feat = _policy.extract_features(_obs_t)
+                _lat_pi, _lat_vf = _policy.mlp_extractor(_feat)
+                _value = _policy.value_net(_lat_vf).item()
+                _dist  = _policy._get_action_dist_from_latent(_lat_pi)
+                _act_t = _dist.mode()
+                _lp    = _dist.log_prob(_act_t).item()
+                _ent   = _dist.entropy().item()
+                _stds  = _dist.distribution.scale.cpu().numpy().flatten().tolist()
+            policy_diagnostics = {
+                "value_estimate":    round(_value, 6),
+                "action_log_prob":   round(_lp, 6),
+                "action_prob":       round(float(np.exp(_lp)), 6),
+                "policy_entropy":    round(_ent, 6),
+                "action_std_per_dim": [round(float(s), 6) for s in _stds],
+                "note": "log_prob/entropy/std are fixed policy params, not state-dependent",
+            }
+        except Exception as _e:
+            logger.warning("Policy diagnostics failed: %s", _e)
+            policy_diagnostics = {}
     else:
         logger.warning("No model loaded and mode is rl_e7 — falling back to B.5-only")
         raw_action = None
@@ -273,12 +316,13 @@ def compute_allocation(
         "cash_frac":          round(cash_frac, 6),
         "stock_weights":      {k: round(v, 6) for k, v in stock_weights_dict.items()},
         "trend_weights":      {k: round(v, 6) for k, v in trend_weights_dict.items()},
-        "rl_state_vector":    [float(x) for x in rl_state],
-        "rl_raw_action":      raw_action,
-        "stress_score":       round(stress_score, 6),
-        "spy_trend_positive": spy_trend_positive,
-        "nav":                round(nav, 6),
-        "model_id":           "rl_e7_clean_promoted",
+        "rl_state_vector":       [float(x) for x in rl_state],
+        "rl_raw_action":         raw_action,
+        "rl_policy_diagnostics": policy_diagnostics,
+        "stress_score":          round(stress_score, 6),
+        "spy_trend_positive":    spy_trend_positive,
+        "nav":                   round(nav, 6),
+        "model_id":              "rl_e7_clean_promoted",
     }
 
     updated_state = {

@@ -51,6 +51,7 @@ _T14_COLS = [
     "tracking_error_vs_b5",
     "tracking_error_vs_spy",
     "reward_offline_t",
+    "offline_advantage_t",   # reward_offline_t - value_estimate_t; filled in pass2
 ]
 
 
@@ -215,14 +216,25 @@ def _backfill_t14(row: pd.Series, date_t: date) -> dict:
         spy_trend_positive=bool(row.get("spy_trend_positive_t", True)),
     )
 
+    # Offline advantage = realized reward - value estimate at decision time.
+    # Positive: model was pessimistic (underestimated how good the state was).
+    # Negative: model was optimistic (overestimated; the period turned out worse).
+    value_est = row.get("value_estimate_t")
+    offline_advantage = (
+        round(reward - float(value_est), 6)
+        if value_est is not None and not np.isnan(float(value_est))
+        else None
+    )
+
     return {
-        "nav_t_plus_14": round(nav_t14, 2),
-        "realized_return_14d": realized_return,
-        "realized_vol_14d": realized_vol,
-        "drawdown_14d": drawdown,
-        "tracking_error_vs_b5": round(te_b5, 6) if not np.isnan(te_b5) else None,
+        "nav_t_plus_14":         round(nav_t14, 2),
+        "realized_return_14d":   realized_return,
+        "realized_vol_14d":      realized_vol,
+        "drawdown_14d":          drawdown,
+        "tracking_error_vs_b5":  round(te_b5, 6) if not np.isnan(te_b5) else None,
         "tracking_error_vs_spy": round(te_spy, 6) if not np.isnan(te_spy) else None,
-        "reward_offline_t": round(reward, 6),
+        "reward_offline_t":      round(reward, 6),
+        "offline_advantage_t":   offline_advantage,
     }
 
 
@@ -256,6 +268,8 @@ def pass1_append_row(date_str: str) -> None:
     actual_weights_json, nav_t1 = _load_actual_weights(date_str)
     te_target = _tracking_error_vs_target(actual_weights_json, target_weights)
 
+    diag = alloc.get("rl_policy_diagnostics", {})
+
     row = {
         # T-fields
         "date_t": date_str,
@@ -271,6 +285,15 @@ def pass1_append_row(date_str: str) -> None:
         "model_id_t": alloc.get("model_id", None),
         "switch_reason_t": alloc.get("switch_reason", None),
         "drift_flags_t": drift_flags,
+        # Policy internals — logged at decision time for post-hoc analysis.
+        # value_estimate_t: V(s) from critic. State-dependent — varies per rebalance.
+        # action_log_prob_t / policy_entropy_t: fixed learned params in DiagGaussian,
+        #   constant across runs of same model. Logged once for reference.
+        # offline_advantage_t: reward_offline_t - value_estimate_t, filled in pass2
+        #   once T+14 outcome is known. Positive = model underestimated; negative = overestimated.
+        "value_estimate_t": diag.get("value_estimate", None),
+        "action_log_prob_t": diag.get("action_log_prob", None),
+        "policy_entropy_t": diag.get("policy_entropy", None),
         # T+1 fill fields
         "actual_weights_t": actual_weights_json,
         "orders_t": orders_json,
