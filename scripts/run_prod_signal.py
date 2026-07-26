@@ -350,9 +350,22 @@ def main():
 
     # Load or initialise portfolio state
     portfolio_state = load_portfolio_state(as_of_date, b5_weights_df)
-    logger.info("Portfolio state: equity=%.3f trend=%.3f cash=%.3f nav=%.4f",
+    nav_s = portfolio_state["nav_series"]
+    logger.info("Portfolio state: equity=%.3f trend=%.3f cash=%.3f nav=%.4f (history=%d entries)",
                 portfolio_state["equity_frac"], portfolio_state["trend_frac"],
-                portfolio_state["cash_frac"], float(portfolio_state["nav_series"].iloc[-1]))
+                portfolio_state["cash_frac"], float(nav_s.iloc[-1]), len(nav_s))
+
+    # Guard: if nav_history has only the T=0 seed entry while we are well past T=0,
+    # state_builder_v2 features 39/40/41 will be zero and the model is flying blind.
+    t0_date = nav_s.index[0]
+    days_since_t0 = (as_of_date - t0_date).days
+    if len(nav_s) <= 1 and days_since_t0 > 7:
+        logger.warning(
+            "NAV_HISTORY_STALE: nav_history has only %d entry but %d days have passed since T=0 (%s). "
+            "State features 39/40/41 (drawdown, vol, ret_zscore) will be zero. "
+            "Run scripts/backfill_nav_history.py to fix, or check that log_paper_fills.py is running.",
+            len(nav_s), days_since_t0, t0_date.date(),
+        )
 
     # [G.4] Evaluate switching rule before allocation
     logger.info("Evaluating G.4 switching rule …")

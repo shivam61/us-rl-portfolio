@@ -230,6 +230,18 @@ def main() -> None:
     elif not args.dry_run:
         logger.info("[H.6 experience log] skipped (non-rebalance day)")
 
+    # NAV history length — must be > 1 after first trading day; zero means the
+    # fill step didn't run or backfill_nav_history.py has not been run yet.
+    nav_history_len = 0
+    try:
+        state_path = REPO_ROOT / "data" / "prod_state" / "current_state.json"
+        if state_path.exists():
+            import json as _json
+            _s = _json.loads(state_path.read_text())
+            nav_history_len = len(_s.get("nav_history_dates", []))
+    except Exception:
+        pass
+
     # Write ops log entry  (alloc_summary + orders_count already loaded above)
     entry = {
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
@@ -239,6 +251,7 @@ def main() -> None:
         "signal_ok": signal_ok,
         "orders_count": orders_count,
         "drift_flags_active": drift_flags,
+        "nav_history_length": nav_history_len,
         "pipeline_errors": errors,
     }
     if not args.dry_run:

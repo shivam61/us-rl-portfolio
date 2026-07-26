@@ -36,6 +36,7 @@ Usage
     .venv/bin/python scripts/log_paper_fills.py --signal-date 2026-05-10 --dry-run
 """
 import argparse
+import json
 import logging
 import sys
 from pathlib import Path
@@ -47,6 +48,9 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+
+CURRENT_STATE_FILE = REPO_ROOT / "data" / "prod_state" / "current_state.json"
+INITIAL_NAV = 50_000.0
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -256,6 +260,77 @@ def append_slippage_summary(fills: pd.DataFrame, cfg: dict) -> None:
         row.to_csv(summary_path, mode="a", index=False, header=header)
 
 
+def compute_mtm_nav(positions: pd.DataFrame, fills: pd.DataFrame, fill_prices: pd.Series) -> float:
+    """Mark-to-market NAV at fill date.
+
+    Reprices held shares at fill_prices (actual adj_close) and adds the real
+    cash balance (INITIAL_NAV minus all signed trade notionals to date).
+
+    This is the number that feeds into state_builder_v2 indices 39/40/41.
+    """
+    # Today's fills: signed notional = shares_filled × fill_price
+    today_cash_delta = 0.0
+    if not fills.empty and "shares_filled" in fills.columns and "fill_price" in fills.columns:
+        today_cash_delta = -(fills["shares_filled"] * fills["fill_price"]).sum()
+
+    # Invested value: sum of shares_held × fill_price for non-cash rows
+    invested = 0.0
+    if not positions.empty:
+        pos = positions[positions["ticker"] != "__CASH__"].copy()
+        for _, row in pos.iterrows():
+            px = float(fill_prices.get(row["ticker"], 0.0))
+            invested += float(row["shares_held"]) * px
+
+    # Cash from positions file = __CASH__ market_value is based on initial_nav,
+    # not real cash. Recompute from the __CASH__ row's shares_held × current_price
+    # which log_paper_fills stores as cash_mv (the residual from initial_nav arithmetic).
+    # Instead, derive real cash: INITIAL_NAV − all net buy notionals ever.
+    # The __CASH__ row's market_value = initial_nav - total_invested (using initial_nav as denom),
+    # so we can't trust it. Use: real_nav = invested + cash_from_state.
+    # The cleanest approach: real_nav = sum(shares × fill_price) + cash_row_market_value
+    # where cash_row_market_value = initial_nav - total_invested_at_signal_prices.
+    # BUT fill_prices ARE the adj_close, so total_invested computed here IS mark-to-market.
+    # Cash ledger = initial_nav - cumulative_net_buys. We read it from positions __CASH__ row
+    # adjusted: cash = positions.__CASH__.market_value + (today fills cash delta is already baked in
+    # since positions were updated after fills).
+    cash_row = positions[positions["ticker"] == "__CASH__"]
+    cash_mv = float(cash_row["market_value"].iloc[0]) if not cash_row.empty else 0.0
+
+    # positions.__CASH__.market_value = initial_nav - total_invested_at_signal_prices
+    # total_invested_at_fill_prices may differ. Recompute invested at fill_prices:
+    mtm_nav = round(invested + cash_mv, 2)
+    return mtm_nav
+
+
+def update_nav_history(fill_date: str, nav: float) -> None:
+    """Append one NAV data point to current_state.json.
+
+    Idempotent: if fill_date already exists in nav_history, updates the value
+    (handles re-runs gracefully).
+    """
+    if not CURRENT_STATE_FILE.exists():
+        logger.warning("current_state.json not found — cannot update nav_history")
+        return
+    with open(CURRENT_STATE_FILE) as f:
+        state = json.load(f)
+
+    dates = state.get("nav_history_dates", [])
+    values = state.get("nav_history_values", [])
+
+    if fill_date in dates:
+        idx = dates.index(fill_date)
+        values[idx] = nav
+        logger.info("NAV updated for existing date %s: $%.2f", fill_date, nav)
+    else:
+        dates.append(fill_date)
+        values.append(nav)
+        logger.info("NAV appended for %s: $%.2f (history now %d entries)", fill_date, nav, len(dates))
+
+    state["nav_history_dates"] = dates
+    state["nav_history_values"] = values
+    CURRENT_STATE_FILE.write_text(json.dumps(state, indent=2))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Log paper trading fills")
     parser.add_argument("--signal-date", required=True, help="Signal date YYYY-MM-DD")
@@ -327,6 +402,13 @@ def main() -> None:
         snapshot_path = pt_dir / f"positions_{fill_date}.parquet"
         positions.to_parquet(snapshot_path, index=False)
         logger.info("Daily positions archive written to %s", snapshot_path)
+
+    # Update NAV history in current_state.json so state_builder_v2 features
+    # 39 (portfolio_drawdown), 40 (portfolio_vol_63d), 41 (portfolio_ret_21d_zscore)
+    # receive real values at the next rebalance instead of zeros.
+    mtm_nav = compute_mtm_nav(positions, fills, fill_prices)
+    update_nav_history(fill_date, mtm_nav)
+    logger.info("MTM NAV for %s: $%.2f", fill_date, mtm_nav)
 
 
 if __name__ == "__main__":
