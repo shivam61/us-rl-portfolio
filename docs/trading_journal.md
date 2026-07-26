@@ -6,6 +6,127 @@
 
 ---
 
+## Rebalance Decision Log
+
+Each rebalance captures the market conditions the model observed, the RL action taken, what the rule-based B.5 system would have done, and what happened in the 14 days afterwards. This is the primary H-6 validation record — it shows whether the RL model is reading the market correctly and whether its decisions add value over the heuristic baseline.
+
+> **B.5 equity estimates are approximate** (stress-cap formula: eq ≈ 0.65 − 0.30 × stress, floor 25%). True B.5 uses a beta-cap optimizer against the full weight vector.  
+> **Outcome equity return** = equal-weight avg of 20 equity holdings. TLT/trend return excluded (raw data stale — see known issues).  
+> **RL port return** = equity_frac × equity_return (trend sleeve treated as flat; understates true return during stress periods when TLT likely rose).
+
+---
+
+### R1 — 2026-05-26
+
+| Field | Value |
+|-------|-------|
+| **Date** | 2026-05-26 |
+| **Stress score** | 0.238 |
+| **VIX** | 16.7 (pct: 39th) |
+| **SPY drawdown** | −0.3% |
+| **Regime** | TRENDING |
+| **RL action** | [−0.653, +0.222, −0.723] |
+| **RL allocation** | Equity 35.9% / Trend 57.6% / Cash 6.5% |
+| **RL call** | Moderate defensive — below-average stress, slight caution |
+| **B.5 would have done** | Equity ~58% / Trend ~42% (less defensive, beta-cap allows more equity at low stress) |
+| **Difference vs B.5** | RL held ~22 pp less equity, ~16 pp more trend |
+| **Outcome (14d to R2)** | Equity avg: +0.9%, SPY: −2.1%, RL port contrib: +0.33%, B.5 est: +0.53% |
+| **Was RL right?** | ⚠️ Partial — RL was more defensive than B.5 but both made money; B.5 slightly outperformed on equity return because market didn't crash in this window. RL defensiveness hurt relative performance here. |
+
+---
+
+### R2 — 2026-06-09
+
+| Field | Value |
+|-------|-------|
+| **Date** | 2026-06-09 |
+| **Stress score** | 0.430 |
+| **VIX** | 18.9 (pct: 73rd) |
+| **SPY drawdown** | −2.9% |
+| **Regime** | SIDEWAYS |
+| **RL action** | [−1.000, +1.000, −0.470] |
+| **RL allocation** | Equity 25.0% / Trend 72.3% / Cash 2.7% |
+| **RL call** | MAX DEFENSIVE — saturated inputs, maximum conviction bearish equity / bullish trend |
+| **B.5 would have done** | Equity ~52% / Trend ~48% (still high equity — B.5 stress-cap doesn't react as sharply) |
+| **Difference vs B.5** | RL held ~27 pp less equity, ~24 pp more trend |
+| **Outcome (14d to R3)** | Equity avg: +1.5%, SPY: −0.2%, RL port contrib: +0.36%, B.5 est: +0.76% |
+| **Was RL right?** | ⚠️ Mixed — VIX spiked to 22.2 on 2026-06-11 (SPY −4.7% drawdown), validating the stress read. But equities recovered within the window (+1.5%), so B.5's higher equity stake earned more. The TLT sleeve (72% of portfolio) likely rose significantly during the June stress peak, which would flip this comparison in RL's favor — cannot confirm without live TLT data. |
+
+---
+
+### R3 — 2026-06-23
+
+| Field | Value |
+|-------|-------|
+| **Date** | 2026-06-23 |
+| **Stress score** | 0.418 |
+| **VIX** | 17.3 (pct: 55th) |
+| **SPY drawdown** | −2.0% |
+| **Regime** | TRENDING |
+| **RL action** | [−1.000, +1.000, −0.561] |
+| **RL allocation** | Equity 25.0% / Trend 73.5% / Cash 1.5% |
+| **RL call** | MAX DEFENSIVE — stress still elevated, held prior defensive position |
+| **B.5 would have done** | Equity ~52% / Trend ~48% |
+| **Difference vs B.5** | RL held ~27 pp less equity, ~26 pp more trend |
+| **Outcome (14d to R4)** | Equity avg: +1.3%, SPY: +1.9%, RL port contrib: +0.32%, B.5 est: +0.68% |
+| **Was RL right?** | ❌ Underperformed — market recovered fully (SPY +1.9%), stress score was retreating, but RL held max-defensive allocation. B.5 would have caught more of the equity recovery. This is the clearest case where RL was too slow to pivot back to risk-on. |
+
+---
+
+### R4 — 2026-07-07
+
+| Field | Value |
+|-------|-------|
+| **Date** | 2026-07-07 |
+| **Stress score** | 0.167 |
+| **VIX** | 15.6 (pct: 18th) |
+| **SPY drawdown** | −1.1% |
+| **Regime** | TRENDING |
+| **RL action** | [−0.591, −0.061, −1.000] |
+| **RL allocation** | Equity 46.2% / Trend 53.8% / Cash 0.0% |
+| **RL call** | Risk-on pivot — stress collapsed, full cash deployment |
+| **B.5 would have done** | Equity ~60% / Trend ~40% (even more aggressive at this stress level) |
+| **Difference vs B.5** | RL held ~14 pp less equity than B.5 would |
+| **Outcome (14d to R5)** | Equity avg: −0.9%, SPY: +0.1%, RL port contrib: −0.41%, B.5 est: −0.53% |
+| **Was RL right?** | ✅ Better than B.5 — equities dipped slightly in this window. RL's more modest risk-on (46% vs B.5's ~60%) limited the drawdown. Both lost money on equity but RL lost less. The stress read (0.167) correctly triggered the pivot, but RL was appropriately cautious about the magnitude. |
+
+---
+
+### R5 — 2026-07-21
+
+| Field | Value |
+|-------|-------|
+| **Date** | 2026-07-21 |
+| **Stress score** | 0.248 |
+| **VIX** | 18.6 (pct: 71st) |
+| **SPY drawdown** | −2.3% |
+| **Regime** | SIDEWAYS |
+| **RL action** | [−0.913, +0.683, −0.630] |
+| **RL allocation** | Equity 25.0% / Trend 69.2% / Cash 5.8% |
+| **RL call** | Defensive pivot — stress rebounded sharply from 0.167, regime flipped to sideways |
+| **B.5 would have done** | Equity ~58% / Trend ~42% (much less defensive despite VIX spike) |
+| **Difference vs B.5** | RL held ~33 pp less equity — largest divergence from B.5 across all rebalances |
+| **Outcome (14d)** | PENDING — R6 due 2026-08-04 |
+| **Was RL right?** | ⏳ Pending — VIX jumped from 15.6 to 18.6 (+3 pts) in 14 days, regime turned sideways. If stress continues rising, RL's defensive call will be validated. If market stabilizes, B.5's higher equity would win. |
+
+---
+
+### Decision Log Summary
+
+| Rebalance | Stress | RL Equity | B.5 Equity | RL vs B.5 (equity only) | Verdict |
+|-----------|--------|-----------|------------|--------------------------|---------|
+| R1 | 0.238 | 35.9% | ~58% | −0.20 pp | ⚠️ Underperformed |
+| R2 | 0.430 | 25.0% | ~52% | −0.40 pp (equity only; TLT likely positive) | ⚠️ Mixed |
+| R3 | 0.418 | 25.0% | ~52% | −0.36 pp | ❌ Underperformed |
+| R4 | 0.167 | 46.2% | ~60% | +0.12 pp | ✅ Outperformed |
+| R5 | 0.248 | 25.0% | ~58% | PENDING | ⏳ |
+
+**Key pattern:** RL consistently holds less equity than B.5 at the same stress level — it is structurally more defensive. This protects in true stress events (R2 June spike) but gives up equity return in recovery windows (R3). The TLT sleeve is the critical unknown: if TLT gained during R2/R3 stress periods (likely), the full-portfolio comparison would look much better for RL.
+
+**Action item:** Fix TLT raw data staleness before R6 to get a clean full-portfolio return comparison.
+
+---
+
 ## T=0 Bootstrap — 2026-05-12
 
 **Status:** ✅ Initial state | **Mode:** rl_e7 | **Orders:** 22 buys | **Signal:** FAILED (stale features)
