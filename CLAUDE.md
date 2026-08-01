@@ -5,11 +5,11 @@ All repo rules, workflow rules, save rules, file lookup order, roadmap-first beh
 Do not treat this file as an independent source of repo instructions.
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-26T17:39:01+00:00
+## Current State — 2026-08-01T15:58:41+00:00
 - Branch: `main`
-- Working tree: 28 changed path(s)
+- Working tree: 65 changed path(s)
 - Dirty paths sample: `M AGENTS.md`, ` M CLAUDE.md`, ` M artifacts/reports/phase_g3_drift_report.md`, ` M artifacts/reports/phase_g5_benchmark_dashboard.md`, ` M docs/agent_handoff.md`
-- Latest commit: `858a1f63 2026-06-28 Update agent_handoff: backfill complete through 2026-06-28`
+- Latest commit: `08d4b09f 2026-07-26 Log PPO policy diagnostics at each rebalance decision`
 - Active jobs: none detected
 - Deep handoff: `docs/agent_handoff.md`
 - Refresh command: `bash scripts/refresh_session_context.sh`

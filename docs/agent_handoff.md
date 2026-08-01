@@ -1,6 +1,6 @@
 # Agent Handoff — Deep Context
 
-Last updated: 2026-07-26T17:39:01+00:00
+Last updated: 2026-08-01T15:58:41+00:00
 
 This is the deep-history document for all agents. Keep `AGENTS.md` short and put long-form notes here.
 
@@ -23,46 +23,127 @@ This is the deep-history document for all agents. Keep `AGENTS.md` short and put
 2. Read `docs/ROADMAP.md`.
 3. Read this file only if prior experiment history or handoff detail is needed.
 
-## Phase H Paper Trading — Status 2026-07-25
+## Phase H Paper Trading — Status 2026-07-26
 
-**Last session: 2026-07-26 17:36 UTC — BACKFILL COMPLETE ✅**
+**Last session: 2026-07-26 19:35 UTC — DIAGNOSTICS + PIPELINE FIXES ✅**
 
-### ✅ Backfill Complete (2026-07-26 session)
-- **All 20 trading days backfilled**: 2026-06-29 through 2026-07-25
-- **R4 Rebalance (2026-07-07)**: ✅ Executed, 21 orders, stress 0.167, Equity 25%→46.2%, Trend 73.5%→53.8% (major risk-on pivot)
-- **R5 Rebalance (2026-07-21)**: ✅ Executed, 21 orders, stress 0.248, Equity 46.2%→25%, Trend 53.8%→69.2% (back to defensive)
-- **Market data**: Features rebuilt through 2026-07-25, 0 pipeline errors
-- **Signal quality**: 0 drift flags across all 20 days
+### ✅ Completed This Session (2026-07-26)
 
-### Current Portfolio State (2026-07-25)
-- **NAV**: $50,000 (paper trading flat — no realized P&L tracking yet)
+#### 1. Full Backfill (R4 + R5)
+- All 20 trading days backfilled: 2026-06-29 through 2026-07-25
+- R4 (2026-07-07): stress 0.167, Equity 25%→46.2%, Trend 73.5%→53.8% (risk-on pivot)
+- R5 (2026-07-21): stress 0.248, Equity 46.2%→25%, Trend 53.8%→69.2% (back defensive)
+- 0 pipeline errors across all 20 days
+
+#### 2. TLT/GLD/UUP Data Staleness Fix
+- **Root cause**: `refresh_market_data.py` read tickers from `sp500.yaml` only; TLT/GLD/UUP were defined in code but never in the yaml
+- **Fix**: Added TLT, GLD, UUP to `macro_etfs` in `config/universes/sp500.yaml`
+- **Impact**: 88-day price gap filled; trend asset features now refresh daily automatically
+- **Collateral fix**: `src/labels/targets.py` — added `result.index.name = "date"` after concat to prevent feature rebuild crash
+
+#### 3. Weekly Attribution Report (`docs/attribution_report.md`)
+- New script: `scripts/generate_attribution_report.py`
+- Decomposes each rebalance period into: equity sleeve, trend sleeve, RL vs B.5 allocation effect, stock selection vs SPY
+- R1–R4 results using real prices (not signal close prices):
+
+| Period | Equity | Trend | RL vs B.5 | Stock sel | Total | SPY |
+|--------|--------|-------|-----------|-----------|-------|-----|
+| R1 (stress 0.24, 36% eq) | +0.33% | +0.24% | −0.14% | +1.07% | **+0.57%** | −2.06% |
+| R2 (stress 0.43, 25% eq) | +0.36% | +0.92% | −0.08% | +0.42% | **+1.28%** | −0.21% |
+| R3 (stress 0.42, 25% eq) | +0.32% | **−1.14%** | **−0.76%** | −0.16% | **−0.82%** | +1.93% |
+| R4 (stress 0.17, 46% eq) | −0.41% | −0.57% | −0.02% | −0.45% | **−0.98%** | +0.08% |
+
+- RL allocation effect is negative every period — model is structurally over-defensive
+- Stock selection (fixed 20-name basket) is the alpha source, not the RL decisions
+
+#### 4. Rebalance Decision Log (`docs/trading_journal.md`)
+- Per-rebalance table: stress, VIX percentile, SPY drawdown, RL action, B.5 counterfactual, outcome, verdict
+- R3 identified as worst period: RL held 73.5% TLT while TLT fell 1.6%
+
+#### 5. R3 State Deep-Dive
+Full state vector decoded for R3 and compared to R2/R4:
+- Stress was genuine (VIX 78th pct, stress=0.418) but driven by vol-of-vol, not price drawdown
+- SPY was up +12.3% over 3m at decision time — market was rallying
+- TLT 3m was +0.1% at decision time — bond allocation looked correct given visible state
+- GLD/UUP features ([9]–[12]) were **zeroed** due to stale data — model blind to gold/dollar
+- PPO action was [−1, +1, −0.56] — maximum defensive, hit hard floor
+- The 14-day TLT fall of −1.6% was not predictable from the state — genuine bad luck, not a modeling error
+
+#### 6. NAV History Fix (Critical — `data/prod_state/current_state.json`)
+- **Bug**: `log_paper_fills.py` never wrote daily NAV to `current_state.json`; `nav_history` frozen at `[1.0, 2026-05-10]` since bootstrap
+- **Impact**: State vector indices 39/40/41 (portfolio drawdown, vol, 21d return z-score) were permanently **zero** at every rebalance — the model was blind to its own P&L
+- **Fix**: `log_paper_fills.py` now computes MTM NAV (shares × actual closes + cash) and appends to `nav_history` after each fill run
+- **Backfill**: `scripts/backfill_nav_history.py` reconstructed 55 days of real NAV from fills ledger
+- **Guard**: `run_prod_signal.py` logs `WARNING: NAV_HISTORY_STALE` if `nav_history` has ≤1 entry more than 7 days after T=0
+- **Monitoring**: `nav_history_length` now logged in every ops log entry (`daily_ops_log.jsonl`)
+- **Current state**: drawdown=−2.8%, vol accumulating (needs 9 more days for 64-day min), 21d return = −2.2%
+
+#### 7. PPO Policy Diagnostics
+- New field `rl_policy_diagnostics` in every rebalance allocation JSON
+- New columns in experience log: `value_estimate_t`, `action_log_prob_t`, `policy_entropy_t`, `offline_advantage_t`
+- Key finding: `action_std ≈ 0.9` across all dims — policy never learned to be confident (std is a fixed learned param in SB3 DiagGaussian, constant at inference)
+- **Value estimates across R1–R5** (the only state-dependent diagnostic):
+
+| Rebalance | Value V(s) | Interpretation |
+|-----------|-----------|----------------|
+| R1 | −39.9 | Pessimistic — high stress, defensive entry |
+| R2 | −36.2 | Slightly less pessimistic |
+| R3 | **−54.4** | Most pessimistic — model saw genuinely bad state |
+| R4 | −35.1 | Recovery in sentiment |
+| R5 | **+10.9** | Only positive value — model finally saw improvement |
+
+- `offline_advantage_t` = `reward_offline_t − value_estimate_t`, filled in pass2 at T+14. Tells whether the model over- or under-estimated the state.
+
+### Current Portfolio State (2026-07-26)
+- **NAV**: $50,247 (+0.49% from T=0 $50,000) — mark-to-market from real closes
+- **NAV peak**: $51,688 (2026-06-23)
+- **Current drawdown**: −2.8% from peak
 - **Last rebalance**: 2026-07-21 (R5)
 - **Next rebalance due**: 2026-08-04 (R6, +14d from R5)
 - **Allocation**: Equity 25.0%, Trend 69.16% (TLT), Cash 5.84%
 - **Signal status**: ✅ OK, model in rl_e7 mode, defensive posture
-- **Trading journal**: `docs/trading_journal.md` — consolidated single file, updated through R5
 
 ### Model Decision Summary (full history)
-| Rebalance | Date | Stress | Equity | Trend | Cash | Action |
-|-----------|------|--------|--------|-------|------|--------|
-| R1 | 2026-05-26 | 0.239 | 35.9% | 57.6% | 6.5% | Initial risk-on |
-| R2 | 2026-06-09 | 0.430 | 25.0% | 72.3% | 2.7% | Max defensive (VIX spike) |
-| R3 | 2026-06-23 | 0.418 | 25.0% | 73.5% | 1.5% | Held defensive |
-| R4 | 2026-07-07 | 0.167 | 46.2% | 53.8% | 0.0% | Major risk-on (stress collapsed) |
-| R5 | 2026-07-21 | 0.248 | 25.0% | 69.2% | 5.8% | Back to defensive (stress rebounded) |
+| Rebalance | Date | Stress | Equity | Trend | Cash | Value V(s) | Action |
+|-----------|------|--------|--------|-------|------|-----------|--------|
+| R1 | 2026-05-26 | 0.239 | 35.9% | 57.6% | 6.5% | −39.9 | Initial risk-on |
+| R2 | 2026-06-09 | 0.430 | 25.0% | 72.3% | 2.7% | −36.2 | Max defensive (VIX spike) |
+| R3 | 2026-06-23 | 0.418 | 25.0% | 73.5% | 1.5% | −54.4 | Held defensive (worst period) |
+| R4 | 2026-07-07 | 0.167 | 46.2% | 53.8% | 0.0% | −35.1 | Major risk-on (stress collapsed) |
+| R5 | 2026-07-21 | 0.248 | 25.0% | 69.2% | 5.8% | +10.9 | Back defensive (stress rebounded) |
 
-**Pattern**: Model oscillates between floor equity (25%) and elevated equity (~46%) based on stress score threshold around 0.20. Cash buffer rebuilt on defensive pivots.
+**Pattern**: Model oscillates between floor equity (25%) and ~46% based on stress threshold ~0.20. RL allocation effect is negative every period — the 20-stock basket is the alpha source.
+
+### Known Issues / Open Items
+1. **State features 40/41 still accumulating**: Vol (index 40) needs 64 days of NAV history — active in ~9 more trading days. Z-score (index 41) needs 252 days; raw 21d return flows through now.
+2. **Action std ~0.9**: Policy never collapsed to confident decisions. Worth tracking whether a retrained model shows lower std.
+3. **H-3 turnover**: R2 turnover hit ~48% vs 35% gate — investigate before go-live.
+4. **Bond/equity correlation**: TLT not reliably safe in 2026 rate environment. R3 is the clearest example.
+5. **Cumulative performance**: RL +1.46% vs SPY +2.10% through R4 exit — 64 bps gap is accumulated RL allocation tax.
 
 ### Next Steps (for next agent)
-1. R6 rebalance due **2026-08-04** — check if market stabilizes or stress rises further
-2. Journal and handoff are current through 2026-07-25
-3. Run backfill for any days missed since 2026-07-25
+1. R6 rebalance due **2026-08-04** — run daily ops through that date
+2. After R6, check `offline_advantage_t` for R1–R4 in experience log (reward should be backfilled)
+3. Run attribution report after R6: `.venv/bin/python scripts/generate_attribution_report.py`
+4. Investigate H-3 turnover before finalising go-live recommendation
 
 ### Useful Commands
-- Run daily ops: `.venv/bin/python scripts/run_daily_paper_ops.py --date YYYY-MM-DD`
-- Review any allocation: `cat data/allocations/YYYY-MM-DD.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['stress_score'], d['equity_frac'], d['trend_frac'])"`
-- Check journal: `tail -40 docs/trading_journal.md`
-- Check prod state: `cat data/prod_state/current_state.json`
+```bash
+# Daily ops
+.venv/bin/python scripts/run_daily_paper_ops.py --date YYYY-MM-DD
+
+# Attribution report (updates docs/attribution_report.md)
+.venv/bin/python scripts/generate_attribution_report.py
+
+# NAV backfill (if nav_history ever goes stale again)
+.venv/bin/python scripts/backfill_nav_history.py --dry-run
+
+# Decode any rebalance state + policy diagnostics
+python3 -c "import json; d=json.load(open('data/allocations/YYYY-MM-DD.json')); print(d['stress_score'], d['equity_frac'], d['rl_policy_diagnostics']['value_estimate'])"
+
+# Check ops log for nav_history_length
+tail -5 data/paper_trading/daily_ops_log.jsonl | python3 -c "import sys,json; [print(json.loads(l)['date'], json.loads(l).get('nav_history_length','?')) for l in sys.stdin]"
+```
 
 ## Legacy Sessions
 
