@@ -1,7 +1,7 @@
 # Phase G.3 — Drift Monitor Report
 
-**As-of:** 2026-07-25  
-**Generated:** 2026-07-26T17:36:11Z  
+**As-of:** 2026-08-18  
+**Generated:** 2026-08-19T16:28:32Z  
 **Mode:** live  
 
 ## ✅ No Alert
@@ -10,15 +10,15 @@
 
 ## Flag Summary
 
-**Active flags:** 0 / 5
+**Active flags:** 1 / 5
 
 | Status | Flag | Value | Threshold | Detail |
 |--------|------|-------|-----------|--------|
-| 🟢 | `sharpe_degradation` | N/A | -0.0500 | Insufficient data (64 records; need ≥65 for 63d rolling Sharpe) |
-| 🟢 | `drawdown_excess` | 0.2448 | -0.0500 | Live MaxDD=0.0% vs B.5 ref -24.5% (excess=-24.5%; flag at >5%) |
+| 🟢 | `sharpe_degradation` | 0.7040 | -0.0500 | Rolling Sharpe=2.000 vs B.5 ref 1.296 (delta=+0.704); days below 1.246 = 0 (flag at ≥21d) |
+| 🟢 | `drawdown_excess` | 0.2399 | -0.0500 | Live MaxDD=-0.5% vs B.5 ref -24.5% (excess=-24.0%; flag at >5%) |
 | 🟢 | `cash_trap` | 0.2500 | 0.2500 | equity_frac=0.250 (threshold=0.25); consecutive rebalances below threshold = 0 (flag at ≥10) |
-| 🟢 | `feature_psi` | N/A | 0.2000 | Insufficient data for PSI (64 records; need ≥73) |
-| 🟢 | `stress_breach` | 0.3598 | 0.7000 | stress_score=0.360 (threshold=0.70); consecutive days above threshold = 0 (flag at ≥5d) |
+| 🔴 | `feature_psi` | 8.6185 | 0.2000 | Max PSI=8.618 on 'realized_market_vol_63d' (threshold=0.20); by feature: vix_percentile_1y=6.350, realized_market_vol_63d=8.618, stress_score=5.149 |
+| 🟢 | `stress_breach` | 0.1409 | 0.7000 | stress_score=0.141 (threshold=0.70); consecutive days above threshold = 0 (flag at ≥5d) |
 
 ---
 
