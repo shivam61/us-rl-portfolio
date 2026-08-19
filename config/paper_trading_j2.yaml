@@ -1,0 +1,47 @@
+# Paper Trading Journey 2 — NAV-freeze fix, clean run from 2026-05-12
+# Identical parameters to J1 (H.0.0); only paths are remapped to j2 namespace.
+
+phase: H
+journey: j2
+version: "H.j2.0"
+frozen_at: "2026-05-12"
+
+capital:
+  initial_nav: 50000.00
+  currency: USD
+
+broker:
+  name: alpaca
+  mode: paper
+  fractional_shares: true
+  min_order_notional: 1.00
+  order_type: market
+
+execution:
+  signal_time_et: "16:05"
+  order_submit_time_et: "09:35"
+  rebalance_cadence_days: 14
+
+slippage:
+  assumption_bps: 20
+  flag_bps: 30
+  model: midpoint
+
+risk:
+  max_position_weight: 0.05
+  max_turnover_rebalance: 0.35
+  target_weight_drift_pp: 5.0
+
+monitoring:
+  drift_flag_alert_count: 2
+  pipeline_failure_max: 2
+  rl_mode_required: true
+
+paths:
+  allocations_dir:   data/allocations_j2
+  paper_trading_dir: data/paper_trading_j2
+  prod_state:        data/paper_trading_j2/current_state.json
+  audit_trail:       data/audit_j2/decisions.parquet
+  drift_flags:       data/drift_j2/flags.parquet
+  journal_path:      docs/paper_trading_j2_journal.md
+  journal_dated_dir: docs/paper_trading_j2

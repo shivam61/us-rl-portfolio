@@ -41,6 +41,15 @@ logger = logging.getLogger(__name__)
 DRIFT_DIR   = REPO_ROOT / "data" / "drift"
 FLAGS_FILE  = DRIFT_DIR / "flags.parquet"
 REPORT_FILE = REPO_ROOT / "artifacts" / "reports" / "phase_g3_drift_report.md"
+_AUDIT_PATH_OVERRIDE: Path | None = None   # set by --journey in main()
+
+
+def _load_pt_config(journey: str) -> dict:
+    import yaml
+    name = "paper_trading.yaml" if journey == "j1" else f"paper_trading_{journey}.yaml"
+    p = REPO_ROOT / "config" / name
+    with open(p) as f:
+        return yaml.safe_load(f)
 
 
 # ── Simulation helpers ────────────────────────────────────────────────────────
@@ -164,8 +173,9 @@ def build_report(report: DriftReport, mode: str = "live") -> str:
 
 # ── Flag history persistence ──────────────────────────────────────────────────
 
-def append_flags_history(report: DriftReport, mode: str) -> None:
-    DRIFT_DIR.mkdir(parents=True, exist_ok=True)
+def append_flags_history(report: DriftReport, mode: str, flags_file: Path | None = None) -> None:
+    target = flags_file or FLAGS_FILE
+    target.parent.mkdir(parents=True, exist_ok=True)
     row: dict = {
         "as_of_date":    pd.Timestamp(report.as_of_date) if report.as_of_date != "N/A" else pd.NaT,
         "run_timestamp": pd.Timestamp(datetime.now(timezone.utc)),
@@ -178,13 +188,13 @@ def append_flags_history(report: DriftReport, mode: str) -> None:
         row[f"val_{name}"]  = result.value
 
     new_row = pd.DataFrame([row])
-    if FLAGS_FILE.exists():
-        existing = pd.read_parquet(FLAGS_FILE)
+    if target.exists():
+        existing = pd.read_parquet(target)
         combined = pd.concat([existing, new_row], ignore_index=True)
     else:
         combined = new_row
-    combined.to_parquet(FLAGS_FILE, index=False)
-    logger.info("Flags history appended to %s", FLAGS_FILE)
+    combined.to_parquet(target, index=False)
+    logger.info("Flags history appended to %s", target)
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -207,7 +217,13 @@ def main() -> int:
         "--dry-run", action="store_true",
         help="Compute but do not write any files",
     )
+    parser.add_argument("--journey", default="j1", help="Journey ID: j1 (default) or j2, j3, ...")
     args = parser.parse_args()
+
+    # Resolve journey-specific paths
+    pt_cfg = _load_pt_config(args.journey)
+    _flags_file = REPO_ROOT / pt_cfg["paths"]["drift_flags"]
+    _audit_path = REPO_ROOT / pt_cfg["paths"]["audit_trail"]
 
     mode = "simulate_breach" if args.simulate_breach else "live"
 
@@ -216,8 +232,8 @@ def main() -> int:
         logger.info("SIMULATION MODE — injecting synthetic breach data")
         audit_df = _build_simulated_breach_df()
     else:
-        logger.info("Loading audit trail from %s", AUDIT_FILE)
-        audit_df = query_decisions()
+        logger.info("Loading audit trail from %s", _audit_path)
+        audit_df = query_decisions(audit_path=_audit_path)
         if audit_df.empty:
             logger.warning(
                 "Audit trail is empty — run run_prod_signal.py to populate it, "
@@ -272,7 +288,7 @@ def main() -> int:
     REPORT_FILE.write_text(report_text)
     logger.info("Dashboard report written to %s", REPORT_FILE)
 
-    append_flags_history(report, mode)
+    append_flags_history(report, mode, flags_file=_flags_file)
 
     # ── Gate validation verdict ────────────────────────────────────────────────
     if args.simulate_breach:

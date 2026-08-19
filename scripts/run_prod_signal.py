@@ -81,10 +81,31 @@ logger = logging.getLogger(__name__)
 
 # ── Paths ─────────────────────────────────────────────────────────────────
 PRODUCTION_MODEL     = REPO_ROOT / "artifacts" / "production" / "rl_e7_clean_promoted.zip"
-ALLOCATIONS_DIR      = REPO_ROOT / "data" / "allocations"
-PROD_STATE_DIR       = REPO_ROOT / "data" / "prod_state"
-CURRENT_STATE_FILE   = PROD_STATE_DIR / "current_state.json"
 SECTOR_FEATURES_PATH = REPO_ROOT / "data" / "features" / "sector_features.parquet"
+
+# Journey-specific paths — set by _init_journey_paths() in main()
+ALLOCATIONS_DIR    = REPO_ROOT / "data" / "allocations"
+PROD_STATE_DIR     = REPO_ROOT / "data" / "prod_state"
+CURRENT_STATE_FILE = PROD_STATE_DIR / "current_state.json"
+_AUDIT_PATH: Path | None = None   # None → audit_trail default (J1)
+
+
+def _load_pt_config(journey: str = "j1") -> dict:
+    import yaml
+    name = "paper_trading.yaml" if journey == "j1" else f"paper_trading_{journey}.yaml"
+    p = REPO_ROOT / "config" / name
+    with open(p) as f:
+        return yaml.safe_load(f)
+
+
+def _init_journey_paths(journey: str) -> None:
+    """Overwrite module-level path globals for the requested journey."""
+    global ALLOCATIONS_DIR, PROD_STATE_DIR, CURRENT_STATE_FILE, _AUDIT_PATH
+    cfg = _load_pt_config(journey)
+    ALLOCATIONS_DIR    = REPO_ROOT / cfg["paths"]["allocations_dir"]
+    CURRENT_STATE_FILE = REPO_ROOT / cfg["paths"]["prod_state"]
+    PROD_STATE_DIR     = CURRENT_STATE_FILE.parent
+    _AUDIT_PATH        = REPO_ROOT / cfg["paths"]["audit_trail"]
 
 # ── Rebalance cadence ─────────────────────────────────────────────────────
 REBALANCE_CADENCE_DAYS = 14   # every ~2 calendar weeks (≈ every 2 trading weeks)
@@ -340,6 +361,7 @@ def compute_allocation(
 
 def main():
     parser = argparse.ArgumentParser(description="Phase G.1 — Production Signal Generation")
+    parser.add_argument("--journey", default="j1", help="Journey ID: j1 (default) or j2, j3, ...")
     parser.add_argument("--config",    default="config/base.yaml")
     parser.add_argument("--universe",  default="config/universes/sp500.yaml")
     parser.add_argument("--mode",      choices=["rl_e7", "b5_only"], default="rl_e7")
@@ -353,9 +375,10 @@ def main():
                         help="Compute but do not write allocation or state files")
     parser.add_argument("--model-path", default=str(PRODUCTION_MODEL))
     args = parser.parse_args()
+    _init_journey_paths(args.journey)
 
     t0 = time.perf_counter()
-    logger.info("Phase G.1 — loading inputs …")
+    logger.info("Phase G.1 — loading inputs … (journey=%s)", args.journey)
     inputs = load_inputs(args.config, args.universe, TREND_ASSETS)
 
     validation_end = recommended_end_for_universe(
@@ -421,10 +444,10 @@ def main():
         b5_maxdd_ref=-0.2448,
     )
 
-    audit_df = query_decisions(end=str(as_of_date.date()))
+    audit_df = query_decisions(end=str(as_of_date.date()), audit_path=_AUDIT_PATH)
 
     # Load drift flags if available
-    drift_flags_path = REPO_ROOT / "data" / "drift" / "flags.parquet"
+    drift_flags_path = REPO_ROOT / _load_pt_config(args.journey)["paths"]["drift_flags"]
     if drift_flags_path.exists():
         drift_flags_df = pd.read_parquet(drift_flags_path)
     else:
@@ -492,7 +515,7 @@ def main():
     logger.info("Portfolio state saved to %s", CURRENT_STATE_FILE)
 
     # Append to audit trail (G.2)
-    append_decision(allocation)
+    append_decision(allocation, audit_path=_AUDIT_PATH)
 
     logger.info("G.1 complete in %.1fs", time.perf_counter() - t0)
     return 0

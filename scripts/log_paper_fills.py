@@ -49,15 +49,13 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-CURRENT_STATE_FILE = REPO_ROOT / "data" / "prod_state" / "current_state.json"
-INITIAL_NAV = 50_000.0
-
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
 
-def load_config() -> dict:
-    path = REPO_ROOT / "config" / "paper_trading.yaml"
+def load_config(journey: str = "j1") -> dict:
+    name = "paper_trading.yaml" if journey == "j1" else f"paper_trading_{journey}.yaml"
+    path = REPO_ROOT / "config" / name
     with open(path) as f:
         return yaml.safe_load(f)
 
@@ -171,8 +169,10 @@ def update_positions(
     fill_prices: pd.Series,
     fill_date: str,
     cfg: dict,
+    real_nav: float | None = None,
 ) -> pd.DataFrame:
-    nav = cfg["capital"]["initial_nav"]
+    # Use real MTM NAV when available; fall back to initial_nav only at T=0
+    nav = real_nav if real_nav is not None else cfg["capital"]["initial_nav"]
 
     # load existing positions (exclude cash row for share accounting)
     pt_dir = REPO_ROOT / cfg["paths"]["paper_trading_dir"]
@@ -302,16 +302,16 @@ def compute_mtm_nav(positions: pd.DataFrame, fills: pd.DataFrame, fill_prices: p
     return mtm_nav
 
 
-def update_nav_history(fill_date: str, nav: float) -> None:
+def update_nav_history(fill_date: str, nav: float, state_file: Path) -> None:
     """Append one NAV data point to current_state.json.
 
     Idempotent: if fill_date already exists in nav_history, updates the value
     (handles re-runs gracefully).
     """
-    if not CURRENT_STATE_FILE.exists():
-        logger.warning("current_state.json not found — cannot update nav_history")
+    if not state_file.exists():
+        logger.warning("current_state.json not found at %s — cannot update nav_history", state_file)
         return
-    with open(CURRENT_STATE_FILE) as f:
+    with open(state_file) as f:
         state = json.load(f)
 
     dates = state.get("nav_history_dates", [])
@@ -328,18 +328,20 @@ def update_nav_history(fill_date: str, nav: float) -> None:
 
     state["nav_history_dates"] = dates
     state["nav_history_values"] = values
-    CURRENT_STATE_FILE.write_text(json.dumps(state, indent=2))
+    state_file.write_text(json.dumps(state, indent=2))
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Log paper trading fills")
     parser.add_argument("--signal-date", required=True, help="Signal date YYYY-MM-DD")
     parser.add_argument("--fill-date", default=None, help="Fill date YYYY-MM-DD (default: next business day)")
+    parser.add_argument("--journey", default="j1", help="Journey ID: j1 (default) or j2, j3, ...")
     parser.add_argument("--dry-run", action="store_true", help="Compute fills but do not write")
     args = parser.parse_args()
 
     fill_date = args.fill_date or next_business_day(args.signal_date)
-    cfg = load_config()
+    cfg = load_config(args.journey)
+    current_state_file = REPO_ROOT / cfg["paths"]["prod_state"]
     logger.info("Config: version=%s, NAV=%.2f, flag_bps=%d",
                 cfg["version"], cfg["capital"]["initial_nav"], cfg["slippage"]["flag_bps"])
 
@@ -371,7 +373,21 @@ def main() -> None:
                 fills["actual_slippage_bps"].abs().mean() if not fills.empty else 0.0,
                 fills["slippage_flagged"].sum() if not fills.empty else 0)
 
-    positions = update_positions(orders, fills, fill_prices, fill_date, cfg)
+    # Compute real MTM NAV from pre-fill positions + fill prices before updating positions.
+    # This breaks the NAV freeze: update_positions uses real_nav as the weight denominator
+    # instead of the constant cfg["capital"]["initial_nav"].
+    pre_fill_pos_path = pt_dir / "positions_latest.parquet"
+    pre_fill_positions = (
+        pd.read_parquet(pre_fill_pos_path) if pre_fill_pos_path.exists()
+        else pd.DataFrame(columns=["ticker", "shares_held", "market_value"])
+    )
+    real_nav = compute_mtm_nav(pre_fill_positions, fills, fill_prices)
+    if real_nav <= 0:
+        # T=0: no existing positions yet; fall back to initial_nav
+        real_nav = cfg["capital"]["initial_nav"]
+    logger.info("Real MTM NAV before position update: $%.2f", real_nav)
+
+    positions = update_positions(orders, fills, fill_prices, fill_date, cfg, real_nav=real_nav)
     invested = positions[positions["ticker"] != "__CASH__"]
     max_drift = invested["weight_drift_pp"].abs().max() if not invested.empty else 0.0
     logger.info("Positions: %d holdings, max weight drift %.2f pp (H-4 gate: %.1f pp)",
@@ -403,11 +419,13 @@ def main() -> None:
         positions.to_parquet(snapshot_path, index=False)
         logger.info("Daily positions archive written to %s", snapshot_path)
 
-    # Update NAV history in current_state.json so state_builder_v2 features
-    # 39 (portfolio_drawdown), 40 (portfolio_vol_63d), 41 (portfolio_ret_21d_zscore)
-    # receive real values at the next rebalance instead of zeros.
-    mtm_nav = compute_mtm_nav(positions, fills, fill_prices)
-    update_nav_history(fill_date, mtm_nav)
+    # MTM NAV from the updated positions (post-fill) for the nav_history record.
+    # This is what state_builder_v2 features 39/40/41 will read at the next rebalance.
+    mtm_nav = compute_mtm_nav(positions, pd.DataFrame(), fill_prices)
+    current_state_file.parent.mkdir(parents=True, exist_ok=True)
+    if not current_state_file.exists():
+        current_state_file.write_text(json.dumps({"nav_history_dates": [], "nav_history_values": []}, indent=2))
+    update_nav_history(fill_date, mtm_nav, current_state_file)
     logger.info("MTM NAV for %s: $%.2f", fill_date, mtm_nav)
 
 

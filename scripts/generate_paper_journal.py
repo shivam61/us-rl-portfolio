@@ -19,6 +19,7 @@ from datetime import date as date_type
 from pathlib import Path
 
 import pandas as pd
+import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -27,10 +28,12 @@ if str(REPO_ROOT) not in sys.path:
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-PT_DIR = REPO_ROOT / "data" / "paper_trading"
-ALLOC_DIR = REPO_ROOT / "data" / "allocations"
-JOURNAL_PATH = REPO_ROOT / "docs" / "paper_trading_journal.md"
-DATED_DIR = REPO_ROOT / "docs" / "paper_trading"  # per-date files: YYYY-MM-DD.md
+
+def load_config(journey: str = "j1") -> dict:
+    name = "paper_trading.yaml" if journey == "j1" else f"paper_trading_{journey}.yaml"
+    path = REPO_ROOT / "config" / name
+    with open(path) as f:
+        return yaml.safe_load(f)
 
 
 def _flag(val: bool) -> str:
@@ -55,14 +58,14 @@ def _usd(v) -> str:
     return f"${float(v):,.2f}"
 
 
-def build_day_section(run_date: str) -> str:
+def build_day_section(run_date: str, pt_dir: Path, alloc_dir: Path) -> str:
     lines: list[str] = []
     lines.append(f"## {run_date}")
     lines.append("")
 
     # --- Ops log (last entry for this date) ---
     ops_entry = None
-    ops_log_path = PT_DIR / "daily_ops_log.jsonl"
+    ops_log_path = pt_dir / "daily_ops_log.jsonl"
     if ops_log_path.exists():
         entries = [json.loads(l) for l in ops_log_path.read_text().strip().splitlines() if l.strip()]
         day_entries = [e for e in entries if e.get("date") == run_date]
@@ -91,7 +94,7 @@ def build_day_section(run_date: str) -> str:
         lines.append("")
 
     # --- Allocation fractions ---
-    alloc_path = ALLOC_DIR / f"{run_date}.json"
+    alloc_path = alloc_dir / f"{run_date}.json"
     alloc = None
     if alloc_path.exists():
         with open(alloc_path) as f:
@@ -112,9 +115,9 @@ def build_day_section(run_date: str) -> str:
         lines.append("")
 
     # --- Positions ---
-    pos_path = PT_DIR / f"positions_{(pd.Timestamp(run_date) + pd.offsets.BDay(1)).strftime('%Y-%m-%d')}.parquet"
+    pos_path = pt_dir / f"positions_{(pd.Timestamp(run_date) + pd.offsets.BDay(1)).strftime('%Y-%m-%d')}.parquet"
     if not pos_path.exists():
-        pos_path = PT_DIR / "positions_latest.parquet"
+        pos_path = pt_dir / "positions_latest.parquet"
 
     if pos_path.exists():
         pos_all = pd.read_parquet(pos_path)
@@ -147,7 +150,7 @@ def build_day_section(run_date: str) -> str:
         lines.append("")
 
     # --- Orders ---
-    orders_path = PT_DIR / f"orders_{run_date}.csv"
+    orders_path = pt_dir / f"orders_{run_date}.csv"
     if orders_path.exists():
         orders = pd.read_csv(orders_path)
         active = orders[orders["action"] != "hold"]
@@ -170,7 +173,7 @@ def build_day_section(run_date: str) -> str:
             lines.append("")
 
     # --- Fills & slippage ---
-    fills_path = PT_DIR / f"fills_{run_date}.csv"
+    fills_path = pt_dir / f"fills_{run_date}.csv"
     if fills_path.exists():
         try:
             fills = pd.read_csv(fills_path)
@@ -216,11 +219,11 @@ def build_day_section(run_date: str) -> str:
     return "\n".join(lines)
 
 
-def load_existing_journal() -> tuple[str, dict[str, tuple[int, int]]]:
+def load_existing_journal(journal_path: Path) -> tuple[str, dict[str, tuple[int, int]]]:
     """Return (full text, {date: (start_line, end_line)}) for existing dated sections."""
-    if not JOURNAL_PATH.exists():
+    if not journal_path.exists():
         return "", {}
-    text = JOURNAL_PATH.read_text()
+    text = journal_path.read_text()
     sections: dict[str, tuple[int, int]] = {}
     lines = text.splitlines()
     i = 0
@@ -238,8 +241,8 @@ def load_existing_journal() -> tuple[str, dict[str, tuple[int, int]]]:
     return text, sections
 
 
-def update_journal(run_date: str, section_text: str) -> None:
-    text, sections = load_existing_journal()
+def update_journal(run_date: str, section_text: str, journal_path: Path) -> None:
+    text, sections = load_existing_journal(journal_path)
     lines = text.splitlines() if text else []
 
     if run_date in sections:
@@ -255,14 +258,15 @@ def update_journal(run_date: str, section_text: str) -> None:
         lines = lines[:first_section] + new_section_lines + [""] + lines[first_section:]
         logger.info("Prepended new journal section for %s", run_date)
 
-    JOURNAL_PATH.write_text("\n".join(lines) + "\n")
+    journal_path.write_text("\n".join(lines) + "\n")
 
 
-def ensure_header() -> None:
-    if JOURNAL_PATH.exists():
+def ensure_header(journal_path: Path, journey: str = "j1") -> None:
+    if journal_path.exists():
         return
-    JOURNAL_PATH.write_text(
-        "# Phase H — Paper Trading Journal\n\n"
+    tag = "" if journey == "j1" else f" — Journey {journey.upper()}"
+    journal_path.write_text(
+        f"# Phase H — Paper Trading Journal{tag}\n\n"
         "> **Portfolio:** $50,000 NAV | Broker: Alpaca paper | Config: v H.0.0\n"
         "> **Rebalance cadence:** every 14 days | **Mode:** rl_e7 (dual-mode switching active)\n"
         "> **Gates:** H-1 pipeline · H-2 slippage <20 bps · H-3 turnover <35% · "
@@ -275,15 +279,22 @@ def ensure_header() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate paper trading journal")
     parser.add_argument("--date", default=None, help="Date to generate entry for (default: all available dates)")
+    parser.add_argument("--journey", default="j1", help="Journey ID: j1 (default) or j2, j3, ...")
     args = parser.parse_args()
 
-    ensure_header()
+    cfg = load_config(args.journey)
+    pt_dir = REPO_ROOT / cfg["paths"]["paper_trading_dir"]
+    alloc_dir = REPO_ROOT / cfg["paths"]["allocations_dir"]
+    journal_path = REPO_ROOT / cfg["paths"]["journal_path"]
+    dated_dir = REPO_ROOT / cfg["paths"]["journal_dated_dir"]
+
+    ensure_header(journal_path, args.journey)
 
     if args.date:
         dates = [args.date]
     else:
         # discover all dates from ops log
-        ops_log_path = PT_DIR / "daily_ops_log.jsonl"
+        ops_log_path = pt_dir / "daily_ops_log.jsonl"
         if not ops_log_path.exists():
             logger.error("No ops log found at %s", ops_log_path)
             sys.exit(1)
@@ -298,22 +309,22 @@ def main() -> None:
                 dates.append(d)
         dates.sort()
 
-    DATED_DIR.mkdir(parents=True, exist_ok=True)
+    dated_dir.mkdir(parents=True, exist_ok=True)
 
     for d in dates:
-        section = build_day_section(d)
-        update_journal(d, section)
+        section = build_day_section(d, pt_dir, alloc_dir)
+        update_journal(d, section, journal_path)
 
-        # Write standalone dated file: docs/paper_trading/YYYY-MM-DD.md
-        dated_path = DATED_DIR / f"{d}.md"
+        # Write standalone dated file
+        dated_path = dated_dir / f"{d}.md"
         dated_path.write_text(
             f"# Paper Trading — {d}\n\n"
-            f"> [Back to full journal](../paper_trading_journal.md)\n\n"
+            f"> [Back to full journal]({journal_path.name})\n\n"
             + section
         )
         logger.info("Dated file written: %s", dated_path)
 
-    logger.info("Journal written to %s", JOURNAL_PATH)
+    logger.info("Journal written to %s", journal_path)
 
 
 if __name__ == "__main__":

@@ -42,8 +42,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 
-def load_config() -> dict:
-    path = REPO_ROOT / "config" / "paper_trading.yaml"
+def load_config(journey: str = "j1") -> dict:
+    name = "paper_trading.yaml" if journey == "j1" else f"paper_trading_{journey}.yaml"
+    path = REPO_ROOT / "config" / name
     with open(path) as f:
         return yaml.safe_load(f)
 
@@ -203,11 +204,12 @@ def compute_orders(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Compute paper trading orders")
     parser.add_argument("--date", required=True, help="Signal date YYYY-MM-DD")
+    parser.add_argument("--journey", default="j1", help="Journey ID: j1 (default) or j2, j3, ...")
     parser.add_argument("--initial", action="store_true", help="T=0: no existing positions")
     parser.add_argument("--dry-run", action="store_true", help="Print orders, do not write")
     args = parser.parse_args()
 
-    cfg = load_config()
+    cfg = load_config(args.journey)
     logger.info("Paper trading config: version=%s, NAV=%.2f", cfg["version"], cfg["capital"]["initial_nav"])
 
     alloc = load_allocation(args.date, cfg)

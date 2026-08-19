@@ -42,15 +42,22 @@ AUDIT_FILE  = AUDIT_DIR / "decisions.parquet"
 _STATE_COLS = [f"state_{i}" for i in range(42)]
 
 
-def append_decision(allocation: dict, override_flag: bool = False, override_note: str = "") -> None:
+def append_decision(
+    allocation: dict,
+    override_flag: bool = False,
+    override_note: str = "",
+    audit_path: Path | None = None,
+) -> None:
     """Append one allocation decision record to the audit log.
 
     Args:
-        allocation: Output dict from compute_allocation in run_prod_signal.py.
+        allocation:   Output dict from compute_allocation in run_prod_signal.py.
         override_flag: True if any constraint was manually overridden this run.
         override_note: Human-readable description of any override.
+        audit_path:   Override the default AUDIT_FILE path (for journey namespacing).
     """
-    AUDIT_DIR.mkdir(parents=True, exist_ok=True)
+    target_file = Path(audit_path) if audit_path else AUDIT_FILE
+    target_file.parent.mkdir(parents=True, exist_ok=True)
 
     rl_action = allocation.get("rl_raw_action") or [np.nan, np.nan, np.nan]
     rl_state  = allocation.get("rl_state_vector", [np.nan] * 42)
@@ -81,13 +88,13 @@ def append_decision(allocation: dict, override_flag: bool = False, override_note
 
     new_row = pd.DataFrame([row])
 
-    if AUDIT_FILE.exists():
-        existing = pd.read_parquet(AUDIT_FILE)
+    if target_file.exists():
+        existing = pd.read_parquet(target_file)
         combined = pd.concat([existing, new_row], ignore_index=True)
     else:
         combined = new_row
 
-    combined.to_parquet(AUDIT_FILE, index=False)
+    combined.to_parquet(target_file, index=False)
     logger.info("Audit record appended: as_of=%s mode=%s is_rebalance=%s",
                 allocation["as_of_date"], allocation["mode"], allocation["is_rebalance"])
 
@@ -96,21 +103,24 @@ def query_decisions(
     start: str | None = None,
     end: str | None = None,
     mode: str | None = None,
+    audit_path: Path | None = None,
 ) -> pd.DataFrame:
     """Query the audit log by date range and/or mode.
 
     Args:
-        start: ISO date string (inclusive). None = no lower bound.
-        end:   ISO date string (inclusive). None = no upper bound.
-        mode:  "rl_e7" | "b5_only" | None = all.
+        start:      ISO date string (inclusive). None = no lower bound.
+        end:        ISO date string (inclusive). None = no upper bound.
+        mode:       "rl_e7" | "b5_only" | None = all.
+        audit_path: Override the default AUDIT_FILE path (for journey namespacing).
 
     Returns:
         DataFrame of matching records (columns: see module docstring).
     """
-    if not AUDIT_FILE.exists():
+    target_file = Path(audit_path) if audit_path else AUDIT_FILE
+    if not target_file.exists():
         return pd.DataFrame()
 
-    df = pd.read_parquet(AUDIT_FILE)
+    df = pd.read_parquet(target_file)
     if start:
         df = df[df["as_of_date"] >= pd.Timestamp(start)]
     if end:

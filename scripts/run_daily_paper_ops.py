@@ -53,8 +53,9 @@ logger = logging.getLogger(__name__)
 PYTHON = str(REPO_ROOT / ".venv" / "bin" / "python")
 
 
-def load_config() -> dict:
-    path = REPO_ROOT / "config" / "paper_trading.yaml"
+def load_config(journey: str = "j1") -> dict:
+    name = "paper_trading.yaml" if journey == "j1" else f"paper_trading_{journey}.yaml"
+    path = REPO_ROOT / "config" / name
     with open(path) as f:
         return yaml.safe_load(f)
 
@@ -141,29 +142,32 @@ def alert_on_drift_flags(flags_active: int, cfg: dict) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Daily paper trading operations")
     parser.add_argument("--date", required=True, help="Signal date YYYY-MM-DD")
+    parser.add_argument("--journey", default="j1", help="Journey ID: j1 (default) or j2, j3, ...")
     parser.add_argument("--initial", action="store_true", help="T=0: no existing positions")
     parser.add_argument("--skip-fills", action="store_true", help="Skip fill simulation (run next morning)")
+    parser.add_argument("--skip-data-refresh", action="store_true", help="Skip step 0 data refresh (data already current)")
     parser.add_argument("--dry-run", action="store_true", help="Signal + drift only; no orders/fills written")
     args = parser.parse_args()
 
-    cfg = load_config()
+    cfg = load_config(args.journey)
     logger.info("=== Phase H Daily Paper Ops | date=%s | config=%s NAV=$%.0f ===",
                 args.date, cfg["version"], cfg["capital"]["initial_nav"])
 
     errors: list[str] = []
 
     # Step 0: Incremental market data + feature refresh
-    if not args.dry_run:
+    if not args.dry_run and not args.skip_data_refresh:
         data_cmd = [PYTHON, str(SCRIPTS_DIR / "refresh_market_data.py"), "--as-of", args.date]
         ok, err = run_step("data refresh", data_cmd)
         if not ok:
             errors.append(f"data refresh: {err}")
             logger.warning("Data refresh failed — signal will use existing (possibly stale) features")
     else:
-        logger.info("[data refresh] skipped (--dry-run)")
+        reason = "--dry-run" if args.dry_run else "--skip-data-refresh"
+        logger.info("[data refresh] skipped (%s)", reason)
 
     # Step 1: G.1 signal generation
-    signal_cmd = [PYTHON, str(SCRIPTS_DIR / "run_prod_signal.py"), "--as-of", args.date]
+    signal_cmd = [PYTHON, str(SCRIPTS_DIR / "run_prod_signal.py"), "--as-of", args.date, "--journey", args.journey]
     if args.initial:
         signal_cmd.append("--force-rebalance")  # T=0: RL must fire its action, not carry forward B.5 defaults
     if args.dry_run:
@@ -174,7 +178,7 @@ def main() -> None:
         errors.append(f"G.1 signal: {err}")
 
     # Step 2: G.3 drift monitoring
-    drift_cmd = [PYTHON, str(SCRIPTS_DIR / "run_drift_monitor_g3.py")]
+    drift_cmd = [PYTHON, str(SCRIPTS_DIR / "run_drift_monitor_g3.py"), "--journey", args.journey]
     ok, err = run_step("G.3 drift", drift_cmd)
     if not ok:
         errors.append(f"G.3 drift: {err}")
@@ -184,7 +188,7 @@ def main() -> None:
 
     # Step 3: Order computation (skip on dry run or non-rebalance if signal failed)
     if not args.dry_run and signal_ok:
-        orders_cmd = [PYTHON, str(SCRIPTS_DIR / "compute_paper_orders.py"), "--date", args.date]
+        orders_cmd = [PYTHON, str(SCRIPTS_DIR / "compute_paper_orders.py"), "--date", args.date, "--journey", args.journey]
         if args.initial:
             orders_cmd.append("--initial")
         ok, err = run_step("compute orders", orders_cmd)
@@ -197,7 +201,7 @@ def main() -> None:
 
     # Step 4: Fill simulation
     if not args.skip_fills and not args.dry_run and signal_ok:
-        fills_cmd = [PYTHON, str(SCRIPTS_DIR / "log_paper_fills.py"), "--signal-date", args.date]
+        fills_cmd = [PYTHON, str(SCRIPTS_DIR / "log_paper_fills.py"), "--signal-date", args.date, "--journey", args.journey]
         ok, err = run_step("log fills", fills_cmd)
         if not ok:
             errors.append(f"fills: {err}")
@@ -216,14 +220,14 @@ def main() -> None:
     orders_count = count_orders(args.date, cfg)
 
     # Step 6: Journal update — human-readable daily log
-    journal_cmd = [PYTHON, str(SCRIPTS_DIR / "generate_paper_journal.py"), "--date", args.date]
+    journal_cmd = [PYTHON, str(SCRIPTS_DIR / "generate_paper_journal.py"), "--date", args.date, "--journey", args.journey]
     ok, err = run_step("journal", journal_cmd)
     if not ok:
         errors.append(f"journal: {err}")
 
     # Step 7: H.6 experience log — append T-row + backfill T+14 (rebalance days only)
     if alloc_summary["is_rebalance"] and not args.dry_run and signal_ok:
-        exp_cmd = [PYTHON, str(SCRIPTS_DIR / "append_experience_log.py"), "--date", args.date]
+        exp_cmd = [PYTHON, str(SCRIPTS_DIR / "append_experience_log.py"), "--date", args.date, "--journey", args.journey]
         ok, err = run_step("H.6 experience log", exp_cmd)
         if not ok:
             errors.append(f"H.6 experience log: {err}")
@@ -234,7 +238,7 @@ def main() -> None:
     # fill step didn't run or backfill_nav_history.py has not been run yet.
     nav_history_len = 0
     try:
-        state_path = REPO_ROOT / "data" / "prod_state" / "current_state.json"
+        state_path = REPO_ROOT / cfg["paths"]["prod_state"]
         if state_path.exists():
             import json as _json
             _s = _json.loads(state_path.read_text())

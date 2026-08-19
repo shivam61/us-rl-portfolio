@@ -25,6 +25,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -35,12 +36,16 @@ from src.rl.reward_v2 import compute_reward_v2
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-PT_DIR = REPO_ROOT / "data" / "paper_trading"
-ALLOC_DIR = REPO_ROOT / "data" / "allocations"
-DRIFT_FLAGS_PATH = REPO_ROOT / "data" / "drift" / "flags.parquet"
+# Shared read-only paths (not journey-specific)
 B5_NAV_PATH = REPO_ROOT / "data" / "switching" / "nav_b5_backtest.parquet"
 SPY_PATH = REPO_ROOT / "data" / "raw" / "SPY.parquet"
-LOG_PATH = PT_DIR / "experience_log.parquet"
+
+
+def load_config(journey: str = "j1") -> dict:
+    name = "paper_trading.yaml" if journey == "j1" else f"paper_trading_{journey}.yaml"
+    path = REPO_ROOT / "config" / name
+    with open(path) as f:
+        return yaml.safe_load(f)
 
 # T+14 outcome columns — null until backfilled
 _T14_COLS = [
@@ -59,19 +64,19 @@ _T14_COLS = [
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _load_allocation(date_str: str) -> dict:
-    for p in [ALLOC_DIR / f"{date_str}.json", ALLOC_DIR / "latest.json"]:
+def _load_allocation(date_str: str, alloc_dir: Path) -> dict:
+    for p in [alloc_dir / f"{date_str}.json", alloc_dir / "latest.json"]:
         if p.exists():
             with open(p) as f:
                 return json.load(f)
     raise FileNotFoundError(f"No allocation JSON for {date_str}")
 
 
-def _load_drift_flags(date_str: str) -> str:
+def _load_drift_flags(date_str: str, drift_flags_path: Path) -> str:
     """Return latest drift flag row as JSON string, or '{}'."""
-    if not DRIFT_FLAGS_PATH.exists():
+    if not drift_flags_path.exists():
         return "{}"
-    df = pd.read_parquet(DRIFT_FLAGS_PATH)
+    df = pd.read_parquet(drift_flags_path)
     if df.empty:
         return "{}"
     flag_cols = [c for c in df.columns if c.startswith("flag_")]
@@ -81,9 +86,9 @@ def _load_drift_flags(date_str: str) -> str:
     return json.dumps({k: bool(v) for k, v in latest.items()})
 
 
-def _load_orders(date_str: str) -> tuple[str, float]:
+def _load_orders(date_str: str, pt_dir: Path) -> tuple[str, float]:
     """Return (orders JSON blob, rebalance turnover ratio)."""
-    path = PT_DIR / f"orders_{date_str}.csv"
+    path = pt_dir / f"orders_{date_str}.csv"
     if not path.exists():
         return "{}", 0.0
     df = pd.read_csv(path)
@@ -100,9 +105,9 @@ def _load_orders(date_str: str) -> tuple[str, float]:
     return json.dumps(orders), round(turnover, 6)
 
 
-def _load_fills(date_str: str) -> tuple[str, float]:
+def _load_fills(date_str: str, pt_dir: Path) -> tuple[str, float]:
     """Return (fills JSON blob, portfolio-level weighted avg slippage bps)."""
-    path = PT_DIR / f"fills_{date_str}.csv"
+    path = pt_dir / f"fills_{date_str}.csv"
     if not path.exists():
         return "{}", 0.0
     df = pd.read_csv(path)
@@ -118,9 +123,9 @@ def _load_fills(date_str: str) -> tuple[str, float]:
     return json.dumps(fills), round(avg_slip, 4)
 
 
-def _load_actual_weights(date_str: str) -> tuple[str, float]:
+def _load_actual_weights(date_str: str, pt_dir: Path) -> tuple[str, float]:
     """Return (actual_weights JSON blob, nav_t_plus_1) from positions_latest.parquet."""
-    path = PT_DIR / "positions_latest.parquet"
+    path = pt_dir / "positions_latest.parquet"
     if not path.exists():
         return "{}", 0.0
     df = pd.read_parquet(path)
@@ -138,12 +143,12 @@ def _tracking_error_vs_target(actual_json: str, target_json: str) -> float:
     return round(float(np.sqrt(sum(diffs))), 6)
 
 
-def _load_daily_nav_series(date_t: date, date_end: date) -> pd.Series:
+def _load_daily_nav_series(date_t: date, date_end: date, pt_dir: Path) -> pd.Series:
     """Reconstruct daily NAV from positions_{date}.parquet snapshots."""
     navs = {}
     d = date_t
     while d <= date_end:
-        p = PT_DIR / f"positions_{d.isoformat()}.parquet"
+        p = pt_dir / f"positions_{d.isoformat()}.parquet"
         if p.exists():
             df = pd.read_parquet(p)
             navs[d] = float(df["market_value"].sum())
@@ -161,10 +166,10 @@ def _annualised_te(portfolio_rets: pd.Series, bench_rets: pd.Series) -> float:
     return float(diff.std(ddof=1) * np.sqrt(252))
 
 
-def _backfill_t14(row: pd.Series, date_t: date) -> dict:
+def _backfill_t14(row: pd.Series, date_t: date, pt_dir: Path) -> dict:
     """Compute all T+14 outcome fields for a row written 14 days ago."""
     date_end = date_t + timedelta(days=14)
-    nav_series = _load_daily_nav_series(date_t, date_end)
+    nav_series = _load_daily_nav_series(date_t, date_end, pt_dir)
 
     if nav_series.empty or len(nav_series) < 2:
         logger.warning("Insufficient daily positions for T+14 backfill of %s", date_t)
@@ -242,30 +247,30 @@ def _backfill_t14(row: pd.Series, date_t: date) -> dict:
 # Main passes
 # ---------------------------------------------------------------------------
 
-def _load_log() -> pd.DataFrame:
-    if LOG_PATH.exists():
-        return pd.read_parquet(LOG_PATH)
+def _load_log(log_path: Path) -> pd.DataFrame:
+    if log_path.exists():
+        return pd.read_parquet(log_path)
     return pd.DataFrame()
 
 
-def _save_log(df: pd.DataFrame) -> None:
-    PT_DIR.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(LOG_PATH, index=False)
+def _save_log(df: pd.DataFrame, log_path: Path, pt_dir: Path) -> None:
+    pt_dir.mkdir(parents=True, exist_ok=True)
+    df.to_parquet(log_path, index=False)
 
 
-def pass1_append_row(date_str: str) -> None:
+def pass1_append_row(date_str: str, pt_dir: Path, alloc_dir: Path, drift_flags_path: Path, log_path: Path) -> None:
     """Build and append the T-row for today's rebalance."""
-    alloc = _load_allocation(date_str)
+    alloc = _load_allocation(date_str, alloc_dir)
 
     # T-fields from allocation JSON
     state_vec = alloc.get("rl_state_vector", [])
     rl_action = alloc.get("rl_raw_action")
     target_weights = json.dumps(alloc.get("stock_weights", {}))
 
-    drift_flags = _load_drift_flags(date_str)
-    orders_json, turnover = _load_orders(date_str)
-    fills_json, slippage_bps = _load_fills(date_str)
-    actual_weights_json, nav_t1 = _load_actual_weights(date_str)
+    drift_flags = _load_drift_flags(date_str, drift_flags_path)
+    orders_json, turnover = _load_orders(date_str, pt_dir)
+    fills_json, slippage_bps = _load_fills(date_str, pt_dir)
+    actual_weights_json, nav_t1 = _load_actual_weights(date_str, pt_dir)
     te_target = _tracking_error_vs_target(actual_weights_json, target_weights)
 
     diag = alloc.get("rl_policy_diagnostics", {})
@@ -306,16 +311,16 @@ def pass1_append_row(date_str: str) -> None:
         **{col: None for col in _T14_COLS},
     }
 
-    df = _load_log()
+    df = _load_log(log_path)
     new_row = pd.DataFrame([row])
     df = pd.concat([df, new_row], ignore_index=True)
-    _save_log(df)
+    _save_log(df, log_path, pt_dir)
     logger.info("Experience log: appended T-row for %s (%d total rows)", date_str, len(df))
 
 
-def pass2_backfill_t14(date_str: str) -> None:
+def pass2_backfill_t14(date_str: str, pt_dir: Path, log_path: Path) -> None:
     """Backfill T+14 outcomes for the row written 14 days ago."""
-    df = _load_log()
+    df = _load_log(log_path)
     if df.empty:
         return
 
@@ -333,14 +338,14 @@ def pass2_backfill_t14(date_str: str) -> None:
         logger.info("Experience log: T+14 fields already filled for %s — skipping", target_date)
         return
 
-    updates = _backfill_t14(row, date.fromisoformat(target_date))
+    updates = _backfill_t14(row, date.fromisoformat(target_date), pt_dir)
     if not updates:
         return
 
     for col, val in updates.items():
         df.at[idx, col] = val
 
-    _save_log(df)
+    _save_log(df, log_path, pt_dir)
     logger.info(
         "Experience log: backfilled T+14 for %s — return=%.4f reward=%.4f",
         target_date,
@@ -352,12 +357,19 @@ def pass2_backfill_t14(date_str: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Append/backfill experience log")
     parser.add_argument("--date", required=True, help="Rebalance date YYYY-MM-DD")
+    parser.add_argument("--journey", default="j1", help="Journey ID: j1 (default) or j2, j3, ...")
     args = parser.parse_args()
 
+    cfg = load_config(args.journey)
+    pt_dir = REPO_ROOT / cfg["paths"]["paper_trading_dir"]
+    alloc_dir = REPO_ROOT / cfg["paths"]["allocations_dir"]
+    drift_flags_path = REPO_ROOT / cfg["paths"]["drift_flags"]
+    log_path = pt_dir / "experience_log.parquet"
+
     # Always attempt T+14 backfill first (idempotent, skips if already done)
-    pass2_backfill_t14(args.date)
+    pass2_backfill_t14(args.date, pt_dir, log_path)
     # Then append today's T-row
-    pass1_append_row(args.date)
+    pass1_append_row(args.date, pt_dir, alloc_dir, drift_flags_path, log_path)
 
 
 if __name__ == "__main__":
