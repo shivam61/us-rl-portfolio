@@ -10,6 +10,8 @@ Usage
     .venv/bin/python scripts/refresh_market_data.py --as-of 2026-05-09   # backfill to specific date
     .venv/bin/python scripts/refresh_market_data.py --skip-features       # price refresh only
 """
+from __future__ import annotations
+
 import argparse
 import logging
 import sys

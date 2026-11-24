@@ -1,5 +1,13 @@
 import argparse
 import logging
+import sys
+from pathlib import Path
+
+# Allow `python scripts/download_data.py` from the repo root without PYTHONPATH.
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from src.config.loader import load_config
 from src.data.ingestion import DataIngestion
 
@@ -35,9 +43,12 @@ def main():
     _ = ingestion.fetch_universe_data(
         tickers=all_tickers,
         start_date=base_config.backtest.start_date,
-        end_date=base_config.backtest.end_date
+        end_date=base_config.backtest.end_date,
+        # Threaded yfinance downloads intermittently return truncated or
+        # malformed frames, and the cache does not validate them. Fetch serially.
+        n_workers=1,
     )
-    
+
     logger.info("Downloading fundamental data...")
     stock_tickers = list(universe_config.tickers.keys())
     _ = ingestion.fetch_universe_fundamentals(
