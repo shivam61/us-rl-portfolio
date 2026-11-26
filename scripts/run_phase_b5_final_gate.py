@@ -13,7 +13,12 @@ for path in (REPO_ROOT, SCRIPTS_DIR):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
-from run_phase_a7_trend_overlay import TREND_ASSETS, build_trend_weight_paths, load_inputs  # noqa: E402
+from run_phase_a7_trend_overlay import (  # noqa: E402
+    NON_TRADABLE_ASSETS,
+    TREND_ASSETS,
+    build_trend_weight_paths,
+    load_inputs,
+)
 from run_phase_b1_simulator_reproduction import (  # noqa: E402
     MAX_GROSS_LIMIT,
     recommended_end_for_universe,
@@ -158,6 +163,9 @@ def build_promoted_weights(
         control_dates,
         inputs["universe_config"].benchmark,
     )
+    # Equity-only: strip any non-stock column (trend/signal assets, benchmark). The freed
+    # weight is simply not invested, so it is held as cash.
+    constrained = constrained.drop(columns=[c for c in NON_TRADABLE_ASSETS if c in constrained.columns])
     return constrained, diagnostics, control_dates
 
 

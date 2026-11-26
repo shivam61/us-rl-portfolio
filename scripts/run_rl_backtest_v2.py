@@ -40,6 +40,7 @@ from run_phase_b4_risk_engine import build_stress_series
 from run_phase_b5_final_gate import build_promoted_weights, compute_net_returns
 from src.reporting.metrics import calculate_metrics
 from src.rl.environment_v2 import PortfolioEnvV2
+import src.rl.environment_v2 as _env_mod
 from src.rl.exposure_mix import _EQ_MIN, _EQ_MAX, _TR_MIN, _TR_MAX, _CA_MIN, _CA_MAX
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -187,7 +188,7 @@ def run_noop_policy_v2(
         rebalance_dates=rebalance_dates, cost_bps=0.0,
         sector_features_df=sector_features_df,
     )
-    noop_action = np.array([1.0, -1.0, -1.0], dtype=np.float32)
+    noop_action = np.array([1.0, -1.0, -1.0][: _env_mod.DEFAULT_ACTION_DIM], dtype=np.float32)
 
     def action_fn(_obs):
         return noop_action
@@ -230,7 +231,7 @@ def run_random_policy_v2(
         )
 
         def action_fn(_obs, _rng=rng):
-            return _rng.uniform(-1.0, 1.0, 3).astype(np.float32)
+            return _rng.uniform(-1.0, 1.0, _env_mod.DEFAULT_ACTION_DIM).astype(np.float32)
 
         raw_ret, daily_to, _, _, _ = _run_env_policy_v2(env, action_fn, f"random-{seed}")
         m = _cost_adjusted_metrics(raw_ret, daily_to, primary_cost_bps, HOLDOUT_START, HOLDOUT_END)
@@ -276,7 +277,8 @@ def _targets_to_raw_action(eq: float, tr: float, ca: float) -> np.ndarray:
     raw_eq = 2.0 * (eq - _EQ_MIN) / (_EQ_MAX - _EQ_MIN) - 1.0
     raw_tr = 2.0 * (tr - _TR_MIN) / (_TR_MAX - _TR_MIN) - 1.0
     raw_ca = 2.0 * (ca - _CA_MIN) / (_CA_MAX - _CA_MIN) - 1.0
-    return np.array([raw_eq, raw_tr, raw_ca], dtype=np.float32)
+    full = np.array([raw_eq, raw_tr, raw_ca], dtype=np.float32)
+    return full if _env_mod.DEFAULT_ACTION_DIM == 3 else full[[0, 2]]
 
 
 def run_rule_based_policy_v2(
@@ -603,9 +605,18 @@ def main():
         default="all",
     )
     parser.add_argument("--seeds", type=int, default=RANDOM_SEEDS)
+    parser.add_argument(
+        "--reports-dir", default="artifacts/reports",
+        help="Where to write e6_* reports (relative to repo). Use a scratch dir to avoid overwriting tracked reports.",
+    )
     args = parser.parse_args()
 
-    reports_dir = REPO_ROOT / "artifacts" / "reports"
+    if args.policy in ("trained", "all") and getattr(args, "model_path", None):
+        from stable_baselines3 import PPO as _PPO
+        _env_mod.DEFAULT_ACTION_DIM = int(_PPO.load(str(REPO_ROOT / args.model_path) if not Path(args.model_path).is_absolute() else args.model_path).action_space.shape[0])
+        logger.info("Action dim from checkpoint: %d", _env_mod.DEFAULT_ACTION_DIM)
+
+    reports_dir = REPO_ROOT / args.reports_dir
     reports_dir.mkdir(parents=True, exist_ok=True)
     model_path = REPO_ROOT / args.model_path
 

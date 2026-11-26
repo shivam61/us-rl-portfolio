@@ -37,7 +37,7 @@ from run_phase_b4_risk_engine import (  # noqa: E402
 from run_phase_b3_exposure_control import rolling_beta_matrix  # noqa: E402
 
 from src.rl.state_builder_v2 import OBS_DIM, build_state_v2
-from src.rl.exposure_mix import apply_exposure_mix
+from src.rl.exposure_mix import apply_exposure_mix, finalize_equity_only
 from src.rl.reward_v2 import compute_reward_v2
 
 _B5_VARIANT = B4Variant(
@@ -62,6 +62,11 @@ def _initial_trend_frac(b5_weights_df: pd.DataFrame, date: pd.Timestamp, trend_t
     trend_total = float(w[[t for t in w.index if t in trend_tickers]].abs().sum())
     total = float(w.abs().sum())
     return trend_total / total if total > 1e-12 else 0.0
+
+
+# Action dimension: 3 = legacy [equity, trend, cash] (E.7); 2 = equity-only [equity, cash].
+# Scripts set this before constructing envs (train: --action-dim; eval: inferred from the model).
+DEFAULT_ACTION_DIM = 3
 
 
 class PortfolioEnvV2(gym.Env):
@@ -150,12 +155,14 @@ class PortfolioEnvV2(gym.Env):
         else:
             self.sector_features_df = pd.read_parquet(_DEFAULT_SECTOR_FEATURES_PATH)
 
+        self.action_dim = int(DEFAULT_ACTION_DIM)
+
         # Gymnasium spaces
         self.observation_space = spaces.Box(
             low=-np.inf, high=np.inf, shape=(OBS_DIM,), dtype=np.float32
         )
         self.action_space = spaces.Box(
-            low=-1.0, high=1.0, shape=(3,), dtype=np.float32
+            low=-1.0, high=1.0, shape=(self.action_dim,), dtype=np.float32
         )
 
         # Episode state (initialised in reset)
@@ -207,7 +214,11 @@ class PortfolioEnvV2(gym.Env):
         )
 
         # --- Apply B.4 constraints as hard floor (non-negotiable) ---
-        mixed_constrained = self._apply_b4_single_date(mixed_weights, current_date)
+        if self.action_dim == 2:
+            # Equity-only: the agent's equity share IS the portfolio (no beta band, no SPY overlay).
+            mixed_constrained = finalize_equity_only(mixed_weights, exposure_info["equity_frac"])
+        else:
+            mixed_constrained = self._apply_b4_single_date(mixed_weights, current_date)
 
         # --- Compute turnover ---
         prev_w = self._current_weights
