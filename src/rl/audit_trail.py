@@ -59,7 +59,8 @@ def append_decision(
     target_file = Path(audit_path) if audit_path else AUDIT_FILE
     target_file.parent.mkdir(parents=True, exist_ok=True)
 
-    rl_action = allocation.get("rl_raw_action") or [np.nan, np.nan, np.nan]
+    rl_action = list(allocation.get("rl_raw_action") or [])
+    rl_action = (rl_action + [np.nan] * 3)[:3]
     rl_state  = allocation.get("rl_state_vector", [np.nan] * 42)
 
     row: dict = {

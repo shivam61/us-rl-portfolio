@@ -168,6 +168,8 @@ def main() -> None:
 
     # Step 1: G.1 signal generation
     signal_cmd = [PYTHON, str(SCRIPTS_DIR / "run_prod_signal.py"), "--as-of", args.date, "--journey", args.journey]
+    if cfg.get("model_path"):  # optional per-journey model override; absent → production E.7
+        signal_cmd += ["--model-path", str(REPO_ROOT / cfg["model_path"])]
     if args.initial:
         signal_cmd.append("--force-rebalance")  # T=0: RL must fire its action, not carry forward B.5 defaults
     if args.dry_run:

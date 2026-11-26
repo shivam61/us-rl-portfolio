@@ -18,7 +18,7 @@ Output schema
   "trend_frac":        float,
   "cash_frac":         float,
   "stock_weights":     {"TICKER": float, ...},
-  "trend_weights":     {"TLT": float, "GLD": float, "UUP": float},
+  "trend_weights":     {},   # equity-only policy: no trend assets are traded (TLT/GLD/UUP are signals only)
   "rl_state_vector":   [float × 42],
   "rl_raw_action":     [float × 3] | null,
   "stress_score":      float,
@@ -73,7 +73,7 @@ from run_phase_b4_risk_engine import (
     B4Variant, _NON_BENCHMARK_TREND, apply_b4_constraints, build_stress_series,
 )
 from src.rl.environment_v2 import _initial_trend_frac
-from src.rl.exposure_mix import apply_exposure_mix
+from src.rl.exposure_mix import apply_exposure_mix, finalize_equity_only
 from src.rl.state_builder_v2 import build_state_v2
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -88,6 +88,9 @@ ALLOCATIONS_DIR    = REPO_ROOT / "data" / "allocations"
 PROD_STATE_DIR     = REPO_ROOT / "data" / "prod_state"
 CURRENT_STATE_FILE = PROD_STATE_DIR / "current_state.json"
 _AUDIT_PATH: Path | None = None   # None → audit_trail default (J1)
+# Experiment hook: tickers forced to 0 weight after the model outputs them.
+# Freed weight falls to cash (no renormalisation). Empty by default → no effect.
+_EXCLUDED_TICKERS: set[str] = set()
 
 
 def _load_pt_config(journey: str = "j1") -> dict:
@@ -100,12 +103,13 @@ def _load_pt_config(journey: str = "j1") -> dict:
 
 def _init_journey_paths(journey: str) -> None:
     """Overwrite module-level path globals for the requested journey."""
-    global ALLOCATIONS_DIR, PROD_STATE_DIR, CURRENT_STATE_FILE, _AUDIT_PATH
+    global ALLOCATIONS_DIR, PROD_STATE_DIR, CURRENT_STATE_FILE, _AUDIT_PATH, _EXCLUDED_TICKERS
     cfg = _load_pt_config(journey)
     ALLOCATIONS_DIR    = REPO_ROOT / cfg["paths"]["allocations_dir"]
     CURRENT_STATE_FILE = REPO_ROOT / cfg["paths"]["prod_state"]
     PROD_STATE_DIR     = CURRENT_STATE_FILE.parent
     _AUDIT_PATH        = REPO_ROOT / cfg["paths"]["audit_trail"]
+    _EXCLUDED_TICKERS  = set(cfg.get("experiment", {}).get("exclude_tickers", []) or [])
 
 # ── Rebalance cadence ─────────────────────────────────────────────────────
 REBALANCE_CADENCE_DAYS = 14   # every ~2 calendar weeks (≈ every 2 trading weeks)
@@ -143,6 +147,7 @@ def load_portfolio_state(as_of_date: pd.Timestamp, b5_weights_df: pd.DataFrame) 
             "cash_frac":         float(state["cash_frac"]),
             "nav_series":        nav_series,
             "last_rebalance_date": last_rebalance,
+            "last_weights":      state.get("last_weights"),
         }
 
     # Cold start — initialise from B.5 weights at or before as_of_date
@@ -169,6 +174,7 @@ def save_portfolio_state(state: dict, allocation: dict) -> None:
         "nav_history_values":   nav.tolist(),
         "last_rebalance_date":  str(state["last_rebalance_date"].date()) if state.get("last_rebalance_date") else None,
         "last_run_date":        allocation["as_of_date"],
+        "last_weights":         state.get("last_weights"),
     }
     CURRENT_STATE_FILE.write_text(json.dumps(out, indent=2))
 
@@ -300,14 +306,21 @@ def compute_allocation(
         trend_frac  = portfolio_state["trend_frac"]
         cash_frac   = portfolio_state["cash_frac"]
 
+    equity_only = model is not None and int(model.action_space.shape[0]) == 2
+    carried_weights = portfolio_state.get("last_weights")
+
     # Apply exposure mix to get combined weights (only on rebalance or first run)
     if rebalance and mode == "rl_e7" and raw_action is not None:
         action_arr = np.array(raw_action, dtype=float)
-        mixed_weights, _ = apply_exposure_mix(b5_snap, _TREND_TICKERS, action_arr)
+        mixed_weights, _mix_info = apply_exposure_mix(b5_snap, _TREND_TICKERS, action_arr)
         # Apply B.4 constraints as hard floor
         single_row   = pd.DataFrame([mixed_weights], index=[as_of_date])
         beta_slice   = beta_frame.reindex(index=[as_of_date]).fillna(0.0)
-        if not beta_slice.empty and beta_slice.abs().sum().sum() > 1e-12:
+        if equity_only:
+            # 2-sleeve policy: the agent's equity share IS the portfolio; no beta band, no SPY overlay.
+            final_weights = finalize_equity_only(mixed_weights, _mix_info["equity_frac"])
+            carried_weights = final_weights.to_dict()
+        elif not beta_slice.empty and beta_slice.abs().sum().sum() > 1e-12:
             constrained, _ = apply_b4_constraints(
                 single_row, beta_slice, stress_series, _B5_VARIANT,
                 control_dates=[as_of_date], benchmark=spy_col,
@@ -315,10 +328,21 @@ def compute_allocation(
             final_weights = constrained.iloc[0].fillna(0.0)
         else:
             final_weights = mixed_weights
+    elif equity_only and portfolio_state.get("last_weights"):
+        # Between rebalances hold the agent's last weights (as the training env does), do not snap to B.5.
+        final_weights = pd.Series(portfolio_state["last_weights"], dtype=float)
+        carried_weights = portfolio_state["last_weights"]
     else:
         final_weights = b5_snap
 
     # Split into stock vs trend weights
+    if _EXCLUDED_TICKERS:
+        final_weights = final_weights.copy()
+        for _t in _EXCLUDED_TICKERS:
+            if _t in final_weights.index:
+                final_weights[_t] = 0.0
+        logger.info("Experiment: zeroed weights for %s (freed weight -> cash)", sorted(_EXCLUDED_TICKERS))
+
     trend_tickers_present = [t for t in _TREND_TICKERS if t in final_weights.index]
     stock_tickers = [t for t in final_weights.index
                      if t not in trend_tickers_present and t != spy_col
@@ -352,6 +376,7 @@ def compute_allocation(
         "cash_frac":             cash_frac,
         "nav_series":            portfolio_state["nav_series"],
         "last_rebalance_date":   as_of_date if rebalance else portfolio_state.get("last_rebalance_date"),
+        "last_weights":          carried_weights if equity_only else None,
     }
 
     return allocation, updated_state

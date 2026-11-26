@@ -12,6 +12,7 @@ for path in (REPO_ROOT, SCRIPTS_DIR):
         sys.path.insert(0, str(path))
 
 from run_phase_a7_3_membership_coverage_artifacts import active_matrix, load_inputs  # noqa: E402
+from run_phase_a7_trend_overlay import TREND_ASSETS  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -121,7 +122,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run Phase B.0 baseline and data-window guard")
     parser.add_argument("--config", default="config/base.yaml")
     parser.add_argument("--universes", nargs="+", default=["config/universes/sp100.yaml", "config/universes/sp500.yaml"])
-    parser.add_argument("--trend-assets", nargs="+", default=["SPY", "TLT", "GLD", "UUP"])
+    parser.add_argument("--trend-assets", nargs="+", default=list(TREND_ASSETS))
     args = parser.parse_args()
 
     reports_dir = Path("artifacts/reports")

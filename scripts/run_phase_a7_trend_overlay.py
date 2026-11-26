@@ -14,7 +14,15 @@ from src.reporting.metrics import calculate_metrics
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-TREND_ASSETS = ["SPY", "TLT", "GLD", "UUP"]
+# Equity-only policy: nothing but individual stocks is ever bought; whatever is not
+# in stocks stays in cash. The trend sleeve is therefore empty (SPY is the benchmark,
+# which the risk engine excludes from the trend list).
+TREND_ASSETS = ["SPY"]
+from src.rl.exposure_mix import NON_TRADABLE_ASSETS as _SHARED_NON_TRADABLE  # noqa: E402
+# Still loaded for prices so they can feed the RL state (TLT/GLD/UUP momentum), but never traded.
+SIGNAL_ONLY_ASSETS = ["TLT", "GLD", "UUP"]
+# Columns stripped from the final portfolio weights: signals, benchmark and any trend asset.
+NON_TRADABLE_ASSETS = sorted(set(TREND_ASSETS) | set(SIGNAL_ONLY_ASSETS) | set(_SHARED_NON_TRADABLE))
 VOL_SPECS = [("vol_top_10", 10), ("vol_top_20", 20)]
 TREND_SPECS = [
     ("trend_3m_long_cash", 63, "long_cash"),

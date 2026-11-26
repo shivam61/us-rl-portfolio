@@ -126,9 +126,19 @@ def main():
         "--eval-freq", type=int, default=STEPS_PER_EPISODE,
         help="Validate every N env steps (used with --total-timesteps). Default: STEPS_PER_EPISODE.",
     )
+    parser.add_argument(
+        "--out-dir", default="artifacts",
+        help="Output root (relative to repo). Writes <out-dir>/models and <out-dir>/reports. Default: artifacts.",
+    )
+    parser.add_argument(
+        "--action-dim", type=int, default=3, choices=[2, 3],
+        help="3 = legacy [equity, trend, cash]; 2 = equity-only [equity, cash] (agent splits whole book).",
+    )
     args = parser.parse_args()
+    import src.rl.environment_v2 as _env_mod
+    _env_mod.DEFAULT_ACTION_DIM = args.action_dim
 
-    out_dir = REPO_ROOT / "artifacts"
+    out_dir = REPO_ROOT / args.out_dir
     models_dir = out_dir / "models"
     reports_dir = out_dir / "reports"
     models_dir.mkdir(parents=True, exist_ok=True)

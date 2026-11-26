@@ -18,6 +18,9 @@ _EQ_MIN, _EQ_MAX = 0.25, 1.00
 _TR_MIN, _TR_MAX = 0.00, 1.00
 _CA_MIN, _CA_MAX = 0.00, 0.50  # E.7: tightened from 0.60
 
+# Equity-only policy: these are never bought. TLT/GLD/UUP are state signals only; SPY is the benchmark.
+NON_TRADABLE_ASSETS = ("GLD", "SPY", "TLT", "UUP")
+
 # Fallback allocation when raw_action sums to near zero
 _FALLBACK = (0.85, 0.10, 0.05)
 
@@ -76,6 +79,39 @@ def _project_to_simplex(eq: float, tr: float, ca: float) -> tuple[float, float, 
     return eq, tr, ca
 
 
+def project_two_sleeve(raw_eq: float, raw_ca: float) -> tuple[float, float]:
+    """Equity-only policy: the agent splits the WHOLE book between equity and cash.
+
+    raw in [-1,+1]^2 -> equity share = eq/(eq+ca) of two box-mapped scores, cash = 1 - equity,
+    with cash <= _CA_MAX. No third sleeve exists, so nothing is decided for the agent.
+    """
+    eq_s = _EQ_MIN + (_EQ_MAX - _EQ_MIN) * (raw_eq + 1.0) / 2.0
+    ca_s = _CA_MIN + (_CA_MAX - _CA_MIN) * (raw_ca + 1.0) / 2.0
+    eq = eq_s / (eq_s + ca_s)
+    ca = min(1.0 - eq, _CA_MAX)
+    return 1.0 - ca, ca
+
+
+def apply_two_sleeve_mix(
+    b5_weights: pd.Series,
+    trend_tickers: list[str],
+    raw_action: np.ndarray,
+) -> tuple[pd.Series, dict]:
+    """2-dim action [raw_equity, raw_cash]: stock weights are rescaled to the equity share;
+    the rest is cash. trend_tickers (if any exist in b5_weights) are ignored/zeroed."""
+    raw_action = np.asarray(raw_action, dtype=float)
+    eq, ca = project_two_sleeve(float(raw_action[0]), float(raw_action[1]))
+    trend_set = set(trend_tickers)
+    result = pd.Series(0.0, index=b5_weights.index)
+    stock_slice = b5_weights[[t for t in b5_weights.index if t not in trend_set]]
+    stock_total = float(stock_slice.abs().sum())
+    if stock_total > 1e-12:
+        result[stock_slice.index] = stock_slice * (eq / stock_total)
+    info = {"equity_frac": float(eq), "trend_frac": 0.0, "cash_frac": float(ca),
+            "gross": float(result.abs().sum())}
+    return result, info
+
+
 def apply_exposure_mix(
     b5_weights: pd.Series,
     trend_tickers: list[str],
@@ -100,7 +136,9 @@ def apply_exposure_mix(
         info: dict with keys equity_frac, trend_frac, cash_frac, gross.
     """
     raw_action = np.asarray(raw_action, dtype=float)
-    assert raw_action.shape == (3,), f"Expected action shape (3,), got {raw_action.shape}"
+    if raw_action.shape == (2,):
+        return apply_two_sleeve_mix(b5_weights, trend_tickers, raw_action)
+    assert raw_action.shape == (3,), f"Expected action shape (2,) or (3,), got {raw_action.shape}"
 
     raw_eq, raw_tr, raw_ca = float(raw_action[0]), float(raw_action[1]), float(raw_action[2])
 
@@ -141,3 +179,16 @@ def apply_exposure_mix(
         "gross":       float(result.abs().sum()),
     }
     return result, info
+
+
+def finalize_equity_only(mixed_weights: pd.Series, equity_frac: float, tol: float = 1e-6) -> pd.Series:
+    """Equity-only finalisation shared by the training env and production.
+
+    Drops every non-tradable column and applies NO beta projection, so the stock weights sum
+    to exactly the agent's equity share and the rest is cash. Raises if that invariant breaks.
+    """
+    w = mixed_weights.drop(labels=[c for c in NON_TRADABLE_ASSETS if c in mixed_weights.index]).fillna(0.0)
+    gap = abs(float(w.abs().sum()) - float(equity_frac))
+    if gap > tol and float(mixed_weights.abs().sum()) > 1e-12:
+        raise AssertionError(f"equity-only invariant broken: stock sum {w.abs().sum():.6f} != equity_frac {equity_frac:.6f}")
+    return w
