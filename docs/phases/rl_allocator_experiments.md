@@ -416,3 +416,19 @@ Result: FAILS all pre-registered bars. No variant beats matched static on both g
 - Caveats: matched static does not match turnover; single deterministic path per run; reused holdout; 8w Calmar comparisons use control SE 0 (generous); yfinance fetch attempt for BK/CTRA per run (no data/ writes observed).
 
 Summary of round 3 (FA, FB, FH, FC, R1, C1, EGM review): features carry only trailing-vol information; clean observations and a baseline-relative action both fail the bars; an agent offered vol/drawdown features uses them but gets no crash protection beyond matched static. Remaining decision experiment: PPO on a small risk set vs a vol-target rule and B.4.
+
+## 21. Design assessment, open decision, and track FM (2026-11-27)
+
+Design problems identified (ranked), from sections 1-20:
+1. Learning problem too small/noisy for PPO: ~58 decisions per episode, one market path, 42 dims; memorization (agent minus matched-static Sharpe: train +0.30, val +0.14, holdout -0.02); PPO settings not the bottleneck (H2). Decisions are near-independent, so a contextual bandit or supervised one-step sizing model fits better (untested).
+2. Objective/signal mismatch: risk is predictable (vol IC ~0.72), returns are not (~0.02); hindsight oracle doubles Sharpe but a one-step delay removes it; return-focused rewards pay for timing that does not exist at this cadence (R1's baseline-relative reward added leverage only).
+3. Action design cannot deliver crash protection: 50% floor cannot protect capital, lowering it (X2) did not help; B.4 protection is mostly low average gross (~29%).
+4. Observation defects (own-NAV restarts, constant/duplicate/artifact dims): fixed in C1/FH, no edge.
+5. Evaluation/data: reused holdout, survivorship (current constituents), unresolved decision-timing convention (fill at close t vs t+1), 8w training vs 14d prod cadence, seed noise ~0.05 Sharpe.
+6. The no-hand-rules constraint excludes the vol-target rule (the one approach with a clear predictive basis); it would be used only as a yardstick.
+
+How the current features were judged unusable: five independent lines (per-feature screens A0-A3 incl. block-permutation and incremental-over-TR; FA out-of-sample sleeve policy capturing 9-11% of oracle gain, -2% with delay; H1 signal gate; G1 state vs single trailing-vol feature; trained-agent controls P0/P3/C1). Caveat: IC screens have low power (min detectable incremental IC ~0.24); the agent-level and policy-level tests carry the conclusion. Untested: VIX3M/VIX9D, HYG/LQD, yield curve, event calendar.
+
+Open owner decision: Option A (recommended) run the last decision experiment (PPO on a small risk-only observation vs a vol-target rule and B.4 as yardsticks), then fix the SPY bug (C1) in main and consolidate worktrees; Option B park RL as allocator, ship B.5+B.4, RL in shadow mode.
+
+Track FM (owner request, launched 2026-11-27, agent a74eecb66c706c91f, analysis only, pre-registered in runs_fm/PREREG.md): (1) feature x target x horizon matrix (5/10/14/21/42/56/63 days) with block-bootstrap/HAC effective n; (2) paired out-of-sample loss comparison TR vs TR+group on identical masks/folds, block bootstrap >= 10,000, min detectable improvement via planted signal; (3) economic value after execution delay: fitted monotone forecast-to-equity map inside training folds, fill at close t vs t+1, net Calmar/Sharpe/MaxDD/turnover at 10 bps vs matched static and B.4 with bootstrap CIs, shuffled-forecast and one-step-delay controls. Status: RUNNING. X1 (floor 0.25) never delivered a final report; treated as redundant given X2.
