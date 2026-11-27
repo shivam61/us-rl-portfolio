@@ -103,8 +103,26 @@ class PortfolioEnvV2(gym.Env):
         rebalance_dates: list[pd.Timestamp] | None = None,
         cost_bps: float = 0.0,
         sector_features_df: pd.DataFrame | None = None,
+        fill_delay: int = 0,
+        terminal_period: bool = False,
+        require_book: bool = False,
     ):
+        """A0 timing options (all default to the legacy behaviour; see docs/phases/rl_consolidation_notes.md).
+
+        fill_delay: 0 = decision at close t is held from close t (legacy). 1 = fill at close t+1: the
+            period (t, t+1] earns the book decided at the previous decision, and the new book is
+            charged its turnover at the start of the following period.
+        terminal_period: False = the last decision's period is never simulated (legacy). True = the
+            last book is held from the last decision to min(end_date, last price date).
+        require_book: False = the rebalance grid may start before the first B.5 snapshot, where the
+            book is empty (legacy). True = drop rebalance dates before the first snapshot.
+        """
         super().__init__()
+        if fill_delay not in (0, 1):
+            raise ValueError(f"fill_delay must be 0 or 1, got {fill_delay}")
+        self.fill_delay = int(fill_delay)
+        self.terminal_period = bool(terminal_period)
+        self.require_book = bool(require_book)
 
         self.inputs = inputs
         self.b5_weights_df = b5_weights_df.copy()
@@ -127,6 +145,12 @@ class PortfolioEnvV2(gym.Env):
                     & (b5_weights_df.index <= self.end_date)
                 ]
             )
+        if self.require_book:
+            # first date with a non-empty book (the B.5 frame has all-zero rows before the first snapshot)
+            nonempty = b5_weights_df.fillna(0.0).abs().sum(axis=1) > 1e-12
+            if nonempty.any():
+                first_snapshot = nonempty[nonempty].index.min()
+                all_dates = [d for d in all_dates if d >= first_snapshot]
         self.rebalance_dates: list[pd.Timestamp] = all_dates
         assert len(self.rebalance_dates) >= 2, (
             f"Need ≥2 rebalance dates in [{start_date}, {end_date}]; got {len(self.rebalance_dates)}"
@@ -174,12 +198,17 @@ class PortfolioEnvV2(gym.Env):
         self._current_trend_frac: float = 0.0
         self._current_cash_frac: float = 0.0
         self._prev_equity_frac: float = 1.0
+        # fill_delay=1 only: book decided at the previous step (earns the current period) and its turnover
+        self._pending_w: pd.Series = pd.Series(dtype=float)
+        self._pending_turnover: float = 0.0
 
     # ------------------------------------------------------------------
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self._step_idx = 0
         first_date = self.rebalance_dates[0]
+        self._pending_w = pd.Series(dtype=float)
+        self._pending_turnover = 0.0
         self._last_rebalance_date = None
         self._nav_series = pd.Series(
             [1.0], index=pd.DatetimeIndex([first_date], name="date")
@@ -202,7 +231,7 @@ class PortfolioEnvV2(gym.Env):
         current_date = self.rebalance_dates[self._step_idx]
         next_idx = self._step_idx + 1
         terminated = next_idx >= len(self.rebalance_dates)
-        next_date = self.rebalance_dates[next_idx] if not terminated else current_date
+        next_date = self.rebalance_dates[next_idx] if not terminated else self._terminal_date(current_date)
 
         # --- Get B.5 weights at current date ---
         b5_snap = self._b5_weights_at(current_date)
@@ -220,20 +249,29 @@ class PortfolioEnvV2(gym.Env):
         else:
             mixed_constrained = self._apply_b4_single_date(mixed_weights, current_date)
 
-        # --- Compute turnover ---
+        # --- Compute turnover of this decision ---
         prev_w = self._current_weights
         if prev_w is not None:
-            turnover = float(
+            decided_turnover = float(
                 (mixed_constrained - prev_w.reindex(mixed_constrained.index).fillna(0.0))
                 .abs().sum()
             )
         else:
-            turnover = float(mixed_constrained.abs().sum())
+            decided_turnover = float(mixed_constrained.abs().sum())
         self._current_weights = mixed_constrained
+
+        # --- Which book earns the period (current_date, next_date] ---
+        if self.fill_delay == 0:
+            earning_w, turnover = mixed_constrained, decided_turnover
+        else:
+            # Fill at close t+1: the period starting now earns the book decided at the previous step
+            # (cash before the first fill) and pays that fill's turnover; this decision fills next step.
+            earning_w, turnover = self._pending_w, self._pending_turnover
+            self._pending_w, self._pending_turnover = mixed_constrained, decided_turnover
 
         # --- Simulate returns ---
         daily_returns = self._compute_daily_returns(
-            mixed_constrained, current_date, next_date, rebalance_turnover=turnover
+            earning_w, current_date, next_date, rebalance_turnover=turnover
         )
 
         # --- Update NAV ---
@@ -303,6 +341,14 @@ class PortfolioEnvV2(gym.Env):
             current_cash_frac=self._current_cash_frac,
             sector_features_df=self.sector_features_df,
         )
+
+    def _terminal_date(self, current_date: pd.Timestamp) -> pd.Timestamp:
+        """End of the last decision's period: current_date (legacy) or min(end_date, last price date)."""
+        if not self.terminal_period:
+            return current_date
+        last_price = self.prices.index.max()
+        horizon = min(self.end_date, last_price)
+        return horizon if horizon > current_date else current_date
 
     def _b5_weights_at(self, date: pd.Timestamp) -> pd.Series:
         available = self.b5_weights_df[self.b5_weights_df.index <= date]

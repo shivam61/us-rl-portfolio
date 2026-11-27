@@ -1,6 +1,32 @@
 # RL feature set certification gate (v4)
 
-Status: PLAN (2026-11-27). Gate between feature construction (track FB) and the feature-selection experiment (track FS). No feature enters an RL experiment until the set is CERTIFIED here.
+Status: NOT CERTIFIED (2026-11-27). Gate between feature construction (track FB/FH) and the feature-selection experiment (track FS). No feature enters an RL experiment until the set is CERTIFIED here. The sign-off table in section 3 is the current state; the verdict in tracker section 18 (FH) stands.
+
+## 0. Decision-timing convention (spec amendment, M2 and M8)
+
+This section replaces the timing wording in M2 and M8. It is the convention every certified result must use.
+
+- Decision at close t: the observation uses data available at the close of t (prices, B.5 snapshot dated <= t, same-day VIX only if the VIX timing check below passes).
+- Fill at close t+1: the book chosen at t is held from close t+1. The period (t, t+1] earns the previous book. The turnover of the new book is charged at the fill.
+- The last decision's period is simulated to min(end, last price date) (terminal period, M8).
+- Cost: 10 bps on turnover for evaluation. Training uses the same cost (owner decision pending; see `rl_consolidation_notes.md`).
+
+What the environment does today (`src/rl/environment_v2.py`, branch commit `ed8ab62`):
+
+| Convention | Default (legacy) | Option that implements the spec | Train/CLI flag |
+|---|---|---|---|
+| Fill timing | fill at close t (`fill_delay=0`) | `fill_delay=1` | `--fill-delay 1` |
+| Last period | not simulated (`terminal_period=False`) | `terminal_period=True` | `--terminal-period` |
+| Grid start | may precede the first non-empty B.5 snapshot (`require_book=False`) | `require_book=True` | `--require-book` |
+| Cost, training | 0 bps (`cost_bps=0`) | `cost_bps=10` | `--train-cost-bps 10` |
+| Cost, validation | 0 bps | `cost_bps=10` | `--val-cost-bps 10` |
+
+The defaults above are legacy and are not certified. A result reported as certification evidence must
+state the flags it ran with, and the M2 items below must be true for those flags.
+
+Amendment to M2: the spec requirement "orders executed t+1 as in the env" was wrong for the env as built.
+The env fills at close t (the FC/FH finding). M2 is satisfied only when the run uses `fill_delay=1`. The
+library itself has no fill dependency: its features use data through t and its targets are forward from t.
 
 ## Sequence (strictly gated)
 
@@ -48,17 +74,26 @@ All tests must run in < 5 minutes on the CI machine; heavy checks (full rebuild,
 
 | Item | Status | Evidence (command, output file, commit) | Reviewer |
 |---|---|---|---|
-| M1 | pending | | |
-| M2 | pending | | |
-| M3 | pending | | |
-| M4 | pending | | |
-| M5 | pending | | |
-| M6 | pending | | |
-| M7 | pending | | |
-| M8 | pending | | |
-| M9 | pending | | |
-| M10 | pending | | |
-| S1-S4 | pending | | |
+Evidence run 2026-11-27 on branch commit `5345eda` plus later commits, with the FH materialised outputs (`runs_fh/features_v4_1/`, 148 MB, not committed) linked locally. Fast: `pytest -q -m "not slow" tests/test_features_v4_*.py` = 46 passed. Slow: `pytest -q -m slow tests/test_features_v4_*.py` = 5 passed (14.6 min). Without the artifacts, these tests skip (set `V4_REQUIRE_ARTIFACTS=1` to fail).
+
+| Item | Status | Evidence (test names; slow marked) | Reviewer |
+|---|---|---|---|
+| M1 | PASS | `test_no_lookahead_truncation`, `test_future_corruption_invariance`, `test_leak_detector_catches_injected_leak`; 100-date sweep `test_causality_full_sweep_100_dates` (slow, PASS) | |
+| M2 | OPEN | Env fills at close t: `test_env_fill_convention_is_close_of_decision_date` codifies the legacy convention, not t+1. `test_vix_same_day_convention` passes but VIX publication lag is not verifiable from the repo; adj_close vintage not verifiable. Amendment written (section 0). `fill_delay=1` option exists but is not the default. | |
+| M3 | PARTIAL | Library: `test_path_independence_mid_history_start`, `test_no_episode_local_state` PASS. Existing env: FAIL (`state_builder_v2` reads episode NAV, dims 39-41; FC xfail `test_existing_env_observation_has_no_episode_nav` not ported). | |
+| M4 | PASS | `test_causal_normalisation`, `test_warmup_nan_policy`. Coverage caveat: first complete-case date 2008-10-31; 2008-09 has NaN for 505 days in some features. | |
+| M5 | PARTIAL | Store vs prod-path parity `test_train_serve_parity_one_rebalance_date` PASS (2015-06-12, 1e-9). Env observation vs prod: NOT TESTED (`build_state_v4` not wired into training). | |
+| M6 | PASS | `test_manifest_row_counts_and_checksums`, `test_manifest_input_hashes_and_library_hash`, `test_no_constant_or_duplicate_columns`; deterministic rebuild `test_deterministic_rebuild` (slow, PASS) and `test_history_build_is_deterministic` (slow, PASS). FC note: rebuild matched only with PYTHONHASHSEED=0 and one BLAS thread; not re-checked for FH. | |
+| M7 | PASS with flags | `test_distribution_regression_by_block`, `test_outlier_flag_clip_is_documented` PASS. ADF is custom; flags on `rv_s_63`, `ewdn_u_126` unstable across builds (FH). | |
+| M8 | PARTIAL | Target construction PASS: `test_targets_forward_only_no_overlap`, `test_target_nan_policy_and_last_period`, `test_targets_match_h1_8w_cache`, `test_embargo_removes_two_decisions_each_side`. Embargo inside the LORO screen: FC found none; not separately re-verified for FH. | |
+| M9 | PASS (power-limited) | `test_leak_detector_catches_injected_leak`, `test_block_permuted_feature_has_no_ic`, `test_stationary_perm_null_is_centred`, `test_noise_feature_null_calibration` (slow, PASS), `test_power_curve_reported_and_consistent` (slow, PASS). Minimum detectable delta IC at 80% power about 0.24. | |
+| M10 | PASS (library) / FAIL (env) | `test_library_reads_no_agent_state`, `test_build_state_v4_takes_only_equity_share` PASS. Existing env reads own NAV (see M3). | |
+| S1 | FAIL (waiver) | `test_clusters_have_one_representative` PASS; VIF > 10 on volatility features remains (FH). | |
+| S2 | NOT TESTED | Missing-day handling not tested separately. | |
+| S3 | PARTIAL | Full panel ~3.4 s, store read < 1 s (FH measurement; no test). | |
+| S4 | PASS | `test_feature_meta_complete`. | |
+
+Survivorship (not a MUST item): raw stocks are current constituents; no index history before 2015 in `data/`; the PIT mask is an ADV filter. Pre-2015 bias is unmeasurable.
 
 ## 4. After certification: follow-up experiments (FS)
 

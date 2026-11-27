@@ -7,3 +7,8 @@ __pycache__/
 .claude/*
 !.claude/settings.json
 !.claude/skills/
+
+# experiment outputs and scratch: never commit
+runs_*/
+*.pkl
+*.parquet
