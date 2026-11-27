@@ -22,6 +22,7 @@ Lambda note (F.2 investigation):
     LAMBDA_DD_E7_EFFECTIVE / LAMBDA_CASH_E7_EFFECTIVE for clarity and to avoid silent drift.
 """
 import argparse
+import json
 import logging
 import sys
 import time
@@ -46,6 +47,7 @@ from run_phase_b4_risk_engine import build_stress_series
 from run_phase_b5_final_gate import build_promoted_weights
 from src.reporting.metrics import calculate_metrics
 from src.rl.environment_v2 import PortfolioEnvV2
+from src.rl.reward_config import resolved_reward_config
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -93,12 +95,16 @@ def _sharpe_from_env_rollout(env: PortfolioEnvV2, model: PPO) -> float:
     return float(m.get("Sharpe", np.nan))
 
 
-def make_env_fn(inputs, b5_weights_df, start_date, end_date, rebalance_dates, sector_features_df):
+def make_env_fn(inputs, b5_weights_df, start_date, end_date, rebalance_dates, sector_features_df,
+                env_kwargs=None):
     """Factory for DummyVecEnv — preloads sector_features_df to avoid repeated disk reads.
 
     Lambda values are pinned explicitly so future env default changes do not silently alter
     training behaviour. Values match what E.7 was effectively trained with (see module docstring).
+    env_kwargs carries the A0 timing/cost options (cost_bps, fill_delay, terminal_period, require_book).
     """
+    extra = dict(env_kwargs or {})
+
     def _make():
         return PortfolioEnvV2(
             inputs, b5_weights_df,
@@ -108,6 +114,7 @@ def make_env_fn(inputs, b5_weights_df, start_date, end_date, rebalance_dates, se
             lambda_dd=LAMBDA_DD_E7_EFFECTIVE,
             lambda_cash=LAMBDA_CASH_E7_EFFECTIVE,
             lambda_churn=LAMBDA_CHURN_E7_EFFECTIVE,
+            **extra,
         )
     return _make
 
@@ -134,7 +141,21 @@ def main():
         "--action-dim", type=int, default=3, choices=[2, 3],
         help="3 = legacy [equity, trend, cash]; 2 = equity-only [equity, cash] (agent splits whole book).",
     )
+    # A0 timing/cost options. Defaults reproduce the legacy env (0 bps, fill at close t, last period not
+    # simulated, grid may start before the first B.5 snapshot). Eval/prod use 10 bps; see rl_consolidation_notes.md.
+    parser.add_argument("--train-cost-bps", type=float, default=0.0,
+                        help="Transaction cost (bps) in the training env. Legacy default 0.")
+    parser.add_argument("--val-cost-bps", type=float, default=0.0,
+                        help="Transaction cost (bps) in the validation env. Legacy default 0; use 10 to match eval.")
+    parser.add_argument("--fill-delay", type=int, default=0, choices=[0, 1],
+                        help="0 = fill at close t (legacy); 1 = fill at close t+1 (spec M2).")
+    parser.add_argument("--terminal-period", action="store_true",
+                        help="Simulate the last decision's holding period (A0 D3). Off by default (legacy).")
+    parser.add_argument("--require-book", action="store_true",
+                        help="Start the rebalance grid at the first B.5 snapshot (A0 D1). Off by default (legacy).")
     args = parser.parse_args()
+    timing_kwargs = dict(fill_delay=args.fill_delay, terminal_period=args.terminal_period,
+                         require_book=args.require_book)
     import src.rl.environment_v2 as _env_mod
     _env_mod.DEFAULT_ACTION_DIM = args.action_dim
 
@@ -177,12 +198,14 @@ def main():
 
     logger.info("Building training environment (PortfolioEnvV2) …")
     train_vec_env = DummyVecEnv([
-        make_env_fn(inputs, b5_weights_df, TRAIN_START, TRAIN_END, _ctrl, sector_features_df)
+        make_env_fn(inputs, b5_weights_df, TRAIN_START, TRAIN_END, _ctrl, sector_features_df,
+                    env_kwargs=dict(timing_kwargs, cost_bps=args.train_cost_bps))
     ])
 
     val_env = PortfolioEnvV2(
         inputs, b5_weights_df, start_date=VAL_START, end_date=VAL_END,
         rebalance_dates=_ctrl, sector_features_df=sector_features_df,
+        cost_bps=args.val_cost_bps, **timing_kwargs,
         lambda_dd=LAMBDA_DD_E7_EFFECTIVE,
         lambda_cash=LAMBDA_CASH_E7_EFFECTIVE,
         lambda_churn=LAMBDA_CHURN_E7_EFFECTIVE,
@@ -272,6 +295,16 @@ def main():
     log_df = pd.DataFrame(log_rows)
     log_df.to_csv(reports_dir / "phase_e5_training_log.csv", index=False)
     logger.info("Training log saved: %d rows", len(log_df))
+    # R0: record the reward coefficients the env actually used (runtime values, not signature defaults)
+    manifest = {
+        "reward_config": resolved_reward_config(val_env),
+        "train_start": TRAIN_START, "train_end": TRAIN_END,
+        "val_start": VAL_START, "val_end": VAL_END,
+        "action_dim": int(args.action_dim), "best_val_sharpe": float(best_val_sharpe),
+        "timing": dict(timing_kwargs, train_cost_bps=args.train_cost_bps, val_cost_bps=args.val_cost_bps),
+    }
+    (reports_dir / "run_manifest.json").write_text(json.dumps(manifest, indent=2))
+    logger.info("Run manifest saved: reward_config=%s", manifest["reward_config"])
     logger.info(
         "Training complete: best_val_sharpe=%.4f, total_time=%.1fs",
         best_val_sharpe, time.perf_counter() - t0,
