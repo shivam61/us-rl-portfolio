@@ -567,3 +567,15 @@ Section 11 holds the per-variant tables up to the round-2 PPO runs. Experiments 
 | BD | 27 | Contextual bandit, equity floor 0.25, 14-fold walk-forward | Gate A not met; L2 14d Sharpe 0.97 vs matched static 0.99, shuffled context equal; controls resolve only Sharpe gains >= ~0.09 (14d) / ~0.18 (8w) |
 
 Overall conclusion (owner direction 2026-11-27 to continue RL was followed through PPO fixes, reward redesign, reduced observations and a bandit): no RL variant beats matched static; RL as the live allocator is not supported by this evidence. Plan: consolidate verified fixes into one PR and ship B.5+B.4 with RL in shadow mode.
+
+## 29. Production-readiness audit of B.5 + B.4 (2026-11-27)
+
+Full report: `docs/phases/prod_readiness_audit.md` (evidence scripts in worktree `agent-a8bc72d751b8f1e00/runs_pa/`, uncommitted). Run on the pre-consolidation base 33f54bb; no sealed-window output computed.
+
+Verdict: paper trading NO-GO as the code stands (conditional GO after B1, B3-B6, about 1.5 engineer-days); live NO-GO (needs B7 broker boundary, M1 survivorship, paper gates).
+
+Reference reconciliation (10 bps, one-day lag): B.5 report 16.04% is the multi-sleeve book; commit 860fa26 strips SPY/TLT/GLD/UUP to cash (`run_phase_b5_final_gate.py:168`), cutting full-period CAGR about 7 pp. HEAD equity-only: 9.24% CAGR / -23.2% MaxDD / Sharpe 0.78 over 2008-2026 (fails the gate's Sharpe > 0.9). Holdout 2019-01-01..2026-04-24 equity-only, overlay as cash: 14.09% / -20.40% / 1.108 (matches the tracker's 14.1%); overlay kept as SPY: 16.29% / -27.01% / 1.037. The 22-23%, 3y 21.3%, and "static 50/72%" reference rows were NOT reproduced (tracker section 2 and H1 explanation need correction). Live expectation: about 9-10% CAGR, -23% MaxDD; the 14% holdout was used for promotion and gating.
+
+Blockers: B1 default prod mode is rl_e7; B2 SPY overlay dropped (beta below the 0.50 floor on 6 of 48 control dates, gross 0.29 vs 0.49); B3 B.5 gate PASS not reproducible on HEAD; B4 book frozen at 2026-04-24 (clip and mask); B5 order sizing on initial NAV (multiplier 0.38-1.05); B6 data refresh fails open; B7 no broker boundary or kill switch (live). Majors: survivorship unquantified, reruns duplicate rows, turnover and position limits unenforced, test gaps, stale monitoring, hard-coded switching references, silent cold start. Prod/backtest weight parity for b5_only holds (max diff 4.8e-7 on 18 dates). J2 replay not run (starts inside the sealed window; state absent).
+
+Owner decisions required: B2 (restore the SPY overlay as SPY weight, or amend the spec), the sealed test (one shot), cost assumption (10 vs 20 bps).
