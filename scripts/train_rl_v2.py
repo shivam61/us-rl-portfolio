@@ -22,6 +22,7 @@ Lambda note (F.2 investigation):
     LAMBDA_DD_E7_EFFECTIVE / LAMBDA_CASH_E7_EFFECTIVE for clarity and to avoid silent drift.
 """
 import argparse
+import json
 import logging
 import sys
 import time
@@ -46,6 +47,7 @@ from run_phase_b4_risk_engine import build_stress_series
 from run_phase_b5_final_gate import build_promoted_weights
 from src.reporting.metrics import calculate_metrics
 from src.rl.environment_v2 import PortfolioEnvV2
+from src.rl.reward_config import resolved_reward_config
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -272,6 +274,15 @@ def main():
     log_df = pd.DataFrame(log_rows)
     log_df.to_csv(reports_dir / "phase_e5_training_log.csv", index=False)
     logger.info("Training log saved: %d rows", len(log_df))
+    # R0: record the reward coefficients the env actually used (runtime values, not signature defaults)
+    manifest = {
+        "reward_config": resolved_reward_config(val_env),
+        "train_start": TRAIN_START, "train_end": TRAIN_END,
+        "val_start": VAL_START, "val_end": VAL_END,
+        "action_dim": int(args.action_dim), "best_val_sharpe": float(best_val_sharpe),
+    }
+    (reports_dir / "run_manifest.json").write_text(json.dumps(manifest, indent=2))
+    logger.info("Run manifest saved: reward_config=%s", manifest["reward_config"])
     logger.info(
         "Training complete: best_val_sharpe=%.4f, total_time=%.1fs",
         best_val_sharpe, time.perf_counter() - t0,
