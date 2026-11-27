@@ -55,3 +55,14 @@ Phase 3: consolidation and sealed test
 1. Approve Phase 0 now (cheap, no training), with Phase 1 following FM.
 2. Is a fitted, learned sizing map (bandit/supervised) acceptable as "RL"? Default assumed: yes (learned from data, not a hand rule).
 3. Crash-fold bar (default 10 points), PPO vs bandit for Phase 2 (default: bandit first).
+
+## 5. Owner's ranked weaknesses mapped to the plan (added 2026-11-27)
+
+| Rank | Weakness | Evidence status | Where addressed |
+|---|---|---|---|
+| 1 High | Reward mixes return timing, risk reduction, recovery, cash drag | Confirmed in structure; term magnitudes unmeasured (recovery <= ~0.005, cash drag <= 0.015 vs Sharpe O(1) suggests Sharpe dominates but it is share-blind) | R0 component report; B3 single-purpose reward (forward utility difference over shares); Phase 2 reward ladder R-A..R-D |
+| 2 High | Portfolio-derived observations: feedback loop and episode-boundary artifacts | Confirmed (FA restart test; P0/P3; C1 importance) | Drop 39-41; use baseline-book P features only (C1 O3 form); observation ladder M, M+E, M+P |
+| 3 Medium | 22 sector dims add complexity without information | FA: no increment over TR/SPY; low-power caveat; Q4 untested | S0 exposure audit; prune unless FM shows value |
+| 4 Medium | Correlated market/stress features hamper attribution | Known: d31 with d04 (VIF 62/153), 13 pairs |corr| > 0.95 and 16 features with VIF > 10 in v4 (FH S1 waiver) | Cluster representatives in B1; permutation importance by cluster, not by feature, in Phase 2 |
+| 5 Medium | Decision cadence and overlapping reward horizons vs production | 8w training vs 14d prod; step reward windows differ by grid; 63-day window clipped to the step | FM horizon matrix picks the actionable horizon; train and evaluate the chosen cadence in prod terms; B3 reward horizon equals the decision horizon, non-overlapping |
+| 6 Medium | Reward defaults differ from documented defaults | Confirmed (runtime 0.15/0.03 vs function 0.08/0.05) | R0: log the resolved runtime config into every run's manifest; test that the signature default equals the env default or is passed explicitly |
