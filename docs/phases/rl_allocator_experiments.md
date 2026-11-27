@@ -513,3 +513,35 @@ Outcome: no cell passes the pre-registered bars. The redesigned reward does not 
 - Caveats: the 3-seed SE uses t(2), so the 2-SE bars are fragile; several effects with |t| 2-3 would not survive more seeds; reward scale taken from a random policy; very early checkpoints in some cells are selection noise; the loader fetches delisted BK/CTRA each run (harmless); a PREREG vs final-table section mismatch was noted, not resolved; nothing committed.
 
 Reading: with the two main design defects addressed (reward made share-dependent and forward; observation reduced and de-referenced), PPO still does not beat matched static, and the cell where the agent most clearly responds to volatility (RS_NEW) pays for it with deeper drawdown and the biggest overfit gap. This closes the pre-registered "one last experiment": Gate A and Gate B are both unmet; RL as live allocator is not supported by the evidence.
+
+## 27. BD0-BD2: contextual-bandit experiment (floor 0.25), Gate A NOT MET
+
+Spec: `rl_bandit_plan.md`. Worktree `agent-a41c358bf0f41c224`, outputs `runs_bd/` (uncommitted; code `src/rl/bd_core.py`, `bd_learners.py`, `scripts/bd0_outcome.py`, `bd1_controls.py`, `bd2_walkforward.py`, tests `tests/test_bd_outcome_table.py`, `test_bd_walkforward.py`, 14 pass). Sealed window not used (data cut 2026-04-24). L3, L4, X1/X2, U2, 20 bps / 2d-delay robustness not run (BD3/BD4).
+
+BD0: outcome table over arms {0.25, 0.4375, 0.625, 0.8125, 1.0}, fill t+1, 10 bps, terminal period included, 14d grid starts at first snapshot (A0 D1, D3 fixed). 8w = 120 decisions, 14d = 477. Weights sum to arm to 1e-9, no hidden floor. Env parity 1e-6 only for shares 1.0/0.625/0.8125 (0.25 and 0.4375 unreachable in the env's 2-dim map, checked against the engine only).
+
+BD1 (controls): planted edge delta*1{VIX rank>0.5}*(0.625-a). 14d z(dU1): delta 0.0025 -> -0.89, 0.005 -> -1.14, 0.01 -> -1.60, 0.02 -> +2.75 (Sharpe z only +1.05); 8w never recovered. For delta <= 0.01 the learner is worse than static (switching noise > edge). Noise false-positive rate 0-2%. MDE (80% power): 14d Sharpe/Calmar +0.087 (347 decisions), 8w +0.18 (87 decisions). Oracles (14d): static Sharpe 0.99 / Calmar 0.62 / MaxDD -55%; hindsight best arm 3.66 / 3.90 / -24%; predictable-risk oracle (knows next-period vol only) 1.79 / 0.96 / -27% (roughly halves drawdown), while the realised TR sizer captures none of it. Note: the hindsight oracle is full-period, so it does not test H1's "gain vanishes after one-step delay".
+
+BD2 (14 expanding folds, test years 2013-2026, pooled OOS, net 10 bps):
+
+| Learner | Grid | CAGR | MaxDD | Sharpe | Calmar | Avg eq |
+|---|---|---|---|---|---|---|
+| L2 bandit | 14d | 33.7% | -56.0% | 0.97 | 0.60 | 0.97 |
+| matched static | 14d | 34.0% | -54.6% | 0.99 | 0.62 | 0.97 |
+| L1 TR sizer | 14d | 25.0% | -41.6% | 0.99 | 0.60 | 0.81 |
+| matched static (L1 avg) | 14d | 28.8% | -47.9% | 1.01 | 0.60 | 0.81 |
+| shuffled context | 14d | 33.6% | -56.0% | 0.95 | 0.60 | 0.98 |
+| L2 bandit | 8w | 30.3% | -56.0% | 0.89 | 0.54 | 0.92 |
+| matched static | 8w | 31.6% | -52.9% | 0.96 | 0.60 | 0.92 |
+
+- L2 sits at 100% equity in 93% of 14d decisions and 87% of 8w decisions: effectively always invested with rare de-risking.
+- H1 (L2 - matched static): 14d dSharpe -0.027 (z -0.81), dCalmar -0.021 (z -0.75); 8w dSharpe -0.073 (z -1.13), dCalmar -0.057 (z -0.84). Not met.
+- H2 (vs L1): no Sharpe/Calmar gain; utility gains track average equity, not timing (equal-equity gap z -0.3 to -0.5).
+- H3 (shuffled control): L2 = shuffled (14d dSharpe +0.014, z 0.40). Does not degrade.
+- Fold sign (Sharpe) 8/14 (14d), 7/14 (8w), need 9. Crash bar: 2020 L2 -55.9% vs -54.5% (14d), 2022 -48.2% vs -46.8%: L2 deeper, bar (10 points shallower) fails.
+- 0.5-floor sensitivity: same picture. Multiplicity: primary family 4 tests; secondary 68 comparisons with BH-FDR, 4 pass q<0.10, all utility comparisons explained by average equity.
+- Legacy split holdout: 14d L2 = matched static (Sharpe 1.09 / Calmar 0.83 both); 8w L2 Sharpe 1.24 vs 1.05, CI [-0.00, +0.39], 48 decisions, not pre-registered. 3y: legacy 14d L2 = static; pooled walk-forward 8w worse than static (Sharpe 1.88 vs 2.18).
+
+Verdict: Gate A NOT MET. Controls are under-powered for small effects (planted edge delta <= 0.01 missed), so this is "no detectable gain", not "no signal". Budget rule for continuing (controls resolve the effect and L2 not worse than L0) not met.
+
+Deviations disclosed: 14d dates not re-anchored; terminal 2026-04-24; labels gross of cost, decoding charges 10 bps x |a-p|; minimum training size 20 decisions (changed from 40 after the first run dropped 8w 2013-2015 folds; qualitatively same); fold-sign metric defined as Sharpe difference; env check used direct share mapping and still fills at close t (A0 D2 fixed in the outcome engine only); `REPORT.md` could not be written by the subagent. `runs_bd/inputs/` holds copies of FM history files containing returns past the sealed cut (never used in statistics); delete before sharing.
