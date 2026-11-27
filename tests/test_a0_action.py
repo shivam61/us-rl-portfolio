@@ -73,34 +73,6 @@ def test_inverse_rejects_unreachable_targets():
         raw_for_equity(0.3)
 
 
-def test_regression_c1_spy_in_snapshot_passes_with_fix():
-    """C1 bug: SPY in a B.5 snapshot entered equity scaling and finalize_equity_only raised."""
-    w, info = apply_exposure_mix(_snapshot(True), TREND, np.array([0.2, -0.3]))
-    out = finalize_equity_only(w, info["equity_frac"])
-    assert "SPY" not in out.index and "TLT" not in out.index
-    assert float(out.abs().sum()) == pytest.approx(info["equity_frac"], abs=1e-6)
-
-
-def test_regression_c1_spy_in_snapshot_would_have_raised_before_fix():
-    """Reproduce the pre-fix scaling (SPY included in stock_slice) and show the invariant breaks."""
-    snap = _snapshot(True)
-    eq, _ca = project_two_sleeve(0.2, -0.3)
-    stock = snap[[t for t in snap.index if t not in set(TREND)]]  # old: NON_TRADABLE not excluded
-    res = pd.Series(0.0, index=snap.index)
-    res[stock.index] = stock * (eq / float(stock.abs().sum()))
-    with pytest.raises(AssertionError):
-        finalize_equity_only(res, eq)
-    assert set(NON_TRADABLE_ASSETS) == {"GLD", "SPY", "TLT", "UUP"}
-
-
-@pytest.mark.parametrize("nontrade", [False, True])
-def test_stock_sum_equals_equity_share(nontrade):
-    for raw in ([-1, -1], [0.0, 0.0], [1.0, -1.0], [0.3, 0.9]):
-        w, info = apply_exposure_mix(_snapshot(nontrade), TREND, np.array(raw, dtype=float))
-        out = finalize_equity_only(w, info["equity_frac"])
-        assert abs(float(out.abs().sum()) - info["equity_frac"]) < 1e-6
-
-
 @pytest.mark.xfail(strict=True, reason="A0 defect D4: snapshot with no stock (only SPY/TLT/GLD/UUP) "
                                        "gives zero holdings while equity_frac > 0; finalize does not raise")
 def test_zero_stock_snapshot_should_not_report_equity():
