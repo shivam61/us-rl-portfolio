@@ -545,3 +545,25 @@ BD2 (14 expanding folds, test years 2013-2026, pooled OOS, net 10 bps):
 Verdict: Gate A NOT MET. Controls are under-powered for small effects (planted edge delta <= 0.01 missed), so this is "no detectable gain", not "no signal". Budget rule for continuing (controls resolve the effect and L2 not worse than L0) not met.
 
 Deviations disclosed: 14d dates not re-anchored; terminal 2026-04-24; labels gross of cost, decoding charges 10 bps x |a-p|; minimum training size 20 decisions (changed from 40 after the first run dropped 8w 2013-2015 folds; qualitatively same); fold-sign metric defined as Sharpe difference; env check used direct share mapping and still fills at close t (A0 D2 fixed in the outcome engine only); `REPORT.md` could not be written by the subagent. `runs_bd/inputs/` holds copies of FM history files containing returns past the sealed cut (never used in statistics); delete before sharing.
+
+## 28. Results index for experiments after section 11 (2026-11-27)
+
+Section 11 holds the per-variant tables up to the round-2 PPO runs. Experiments run afterwards are indexed here with their verdict; full numbers are in the section named. All verdicts are against matched static (static at the agent's own average equity, same grid), net of 10 bps, holdout 2019-01-01..2026-04-24 unless stated.
+
+| Track | Section | What was tested | Verdict |
+|---|---|---|---|
+| F | 12 | Reference reconciliation (B.5+B.4 14.1% vs 22-23%) | Reconciled for gate G0; a ~1 pt CAGR gap remains between harnesses (R1 13.2% vs 14.1%) |
+| G1 | 13 | Is the drawdown signal real and monetizable? | Real, but equals trailing volatility; monetization fails |
+| FB / FC / FH | 14, 17, 18 | Candidate feature library v4 / certification checks / v4.1 (48 features) | Library hardened, not certified as a signal library; no feature beats the trivial set TR |
+| EGM | 15 | Review of feature set v4 | Certify with fixes; screens have low power (min detectable incremental IC ~0.24) |
+| FA | 16 | Audit of the existing 42 dims | Dead/redundant/self-referential dims confirmed; sector dims harmful out of sample |
+| R1 | 19 | Baseline-relative multiplier action | Failed bars |
+| C1 | 20 | Clean risk observations | Failed bars |
+| S0 | 22 | B.5 book sector/risk exposure audit | 22 sector dims redundant and buggy (XLRE/XLC defaults) |
+| A0 | 23 | Action/transition audit | Defects D1-D6 found (grid start, fill timing, terminal period, 0 vs 10 bps training cost) |
+| R0 | 24 | Reward component audit | Reward is ~100% a share-blind step Sharpe; other terms <2% |
+| FM | 25 | Horizon matrix, paired incremental value, economics after delay | No group beats TR; sizer dCalmar +0.06 [-0.40, +0.62]; Gate A not met |
+| RS1 | 26 | Reduced observation x redesigned reward, 2x2 PPO, 12 runs | No cell passes; 2020 MaxDD bar fails in all four cells; reward effect undetectable |
+| BD | 27 | Contextual bandit, equity floor 0.25, 14-fold walk-forward | Gate A not met; L2 14d Sharpe 0.97 vs matched static 0.99, shuffled context equal; controls resolve only Sharpe gains >= ~0.09 (14d) / ~0.18 (8w) |
+
+Overall conclusion (owner direction 2026-11-27 to continue RL was followed through PPO fixes, reward redesign, reduced observations and a bandit): no RL variant beats matched static; RL as the live allocator is not supported by this evidence. Plan: consolidate verified fixes into one PR and ship B.5+B.4 with RL in shadow mode.
