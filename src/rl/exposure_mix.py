@@ -103,7 +103,11 @@ def apply_two_sleeve_mix(
     eq, ca = project_two_sleeve(float(raw_action[0]), float(raw_action[1]))
     trend_set = set(trend_tickers)
     result = pd.Series(0.0, index=b5_weights.index)
-    stock_slice = b5_weights[[t for t in b5_weights.index if t not in trend_set]]
+    # C1 fix: B.5 snapshots can hold SPY (benchmark). It is never bought in equity-only mode, so it
+    # must not enter the equity-sleeve scaling; finalize_equity_only drops it and would otherwise
+    # break the stock-sum == equity_frac invariant. Snapshots without SPY are unchanged.
+    excluded = trend_set | set(NON_TRADABLE_ASSETS)
+    stock_slice = b5_weights[[t for t in b5_weights.index if t not in excluded]]
     stock_total = float(stock_slice.abs().sum())
     if stock_total > 1e-12:
         result[stock_slice.index] = stock_slice * (eq / stock_total)
