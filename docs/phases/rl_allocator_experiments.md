@@ -608,3 +608,15 @@ B.5 picks (top 20 by volatility score, equal weight, every control date, no cash
 Reading: about a third of the unrestricted return came from the survivorship effect. The restricted picks still beat SPY by about 12 points a year, but the remaining bias from the 37% of members with no price data is unmeasured and likely still positive. A clean answer needs survivorship-free prices (for example Norgate or CRSP).
 
 Price-data check for removed names (2026-11-28): 709 of the 1,209 tickers that were ever in the index have no price cache. Yahoo via yfinance returns nothing for most removed names (BSC, CFC, CCE, BRCM, WFM: no data). Where it returns data it can be a different company that reused the ticker (WB now Weibo, JAVA now a 2021 listing, ADCT from 2020). Using those series would corrupt the test, so no yfinance prices were added to the cache. A survivorship-free source is needed (Norgate, CRSP, EODHD or Tiingo, all paid or key-based). No data was written.
+
+## 32. Correction: the 93 "verified" delisted price series are not delisted histories (2026-11-28)
+
+What was run: yfinance histories for 156 candidate names; checks for date-window overlap, gaps and large moves (section 31 follow-up). 93 passed as VERIFIED and were copied to `data/raw_delisted/`. A PIT picks rerun then added them to a 503-name universe (596 total, sector 'Unknown').
+
+What is wrong: every one of the 93 files runs to 2026-11-27 with no gap. Examples: ENPH starts 2012, SOLS 2025, OGN 2021. Most top names (ENPH, SEDG, CZR, ETSY, NOV) are still listed. These are current-ticker series, not the price history of the original index members. The verification check tested whether the window overlapped, but did not test whether the series stopped at the company's removal date. It also could not catch a reused ticker that is still trading. The VERIFIED label was therefore wrong.
+
+Effect: the extended-universe result (+252% holdout, about 18.8% CAGR) is not a valid correction and must not be used. The earlier point-in-time result (restricted to members with price data in the original cache, about 27% CAGR, section 31) does not use these files and stands as reported.
+
+Action: `data/raw_delisted/` renamed to `data/raw_delisted_QUARANTINED/` (gitignored). Not used by any pipeline. The worktree copy `runs_pit/raw_extended/` (about 158 MB) is scratch and should be deleted.
+
+Still needed: a survivorship-free source with real delisting dates and final prices. The verification logic also needs to require that each series stops at the membership removal date, and that a ticker's history matches the company that was in the index (name or CIK check).
