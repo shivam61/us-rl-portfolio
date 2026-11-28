@@ -7,3 +7,4 @@ __pycache__/
 .claude/*
 !.claude/settings.json
 !.claude/skills/
+runs_ingest/
