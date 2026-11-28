@@ -1,58 +1,84 @@
-# Plan: improve stock selection (B.5 successor experiment)
+# Plan (rev 2): is stock selection worth improving? Controls first
 
-Status: PLAN (2026-11-28), not executed. B.5 stays frozen in production until a candidate passes the gates below. Evidence base: tracker sections 33 and 34.
+Status: PLAN rev 2 (2026-11-28), not executed. Rev 1 was reviewed by six EGM reviewers (design, zoom-out, implementation readiness, codebase details, inventive catalyst, comprehension); this revision folds in their findings. Evidence: tracker sections 25, 33, 34.
 
-## 1. Why
+## 0. Terms (for a new reader)
 
-- Current score = mean percentile rank of 63-day volatility, downside volatility, beta, and max drawdown; top 20, equal weight. It selects the riskiest stocks and has no return, quality or valuation input.
-- On the survivorship-reduced universe the picks earn 21.8% (holdout, 10 bps) with Sharpe 0.52 and MaxDD -64%; the full B.5+B.4 book earns 9.1% / 0.74 vs SPY 17.2% / 0.88.
-- The score is a percentile over whatever names are loaded, so adding names alone moved the holdout by 67 points (section 33). This is a design flaw to fix first.
+- B.5: the stock sleeve. Score = mean percentile rank of 63-day volatility, downside volatility, beta to SPY (all higher = riskier) and max drawdown; top 20 names, equal weight (scripts/run_phase_b2_turnover_control.py build_vol_path_fast).
+- Trend sleeve: a volatility-targeted SPY position (TREND_ASSETS = ["SPY"], target vol 10%, gross cap 1.5).
+- Promoted book: stock sleeve and trend sleeve blended each control date. Trend weight = 0.50 + 0.30 x stress score, capped at 0.75; stock weight = 1 - trend weight (so 25% to 50%). scripts/run_phase_b2_turnover_control.py combine_candidate_weights, built by build_b2_candidate.
+- B.4: the risk engine: beta band (floor 0.50, cap 0.90 - 0.20 x stress), gross and turnover caps (scripts/run_phase_b4_risk_engine.py).
+- Equity-only mode: SPY and other non-stock columns are dropped after B.4 (scripts/run_phase_b5_final_gate.py, NON_TRADABLE_ASSETS); the freed weight is held as cash.
+- Gate 0: the owner's definition of success (section 2). Tier B: index exits added from free data (PR #3). Survivorship-reduced universe: 568 names, corrected point-in-time mask (tracker 34). Holdout: 2019-01-01..2026-04-24, already reused; sealed window 2026-05..11 untouched.
 
-## 2. Objective (Gate 0, owner to confirm; default below)
+## 1. What rev 1 missed (new facts)
 
-Default: beat SPY on Sharpe AND Calmar net of 10 bps, with MaxDD at least 10 points shallower, on the survivorship-reduced universe. Alternative: maximise return subject to a drawdown cap. The choice decides which candidates are worth testing.
+1. In equity-only mode the trend sleeve is deleted and its weight becomes cash. With trend weight 0.50-0.75, the stock sleeve receives only 25-50% of capital before B.4 and about 30% gross after it. The 9.1% holdout CAGR is therefore mostly an idle-cash result, not a stock-selection result: picks fully invested earn 21.8%. Selection can only move 25-50% of the book.
+2. The vol score is a percentile over every column in the loaded panel, including sector ETFs, macro ETFs, the VIX proxy and non-members (volatility_score.py:35-47; the mask is applied after scoring, run_phase_b2_turnover_control.py:94). The "-67 points" in section 33 is cumulative return (+519% to +452%); in CAGR it is 2 points (28.8% to 26.8%). The flaw is real but smaller than I said.
+3. C2 (quality filter) is infeasible: the 32 stock features contain no fundamentals and base.yaml sets the fundamentals provider to "simulated".
+4. The loader reads sealed-window rows (no end cap in load_inputs); only the harness clips at 2026-04-24.
+5. scripts/run_trackA_book.py and config/universes/sp500_pit_experiment.yaml exist only on branch worktree-agent-a88e253b6b67161cf (unmerged). No bootstrap, Newey-West or IC-by-horizon code exists on exp/no-tlt; rank-IC pieces exist in src/backtest/walk_forward.py:478-499 and scripts/run_alpha_research.py.
+6. Walk-forward folds have nothing to fit for fixed-rule scores; they only measure per-year stability.
 
-## 3. Rules to avoid repeating past mistakes
+## 2. Gate 0 (owner decides before Phase 1; recommendation)
 
-- Evaluate on the experiment universe (568 names, corrected PIT mask), 10 bps costs, with 25 and 50 bps sensitivities. Every result stated as an upper bound until delisted names are added.
-- Candidates are pre-registered below (at most 6). No candidate is added after seeing results. Multiplicity: BH-FDR across the candidates; one primary test.
-- Selection and parameters are chosen on walk-forward folds only. The holdout 2019-2026-04 is reported, not tuned on. The sealed 2026-05..11 window is touched once, only if a candidate passes every gate.
-- No lookahead: features at date t use data through t; fills at t+1 close (the A0 delay correction).
+Options: (A) beat SPY on Sharpe and Calmar after 10 bps; (B) keep a lower-drawdown book: MaxDD at least 10 points shallower than SPY with CAGR within X points of SPY (owner states X); (C) maximise return with a drawdown cap. Recommendation: B, because the book's only demonstrated edge is drawdown (-21% vs -34%). Under A the current book fails on both survivorship-reduced and survivor data.
 
-## 4. Steps
+## 3. Phase 1: controls (about 1.5 days, no new signals)
 
-S0. Fix the universe-size flaw (about 0.5 day): compute percentile ranks over the point-in-time members active on each control date, not over all loaded columns. Add a test: adding unrelated non-member columns must not change the picks. Rerun B.5 and B.5+B.4 as the new baseline. All later comparisons are against this baseline.
+Run through the same harness (merge run_trackA_book.py first) on the experiment universe, 10 bps, holdout, 3y and 2008-2018:
+- P1a Sleeve split: report the stock-sleeve weight, the trend-sleeve weight and the cash share over time for the promoted book.
+- P1b Idle-cash test: the same picks with the trend sleeve replaced by SPY exposure (non-equity-only) and with the stock sleeve fixed at 100%, 75%, 50%, 30% of capital, remainder cash and remainder SPY.
+- P1c Random-pick null: 500 random 20-name draws from the point-in-time members through the identical book; report the distribution of CAGR, Sharpe, Calmar, MaxDD.
+- P1d SPY scaled to the book's average gross and beta, and an equal-weight member basket at the same gross.
+- P1e Minimum detectable effect for Sharpe and Calmar differences at the pooled sample size (block bootstrap, block length 6 monthly observations).
+Decision rule: if the real picks do not beat the 90th percentile of the random-pick null on Sharpe or Calmar, selection adds nothing measurable: stop improving selection and go to the structure question (section 5). If the scaled-SPY control matches the book on Sharpe and Calmar, the book's value is the cash, not the stocks.
 
-S1. Signal audit (about 1.5 days, no new book runs): for each of the 32 stock features and the four score components, compute cross-sectional rank IC against forward returns at 14d, 8w and 13w on the PIT universe, by year, with t-stats (Newey-West) and turnover of the signal. Also the quintile spread (top minus bottom) net of costs. Output a table: which components carry return information, which only carry risk. Prior evidence (tracker section 25: return timing IC about 0.02) suggests little return signal; this tests the cross-section, which has not been tested for stock selection.
+## 4. Phase 2: bug fixes (about 1-1.5 days, do regardless)
 
-S2. Candidate scores (pre-registered; each built from existing features, no new data):
-  C1. Baseline S0 (control).
-  C2. Risk score plus quality filter: drop the bottom third on profitability and leverage fields available in the feature set, then top 20 by the risk score.
-  C3. Risk score plus momentum: risk percentile averaged with 12-1 month momentum percentile (50/50).
-  C4. Risk-adjusted: rank by trailing return per unit of downside volatility (a Sortino-style score).
-  C5. Lower-risk tilt: invert the score (lowest risk first), as a direction check since the high-vol anomaly literature predicts low-risk stocks do better on risk-adjusted terms.
-  C6. Diversified risk: baseline score with at most 3 names per sector and 30 names instead of 20 (limits concentration; Tier B sectors are Unknown, so sector caps apply only to names with sector data and the limit is stated).
-Each is run through the same B.5+B.4 harness (scripts/run_trackA_book.py) with no other change.
+- S0: compute percentile ranks over the point-in-time members active on each control date only: add a members mask argument to compute_volatility_score_frame, passed from load_inputs; exclude ETFs and non-stock columns from the pool. Test: adding unrelated columns does not change scores, picks, or liquidity_rank and the sector medians (these two are pool-dependent too). Check the rank denominator equals the active count. Rebaseline B.5 and the book; all later numbers use the new baseline.
+- Truncate or assert on data after 2026-04-24 in load_inputs for any evaluation run.
+- Make top-N a parameter (the 20 is hardcoded at lines 97 and 101-102).
 
-S3. Evaluation: walk-forward 2013-2025 folds (train 2008..Y, test Y+1) for any parameter; headline is the pooled out-of-sample series; also the holdout, 3y window and 2008-2018 table. Metrics: CAGR, Sharpe, Sortino, Calmar, MaxDD, turnover, average gross and beta, 2020 and 2022 drawdowns, cost sensitivity. Paired stationary block bootstrap on period differences vs C1 and vs SPY (95% CI and 2 SE).
+## 5. Structure question (decide after Phase 1)
 
-## 5. Gates
+If P1b shows the idle cash is the main drag, the real decision is the design: (a) keep the trend sleeve as SPY exposure (the pre-equity-only book), (b) raise the stock share and let B.4 cap beta, (c) accept a low-return, low-drawdown book. This needs an owner decision and conflicts with the "individual equities only" rule; state it plainly. The earlier committed 16% PASS included the SPY overlay.
 
-A candidate advances only if ALL hold: beats C1 on Sharpe and Calmar by more than 2 SE on the pooled walk-forward series; beats SPY on the Gate 0 objective on the holdout; at least 9 of 14 folds non-negative vs C1; crash fold (2020) MaxDD at least as good as C1; survives 25 bps costs; robust to dropping flagged names (BWA, BBWI, JEF) and Tier B as a block. If none passes, the conclusion is that selection by these features does not improve the book on this data, and the decision moves to Gate 0 (ship a lower-drawdown book or park).
+## 6. Phase 3: signal audit and candidates (only if Phase 1 says selection is worth testing; about 5-6 days)
 
-## 6. Effort and order
+S1 signal audit: rank IC and quintile spread for the continuous features and the four score components against forward returns at 10, 40 and 65 trading days from the t+1 fill, sampled every 10 days to limit overlap, Newey-West lag = horizon/10, by year, net of 10 bps at the rank-turnover observed. Reuse src/backtest/walk_forward.py IC code. Binary and non-cross-sectional features are excluded (above_50dma, trend_consistency, avg_dollar_volume_63d).
+Candidates (pre-registered, at most 3, chosen by S1 and fixed before any book run):
+- K1 baseline (rebaselined S0).
+- K2 momentum only: top 20 by ret_12m_ex_1m (select for return, let B.4 size the risk).
+- K3 lowest-risk first: the same score, sorted ascending (one direction, declared now).
+- K4 (optional, if S1 supports it): 50/50 risk percentile and 12-1 momentum percentile.
+Dropped: C2 (no real fundamentals; revisit only with a paid fundamentals source), C4 (folded into S1 as a signal), C6 (sector cap needs sectors for 68 Unknown names).
+Reported per candidate: selection fully invested, at matched gross, and through B.4; gross, pre-projection beta, beta_up and SPY-overlay counts (K3 will trigger the beta floor and SPY would confound it).
 
-S0 0.5 day, S1 1.5 days, S2 and S3 about 3 days (candidates in parallel worktrees). About 5-6 days of agent time. RL work stays parked; the bandit rerun on the new book follows only if a candidate passes.
+Evaluation: per-calendar-year test slices 2009-2025 (17 years), described as stability, not out-of-sample fitting; the pooled monthly return series is the unit. Paired stationary block bootstrap (new code, block 6 months, 5,000 draws) for Sharpe and Calmar differences vs K1 and vs SPY.
 
-## 7. Risks
+## 7. Gates (a candidate advances only if ALL hold)
 
-- With about 6 candidates and one reused history, a false positive is likely; the walk-forward pooled test and FDR are the guard, and a pass is a statement about this data, not a promise.
-- Feature coverage: quality fields may be missing for Tier B and older names; report coverage and the effect of dropping uncovered names.
-- Survivorship is reduced, not removed; a signal that works only on survivors is not evidence.
-- Sector data is missing for Tier B names; C6 is partial.
+1. Sharpe and Calmar difference vs K1 above 2 bootstrap SE on the pooled monthly series, fully invested and at matched gross; primary metric = Sharpe difference (BH-FDR over the 2-3 candidates).
+2. Beats the 90th percentile of the random-pick null (P1c).
+3. At least 11 of 17 calendar years non-negative vs K1; 2020 calendar-year MaxDD no worse than K1.
+4. Survives 25 bps and the removal of BWA, BBWI, JEF and Tier B as a block (CAGR change under 2 points).
+5. Meets the Gate 0 objective on the holdout.
+A pass is a statement about this upper-bound universe; before any shipping step, buy survivorship-free data and rerun, then use the sealed window once.
 
-## 8. Owner decisions
+## 8. Outcomes and deciders
 
-1. Gate 0 objective (default in section 2).
-2. Approve lifting the B.5 freeze for this experiment only.
-3. OK to run S0 first and rebaseline before any candidate.
+| Outcome | Next action | Decider |
+|---|---|---|
+| Phase 1: picks do not beat random | Park selection work; go to section 5 | Owner |
+| Phase 1: scaled SPY matches the book | Book value is the cash; decide whether to ship a low-drawdown SPY-plus-cash book | Owner |
+| Phase 3: no candidate passes | Keep K1, close the experiment, record the null | Owner |
+| Phase 3: a candidate passes | Buy delisted data and rerun; then one sealed-window test; then production planning | Owner approves each step |
+
+## 9. Effort and impact
+
+Phase 1 about 1.5 days, Phase 2 about 1-1.5 days, Phase 3 about 5-6 more (reviewer estimate for the full rev 1 scope was 7-10 days; this plan cuts C2, C4, C6). Reviewer estimates of outcomes (not measured): the controls most likely show the book's value is the cash and the drawdown (about 60%), little return signal in the audit (about 30%), a passing candidate (about 10%, still an upper bound). The cheapest and most informative step is Phase 1.
+
+## 10. Risks
+
+Reused history (one path, holdout already used); survivorship still partial (about 360 delisted names missing, which are disproportionately the risky names this score picks); Tier B prices not independently validated at scale; Gate 0 undecided.
