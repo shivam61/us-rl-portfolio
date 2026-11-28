@@ -638,3 +638,24 @@ Method: B.5 vol_top_20, equal weight, fully invested, no costs, membership-only 
 Coverage of members with prices: 57% (2008), 65% (2012), 75% (2016), 86% (2020), 96% (2024).
 
 Reading: the 28% figure (A) is the most survivorship-biased; adding exits that still trade cuts the holdout to about 19% CAGR. The volatility score is a cross-sectional percentile, so adding names alone moved the holdout by -67 points (A to A_pool) with no change in membership; differences under about 30 points in training (tie dates) are not signal. Every variant trails SPY on Sharpe and has about 20 points deeper drawdown. Because truly delisted names are missing, all numbers are upper bounds. The earlier +252% run is reproduced (+251.9%); the corrected mask adds +47 points, the universe swap removes 41. Price-convention conversion of Tier B changed nothing (selection uses adj_close).
+
+## 34. Track A: full B.5+B.4 book on the survivorship-reduced universe (2026-11-28)
+
+Branch worktree-agent-a88e253b6b67161cf (not merged): config/universes/sp500_pit_experiment.yaml (568 names), scripts/run_trackA_book.py, tests/test_experiment_universe.py (6 pass; suite 47 passed, 1 skipped). Same gate code and parameters, no retuning, 10 bps costs, evaluation ends 2026-04-24. Independent price audit (18 names): scratchpad trackA4, summary in this section.
+
+Control reproduction: the committed gate reproduces WP5 run 1 exactly on the FULL period 2008..2026-04-24 (CAGR 9.24%, Sharpe 0.781, MaxDD -23.2%). Correction: the 9.24% / 0.78 figures are FULL-period, not holdout. Holdout control is 14.1% / 1.11 / -20.4%.
+
+| B.5+B.4 (CAGR / Sharpe / Calmar / MaxDD) | Control (survivors) | Experiment (reduced) | SPY |
+|---|---|---|---|
+| Holdout 2019-2026-04 | 14.1 / 1.11 / 0.69 / -20.4 | 9.1 / 0.74 / 0.43 / -21.0 | 17.2 / 0.88 / 0.51 / -33.7 |
+| 3y | 21.9 / 2.30 / 2.67 / -8.2 | 11.6 / 1.26 / 1.23 / -9.4 | 22.4 / 1.47 / 1.19 / -18.8 |
+| 2008-2018 | 6.1 / 0.54 / 0.26 / -23.2 | 5.9 / 0.49 / 0.29 / -20.6 | 7.3 / 0.36 / 0.14 / -52.3 |
+
+Cost sensitivity, holdout CAGR/Sharpe at 10/25/50 bps: control 14.1/1.11, 13.8/1.09, 13.3/1.05; experiment 9.1/0.74, 8.8/0.71, 8.3/0.67. Dropping BWA, BBWI, JEF: 9.1 -> 9.0.
+Picks only (vol top-20, 10 bps, drift-correct, holdout): control 43.7% (Sharpe 0.99, MDD -59.6%), experiment 21.8% (0.52, -63.7%).
+
+Reading: on the survivorship-reduced universe the book does not beat SPY on return, Sharpe or Calmar over the holdout; it only has a shallower MaxDD (-21% vs -34%). It is 5.0 points CAGR and 0.37 Sharpe worse than the survivor-only control, which is an upper bound; truly delisted names (about 360) are still missing, so the true figure is likely lower. The earlier "28.8% survivor-only baseline" in section 33 used a membership mask on 501 names; the original ADV-mask production book gives 41%/43.7% on picks, so that baseline was not the production book.
+
+B.4 checks: rolling betas and stress series identical to control on common names; no NaN betas for held names. Caveats: vol-score pool changes 503 -> 568 so percentiles shift; the mask changes from ADV-based to membership plus price-gated; Tier B sector Unknown; the loader reads the sealed 2026-05..11 rows (metrics clipped at 2026-04-24, features backward-looking, but rows are loaded); BK and CTRA not added (yfinance returned nothing; BK predecessor identity fails).
+
+Independent audit (18 names): dividends vs SEC XBRL pass 12, fail 5 (BWA, FMC, FHN, FLS, M; 7-36% gaps); only 5 independent closes found, 4 exact; BWA PHINIA spin (2023-07-03) not adjusted, restrict BWA to end 2023-06-30; BBWI and JEF windows valid as set. Tier B prices usable for specific names only, not independently validated at scale.

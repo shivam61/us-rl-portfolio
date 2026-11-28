@@ -5,7 +5,7 @@ Status: PLAN, not executed. Supersedes nothing; companion to `prod_fix_plan.md` 
 ## 0. Where we are
 
 - Survivorship-reduced picks test (section 33): B.5 vol_top_20, holdout CAGR 19.4% (28.8% with today's constituents), SPY 15.3%; Sharpe 0.43 vs SPY 0.80; max drawdown about -53% vs -29%. Every figure is an upper bound (about 360 truly delisted names have no data; coverage 57% in 2008, 86% in 2020).
-- The B.5+B.4 book (picks plus the risk engine and cash layer) was measured earlier at 9.24% CAGR, Sharpe 0.78 on survivor-only data. It has NOT been rerun on the survivorship-reduced universe.
+- The B.5+B.4 book was measured at 9.24% CAGR, Sharpe 0.78 on the FULL 2008-2026 period (holdout 14.1% / 1.11) on survivor-only data. Track A (tracker section 34) reran it on the survivorship-reduced universe: holdout 9.1% / 0.74 vs SPY 17.2% / 0.88.
 - RL: no variant beat matched static; bandit Gate A not met. RL stays shadow-only and is out of scope below.
 - Production: gate fails on current code, committed PASS report is stale, owner decisions D-a to D-i open, four fix branches local and unpushed.
 
