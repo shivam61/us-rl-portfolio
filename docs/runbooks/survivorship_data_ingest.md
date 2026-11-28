@@ -116,3 +116,57 @@ About 360 names remain REJECT, most of them truly delisted (no free series). Clo
 needs a paid survivorship-free source such as Norgate or Sharadar. Tier B itself is capped at
 medium-low confidence: a restated series such as ITT (spin adjustment) can pass the band, and
 renamed-after-window names are conservatively rejected.
+
+## Corrected mask and rerun
+
+Uses the web-confirmed usable windows (`artifacts/reports/tierb_usable_windows.csv`, 62 Tier B
+names). Outputs go to `runs_final/` (untracked). Nothing is written to `data/raw` or `data/raw_tierB`.
+Run from the worktree root (`data` is a symlink to the main checkout's `data/`).
+
+```bash
+PY=.venv/bin/python
+COMP=/private/tmp/claude-501/-Users-shivamgupta-github-us-rl-portfolio/5058cb96-5758-4d0d-bf44-39a776434699/scratchpad/membership/components_updated.csv
+W=/Users/shivamgupta/github/us-rl-portfolio/artifacts/reports/tierb_usable_windows.csv
+
+# 1. Tier B convention: close == adj_close (OHLC scaled per row), copies only
+$PY -I scripts/convert_tierb_convention.py --src data/raw_tierB/raw --dst runs_final/raw_tierB_adj/raw \
+    --summary runs_final/tierb_convention.csv
+
+# 2. Merged cache: symlinks to data/raw + converted Tier B (plus an unconverted copy for the sanity check)
+$PY -I scripts/build_merged_cache.py --main data/raw --extra runs_final/raw_tierB_adj/raw --out runs_final/merged_cache/raw
+$PY -I scripts/build_merged_cache.py --main data/raw --extra data/raw_tierB/raw --out runs_final/merged_cache_unconv/raw
+
+# 3. Corrected mask: snapshot + last-member override + Tier B windows + price gate
+$PY -I scripts/build_sp500_pit_membership.py --components $COMP --prices-dir runs_final/merged_cache/raw \
+    --windows $W --output runs_final/pit_mask_corrected.parquet \
+    --ungated-output runs_final/pit_mask_ungated.parquet --presence-output runs_final/pit_price_presence.parquet \
+    --overrides-out runs_final/mask_overrides.csv
+
+# 4. Tests
+$PY -m pytest -q tests/test_pit_mask_overrides.py tests/test_tierb_convention.py
+
+# 5. Rerun (configs, then one feature build per universe; the vol rank is cross-sectional)
+$PY -I scripts/run_pit_corrected.py make-configs
+$PY -I scripts/run_pit_corrected.py run --load 503       # A
+$PY -I scripts/run_pit_corrected.py run --load B         # B, D, A_pool (control)
+$PY -I scripts/run_pit_corrected.py run --load C         # C
+$PY -I scripts/run_pit_corrected.py run --load legacy    # S0 (old run, reproduces +252%), S1
+$PY -I scripts/run_pit_corrected.py run --load unconv    # B with unconverted Tier B
+$PY -I scripts/run_pit_corrected.py report               # runs_final/variant_metrics.csv, coverage_by_year.csv
+```
+
+Rules used in the mask (full table in `runs_final/mask_overrides.csv`):
+- Tier B names (62): True only inside `[usable_start, usable_end]`; snapshot membership ignored.
+  The stint text is not intersected. For PVH, PENN, SEDG and SLG the stint text still holds the
+  stale snapshot end date (PENN 2022-06-28, usable 2022-09-16), so intersecting would cut about
+  three months wrongly. A usable start before the stint start raises an error.
+- FMC: snapshot last member capped at 2025-03-21 (removal effective 2025-03-24). Same result as the
+  window.
+- AAP, ETSY, TFX, VNO, FLS, BHF, OGN: the carry-forward snapshot already gives the windows dates. The
+  batch CSV member_last values were the narrower ones.
+- Price gate: a ticker is False on any date without a non-null `adj_close` (no forward fill).
+  Removes 29k cells on tickers with files (pre-series dates) and none for Tier B.
+- JEF's window starts 2018-05-23, so False before that. CZR's window starts 2021-03-22.
+- Known limits: the windows are SEC-identity based, not price-audited. BWA and BBWI may be unadjusted for
+  spin-offs. ILMN's second stint (2026-09-21) is after the mask end. BK and CTRA have no cached price and
+  are dropped from the universes (the earlier run also got no data for them).
