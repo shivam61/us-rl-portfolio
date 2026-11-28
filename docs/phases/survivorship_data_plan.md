@@ -83,3 +83,5 @@ The code work is about 1 to 2 days and can run in parallel with the data pull.
 2. D-2 budget.
 3. D-3 delisting-return method.
 4. Whether the test should use the full period, or only 2008 onward (the period with the largest coverage gap).
+
+Free-source ingest (Tier A/B, ticker-reuse checks, rerun steps): see docs/runbooks/survivorship_data_ingest.md (on branch worktree-agent-a585f6d9ca91450af until merged).
