@@ -659,3 +659,20 @@ Reading: on the survivorship-reduced universe the book does not beat SPY on retu
 B.4 checks: rolling betas and stress series identical to control on common names; no NaN betas for held names. Caveats: vol-score pool changes 503 -> 568 so percentiles shift; the mask changes from ADV-based to membership plus price-gated; Tier B sector Unknown; the loader reads the sealed 2026-05..11 rows (metrics clipped at 2026-04-24, features backward-looking, but rows are loaded); BK and CTRA not added (yfinance returned nothing; BK predecessor identity fails).
 
 Independent audit (18 names): dividends vs SEC XBRL pass 12, fail 5 (BWA, FMC, FHN, FLS, M; 7-36% gaps); only 5 independent closes found, 4 exact; BWA PHINIA spin (2023-07-03) not adjusted, restrict BWA to end 2023-06-30; BBWI and JEF windows valid as set. Tier B prices usable for specific names only, not independently validated at scale.
+
+## 35. Selection experiment Phases 1-2: controls and bug fixes (2026-11-28)
+
+Branches (unmerged): Phase 1 worktree-agent-ae5ea90a232e534a2 (361f631: controls, src/eval/bootstrap.py, tests); Phase 2 worktree-agent-adadaabefb4028f45 (9561f6e, 7f620c2: PIT-aware score, top_n, sealed guard). Plan: docs/phases/selection_improvement_plan.md rev 2. Experiment universe, 10 bps, holdout 2019-01-01..2026-04-24 unless stated.
+
+Phase 2 (fixes): vol score now ranks active members only (ETFs excluded); default path byte-identical, new behaviour opt-in. Effect is small: picks 21.8% -> 22.4%, book 9.1% -> 8.8% (control universe 43.7% -> 44.2%, 14.1% -> 14.1%); about 97% of picks unchanged. Tests: suite 66 passed, 3 skipped. Production loaders still read sealed rows; only the harness truncates.
+
+Phase 1 (controls):
+- Sleeve split: vol sleeve 0.395, trend (SPY) sleeve 0.605 before B.4; after B.4 and the equity-only strip stock gross 0.295 and cash 0.705. The book is about 30% stocks and 70% cash.
+- A fixed 30% stock share with the rest in cash reproduces the book on the holdout (9.0% / 0.77 / 0.46 vs 9.1% / 0.74 / 0.43). SPY held at the book's average beta (0.56), rest cash: 9.8% / 0.90 / 0.49 / MaxDD -19.9%, which matches or beats the book on Sharpe and Calmar (holdout and 3y). SPY at the book's gross (0.30): 5.2% / 0.90.
+- Without the equity-only strip (SPY trend sleeve kept): 11.2% / 0.73 / 0.38 / -29.6%.
+- Random-pick null (holdout; 500 draws fully invested, 200 through the full book): real picks CAGR percentile 100 but Sharpe 40, Calmar 74, MaxDD worst of all draws; real book CAGR percentile 99, Sharpe 62, Calmar 59. 2008-2018: picks Sharpe 38, Calmar 91; book Sharpe 83, Calmar 100.
+- Power (paired stationary bootstrap, 6-month blocks, monthly series): book minus SPY holdout CAGR -8.0 points (CI -15.3 to -1.0); Sharpe -0.25 (CI -0.78 to +0.23); minimum detectable Sharpe difference about 0.70.
+- Decision rule (real picks above the 90th percentile of the null on Sharpe or Calmar, both fully invested and through the book): NOT MET on the holdout.
+
+Reading: the picks earn higher return than random names by taking more risk (deepest drawdown of all draws, Sharpe at the median), not by risk-adjusted skill. The book is equivalent to holding about 56% SPY and 44% cash. Selection adds no measurable value on the holdout; the earlier 2008-2018 Calmar result is not confirmed by Sharpe.
+Caveats: the random null redraws names every date (near-full turnover) while the real picks overlap about 74% period to period, so the null carries a larger cost drag and its CAGR is biased low against the real picks (random fully invested averages 11.8% vs 14.8% for an equal-weight member basket); this flatters the picks' CAGR percentile but does not affect the Sharpe/Calmar conclusion. Fixed-share 100% equals the picks on the 4-week schedule but is 3.1 points higher on the book's control dates (rebalance cadence). Monthly bootstrap Sharpe is coarser than daily. All numbers are upper bounds (about 360 delisted names missing).
