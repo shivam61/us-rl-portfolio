@@ -606,3 +606,5 @@ B.5 picks (top 20 by volatility score, equal weight, every control date, no cash
 | SPY, same periods | +180% | about 15% |
 
 Reading: about a third of the unrestricted return came from the survivorship effect. The restricted picks still beat SPY by about 12 points a year, but the remaining bias from the 37% of members with no price data is unmeasured and likely still positive. A clean answer needs survivorship-free prices (for example Norgate or CRSP).
+
+Price-data check for removed names (2026-11-28): 709 of the 1,209 tickers that were ever in the index have no price cache. Yahoo via yfinance returns nothing for most removed names (BSC, CFC, CCE, BRCM, WFM: no data). Where it returns data it can be a different company that reused the ticker (WB now Weibo, JAVA now a 2021 listing, ADCT from 2020). Using those series would corrupt the test, so no yfinance prices were added to the cache. A survivorship-free source is needed (Norgate, CRSP, EODHD or Tiingo, all paid or key-based). No data was written.
