@@ -579,3 +579,30 @@ The committed `artifacts/reports/phase_b5_final_gate.md` shows 16.04% CAGR / Sha
 Second finding: the committed report's "Max gross 1.500" and "turnover 84.12" rows are hardcoded constants (`B4_MAX_GROSS`, `B4_TURNOVER`, `scripts/run_phase_b5_final_gate.py:26-33`, written at `:333-354`), not computed. The computed values are 0.399 and 31.23, so the PASS rows are not evidence.
 
 Consequence: the B.5 gate as committed says PASS, and on current code it FAILS. Do not cite the committed report as evidence until WP5 run 2 regenerates it with computed values.
+
+## 31. Point-in-time S&P 500 membership and the B.5 picks (2026-11-28)
+
+Data: fja05680/sp500, "S&P 500 Historical Components & Changes (Updated).csv" (MIT License, Copyright 2019-2020 Farrell J. Aultman), 2,720 snapshots 1996-01-02 to 2026-08-18. Built by `scripts/build_sp500_pit_membership.py` into `data/artifacts/sp500_pit_membership_mask.parquet` (gitignored). Tests: `tests/test_sp500_pit_membership.py` (3 pass; suite 18 pass).
+
+Coverage: members with price history in `data/raw` (current tickers only):
+
+| Year | Members | Priced | Coverage |
+|---|---|---|---|
+| 2008 | 498 | 265 | 53% |
+| 2012 | 497 | 300 | 60% |
+| 2016 | 506 | 343 | 68% |
+| 2020 | 505 | 406 | 80% |
+| 2024 | 503 | 472 | 94% |
+| 2026 | 503 | 499 | 99% |
+
+Mean coverage 2008 to 2026-04: 63%. The price cache cannot price names removed from the index before the present, so the membership mask still carries survivorship bias.
+
+B.5 picks (top 20 by volatility score, equal weight, every control date, no cash, no costs; holdout 2019 to 2026-04, 94 periods):
+
+| Universe | Cumulative | CAGR (approx.) |
+|---|---|---|
+| Unrestricted (current constituents, ADV mask) | +1,087% | about 42% |
+| Restricted to point-in-time members with prices | +484% | about 27% |
+| SPY, same periods | +180% | about 15% |
+
+Reading: about a third of the unrestricted return came from the survivorship effect. The restricted picks still beat SPY by about 12 points a year, but the remaining bias from the 37% of members with no price data is unmeasured and likely still positive. A clean answer needs survivorship-free prices (for example Norgate or CRSP).
