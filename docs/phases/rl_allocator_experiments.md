@@ -620,3 +620,21 @@ Effect: the extended-universe result (+252% holdout, about 18.8% CAGR) is not a 
 Action: `data/raw_delisted/` renamed to `data/raw_delisted_QUARANTINED/` (gitignored). Not used by any pipeline. The worktree copy `runs_pit/raw_extended/` (about 158 MB) is scratch and should be deleted.
 
 Still needed: a survivorship-free source with real delisting dates and final prices. The verification logic also needs to require that each series stops at the membership removal date, and that a ticker's history matches the company that was in the index (name or CIK check).
+
+## 33. Survivorship-reduced picks test with free-source data (2026-11-28)
+
+Data added: Tier A (5 current members, in data/raw) and Tier B (62 index exits that still trade, in data/raw_tierB, identity from SEC records, usable window per name from web-confirmed index dates; table in artifacts/reports/tierb_usable_windows.csv). 58 names rejected; about 360 truly delisted names still have no data. Only 5 of 176 price anchors came from a non-Yahoo source, so prices are not independently audited. Branch worktree-agent-af1eb684ae07face5 (not pushed): scripts/run_pit_corrected.py, convert_tierb_convention.py, build_merged_cache.py; runbook docs/runbooks/survivorship_data_ingest.md.
+
+Method: B.5 vol_top_20, equal weight, fully invested, no costs, membership-only mask, holdout 2019-01-22..2026-04-06 (95 rebalances); training 2008-01..2018-12. Sealed window not used.
+
+| Variant | Holdout cum | CAGR | Sharpe | MaxDD | Train cum | Train CAGR |
+|---|---|---|---|---|---|---|
+| A: 503 names, corrected mask | +519% | 28.8% | 0.65 | -50.5% | +423% | 16.3% |
+| A_pool: same mask, Tier pool loaded | +452% | 26.8% | 0.60 | -52.2% | +386% | 15.5% |
+| B: A + Tier A + Tier B in windows | +258% | 19.4% | 0.44 | -53.1% | +338% | 14.4% |
+| C: B minus BWA, BBWI, JEF | +256% | 19.3% | 0.43 | -53.1% | +308% | 13.7% |
+| SPY | +180% | 15.3% | 0.80 | -28.8% | +109% | 6.9% |
+
+Coverage of members with prices: 57% (2008), 65% (2012), 75% (2016), 86% (2020), 96% (2024).
+
+Reading: the 28% figure (A) is the most survivorship-biased; adding exits that still trade cuts the holdout to about 19% CAGR. The volatility score is a cross-sectional percentile, so adding names alone moved the holdout by -67 points (A to A_pool) with no change in membership; differences under about 30 points in training (tie dates) are not signal. Every variant trails SPY on Sharpe and has about 20 points deeper drawdown. Because truly delisted names are missing, all numbers are upper bounds. The earlier +252% run is reproduced (+251.9%); the corrected mask adds +47 points, the universe swap removes 41. Price-convention conversion of Tier B changed nothing (selection uses adj_close).
