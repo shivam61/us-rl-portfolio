@@ -1,6 +1,8 @@
-# Fix plan: production blockers for the B.5 + B.4 book
+# Fix plan: production blockers for the B.5 + B.4 book (rev 2, after EGM review)
 
 Status: PLAN (2026-11-28), not executed. Source: `docs/phases/prod_readiness_audit.md` (defect IDs B1-B7, M1-M9, m1-m5). Scope: the deterministic B.5 stock book with the B.4 risk engine, equity and cash only. The RL allocator is out of scope: it stays in shadow mode (`docs/phases/rl_shadow_mode.md`, branch `consolidate/rl-fixes`).
+
+Revision 2 applies the EGM design, simplicity and readiness reviews (2026-11-28). Changes: survivorship and dashboard regeneration moved off the paper path; the shared-function refactor removed (D-a default is a doc amendment); the per-journey lock dropped; tests merged into each package; research-path `fillna` untouched; WP3 reuses the existing MTM NAV function.
 
 ## 0. Goal and non-goals
 
@@ -8,118 +10,122 @@ Goal: the paper-trading path does what the owner-approved spec says, is idempote
 
 Non-goals:
 - Changing B.5 stock picks (frozen).
-- Any change to RL training or the reward.
+- Any change to RL training, the reward, or the RL env (RL is shadow-only).
 - Touching the sealed window 2026-05..11 (one-shot, owner decision).
-- Broker integration (B7) is a separate later track.
+- Broker integration (B7), survivorship (M1), dashboard regeneration: separate tickets.
 
 ## 1. Owner decisions required before coding
 
 | ID | Decision | Options | Default if no answer |
 |---|---|---|---|
-| D-a | SPY overlay (B2) | (i) restore as SPY weight to the beta floor (holdout 16.3% / -27%); (ii) amend the spec to equity plus cash, accept beta below 0.50 on some dates | (ii), documented, with beta reported daily; (i) is the spec-faithful choice |
-| D-b | Cost assumption | 10 bps (backtest) or 20 bps (config) | 20 bps in prod config and sizing; 10 bps backtest kept, sensitivity reported |
-| D-c | Turnover limit (M3) | enforce 0.35 on rebalance days, or waive per date | enforce, with waiver log |
+| D-a | SPY overlay (B2) | (i) restore as an explicit SPY weight to the beta floor (holdout 16.3% / -27%); (ii) amend the spec to equity plus cash and accept beta below 0.50 on some dates | (ii): a documented spec amendment, with daily beta reported and dates below 0.50 flagged |
+| D-b | Cost assumption | 10 bps (backtest) or 20 bps (config) | 20 bps in the prod config and sizing; backtest stays 10 bps with a sensitivity line in the report |
+| D-c | Turnover limit (M3) | enforce 0.35 on rebalance days, or waive per date | enforce, with a waiver record |
 | D-d | Sealed test (M5) | run once on the baseline now, or later | later, after paper gates |
 
-Work on B1, B3-B6, B8 and M-items does not depend on D-a to D-d and can start immediately.
+WP1, WP2, WP3, WP6, WP8 and WP9 do not depend on D-a to D-d and can start now.
 
 ## 2. Work packages
 
-Each package has a branch off `consolidate/rl-fixes` (or main once PR #2 merges), one PR per package unless noted, tests first.
+Each package is one branch off `consolidate/rl-fixes` (or main after PR #2 merges) and one PR. Tests are written first inside each package.
 
 ### WP1 Mode lock (B1, M8, M9) — 2 h
-- `run_prod_signal.py`: default `--mode b5_only`; remove `rl_e7` from the choices in daily ops; `run_daily_paper_ops.py` asserts mode == `b5_only`.
-- Replace hard-coded switching references (`run_prod_signal.py:468-469`) with values read from the B.5 gate artifact.
-- `load_portfolio_state`: fail if the journey state is missing (no cold start unless `--init-journey` is given explicitly).
-- Tests: `test_daily_ops_cannot_select_rl` (argparse and config path), `test_missing_state_fails`.
+- `run_prod_signal.py:392`: default `--mode b5_only`; remove `rl_e7` from the daily-ops path. `run_daily_paper_ops.py` asserts mode == `b5_only`.
+- Replace the hard-coded switching references (`run_prod_signal.py:468-469`) with values read from the B.5 gate artifact.
+- `load_portfolio_state`: fail if the journey state is missing. Cold start only with an explicit `--init-journey` flag.
+- Tests: `test_daily_ops_cannot_select_rl`, `test_missing_state_fails`.
 
-### WP2 Staleness and data fail-closed (B4, B6, m4) — 4 h
-- Data refresh failure in `run_daily_paper_ops.py:164` becomes a non-zero exit with no orders written.
-- `load_close_prices` (`compute_paper_orders`): require the price date equal to the signal date; no last-price fallback.
+### WP2 Staleness and fail-closed data (B4, B6, m4) — 3-4 h
+- `run_daily_paper_ops.py:164`: a failed data refresh exits non-zero before any order step. Today it logs a warning and continues; the fix is the exit change plus the stop.
+- `compute_paper_orders.load_close_prices`: require the price date to equal the signal date; remove the last-price fallback on the live path.
 - Fail unless the B.5 snapshot date is the last trading day <= `as_of`.
-- Missing price for a held or targeted name: fail; `fillna(0)` on return paths is removed for live use (kept for research).
-- Separate the research clip/mask (`run_phase_b3_exposure_control.py:216`) from the live path; refresh the universe mask through the last available date (needs data).
-- Tests: `test_refresh_failure_no_orders`, `test_stale_snapshot_rejected`, `test_missing_price_fails`, a post-clip date case.
+- Missing price for a held or targeted name on the live path: fail. The `fillna(0)` on research return paths is left unchanged.
+- Research clip and mask (`run_phase_b3_exposure_control.py:216`) stay as they are; the live path reads a mask refreshed through the last available date (data step, needs the data pipeline).
+- Tests: `test_refresh_failure_no_orders`, `test_stale_snapshot_rejected`, `test_price_date_must_match_signal`, `test_missing_price_fails`.
 
-### WP3 Sizing on current NAV (B5) — 3 h
-- `compute_paper_orders.py:133,172`: size on mark-to-market NAV from the journal at `as_of` (previous close), not `initial_nav`.
-- Add a drift-tracking note: targets are weights of current NAV; minimum notional rule documented.
-- Tests: synthetic 2x NAV case gives notional error < 1%; 0.5x case; unit test on the NAV source.
+### WP3 Sizing on current NAV (B5) — 1-2 h
+- `compute_paper_orders.py:133,172`: replace `initial_nav` with the mark-to-market NAV at `as_of`. Reuse `compute_mtm_nav` from `scripts/log_paper_fills.py` (already used on the fills path, lines 174-175 and 378-387). Do not write a second NAV function.
+- Fall back to `initial_nav` only when no positions exist (matches the existing T=0 rule).
+- Tests: a 2x-NAV synthetic case gives notional error < 1%; a 0.5x case; the T=0 fallback.
 
-### WP4 Overlay and beta band (B2) — 3 h after D-a
-- If D-a = (i): restore the SPY overlay as an explicit SPY weight in `run_prod_signal` and in the backtest so both use one function (`finalize_b4_weights`); add a parity test on 18 dates to 1e-6 (the audit's `q2_parity.py` is the template).
-- If D-a = (ii): amend `docs/phases/prod_readiness_audit.md` and the B.4 spec; the report records daily beta and flags dates below 0.50.
-- Either way: one shared function for env, backtest and prod (this also closes the RL parity issue).
+### WP4 Overlay decision (B2) — D-a (ii): 1 h; D-a (i): 4 h, after D-a
+- D-a (ii): amend the B.4 spec and `prod_readiness_audit.md` section on B2; add a daily beta column to the allocation JSON and flag dates below 0.50. No code change to the book.
+- D-a (i) only: add an explicit SPY weight in `run_prod_signal.py` to the beta floor, matching the backtest's overlay (`run_phase_b4_risk_engine.py`). Copy the audit's 18-date parity script (`runs_pa/q2_parity.py` in worktree `agent-a8bc72d751b8f1e00`, not on any branch) into `tests/` as a golden test, at 1e-6 tolerance.
+- Not in scope: a shared finalize function for env and RL. RL is shadow-only.
 
-### WP5 Gate reproduction (B3) — 3 h, runs in parallel
-- Re-issue `artifacts/reports/phase_b5_final_gate.md` on HEAD. Record the cause (commit 860fa26 stripped the sleeves; 9.24% CAGR full period, Sharpe 0.78 fails the gate).
-- Gate outcome is owner-accepted FAIL or a PASS with a documented change. No edits to thresholds to make it pass.
+### WP5 Gate reproduction (B3) — 1 h of doc work, after WP2 and WP3
+- Re-issue `artifacts/reports/phase_b5_final_gate.md` from the current code. Record the cause: commit 860fa26 stripped the sleeves (`run_phase_b5_final_gate.py:168`); 9.24% CAGR full period, Sharpe 0.78 fails the gate.
+- Outcome is an owner-accepted FAIL or a PASS with a documented change. Thresholds are not edited.
 
-### WP6 Idempotency and logging (M2, parts of section 7) — 3 h
-- `audit_trail.append_decision` and `log_paper_fills.append_slippage_summary`: upsert on (as_of, journey); a file lock per journey.
-- Allocation JSON records input checksums, config hash, code commit.
+### WP6 Idempotency (M2) — 2 h
+- `audit_trail.append_decision` (`src/rl/audit_trail.py:45-70`) and `log_paper_fills.append_slippage_summary`: upsert on (as_of, journey), and skip if the day's output already exists. No file lock: this is one daily job.
+- Allocation JSON records the config hash and the code commit. Input checksums are optional.
 - Test: running the same date twice gives identical files and no duplicate rows.
 
-### WP7 Limits (M3) — 2 h (after D-c)
+### WP7 Limits (M3) — 2 h, after D-c
 - Enforce `max_turnover_rebalance` (0.35) and `max_position_weight` (0.05) as checks that block the order file unless a waiver is recorded in the allocation JSON.
-- Test: a 0.54 turnover case is blocked or waived explicitly.
+- Test: a 0.54 turnover case is blocked, or waived with a record.
 
-### WP8 Tests and CI (M6) — 4 h, parallel with everything
-- Golden parity test for `b5_only` (the 18-date set, 1e-6), beta band tests, projection tests, sizing tests, idempotency tests, staleness tests.
-- Artifact-gated tests get a CI job that has the artifacts, or are listed as not run.
+### WP8 CI wiring — 1 h
+- Test writing is inside each package above. This item is only CI: run the new tests on every push, and list artifact-gated tests as not run when their artifacts are absent.
 
-### WP9 Corrections and hygiene (M4, m1, m2, m3, m5) — 2 h
-- Correct the tracker section 2 reference table (22-23%, 21.3%, static 50/72% not reproduced; state the explanation found in the audit).
-- `log_paper_fills` docstring (open vs adj_close).
-- NYSE holiday calendar in `run_j2_backfill.py:38` (`pd.bdate_range` runs on holidays).
-- Align cost (m1) per D-b.
-- Restore or correct the missing doc references.
+### WP9 Corrections (M4, m1, m2, m3, m5) — 1-2 h
+- Correct the tracker section 2 reference table (22-23%, 21.3%, static 50/72% not reproduced; state the audit's explanation).
+- Holiday fix: `run_j2_backfill.py:38` uses `pd.bdate_range`. Replace with the calendar already in `src/data/calendar.py` after confirming it is the NYSE calendar. Do not build a new one.
+- Fix the `log_paper_fills` docstring (open vs adj_close). Align the cost value per D-b.
+- Restore or correct the doc references (`rl_shadow_mode.md`, `rl_consolidation_notes.md`).
 
-### WP10 Monitoring and scheduling (M7) — 4 h
-- Schedule the daily ops job; alert on any non-zero exit (email or log file that is checked).
-- Regenerate the G.3 drift report and G.5 dashboard from current data.
+### WP10 Scheduling and alert (M7) — 1 h
+- Schedule the daily ops job. Alert on any non-zero exit through a log that is checked, or email.
+- Dashboard and drift-report regeneration are not paper gates and are removed from this plan.
 
-### WP11 Survivorship (M1) — 8-16 h, data-dependent, not on the paper path
-- Historical constituents, or quantify the bias on the 2015+ window and disclose.
-
-### Deferred (not in this plan)
-- B7 broker executor, reconciliation and kill switch (16-24 h): needed before live only.
+### Out of plan (separate tickets)
+- M1 survivorship: one disclosure line in the gate report now; historical constituents later (8-16 h, data-bound). Required before live.
+- B7 broker executor, reconciliation and kill switch (16-24 h): before live only.
 - M5 sealed test: owner decision D-d.
 
 ## 3. Order and parallelism
 
 ```
-D-a..D-d (owner)  ───────────────┐
-WP1 mode lock ──┐                │
-WP2 staleness ──┼─> WP5 gate ────┼─> WP4 overlay (after D-a) ─┐
-WP3 sizing ─────┤                │                             ├─> paper-trading go/no-go
-WP6 idempotency ┘                │                             │
-WP8 tests (throughout) ──────────┴─> WP7 limits (after D-c) ───┘
-WP9 corrections, WP10 monitoring: any time
+D-a..D-d (owner)            ──────────────────────┐
+WP1 mode lock ──┐                                  │
+WP2 fail-closed ─┼─> WP5 gate ──────────────────────┼─> paper go/no-go
+WP3 NAV sizing ──┤                                  │
+WP6 idempotency ─┘                                  │
+WP4 overlay (after D-a) ────────────────────────────┤
+WP7 limits (after D-c) ─────────────────────────────┤
+WP8 CI, WP9 corrections, WP10 scheduling: any time ─┘
 ```
 
-Parallel now: WP1, WP2, WP3, WP6, WP8, WP9, WP10. WP5 follows WP2 and WP3 (it needs the fixed sizing and staleness behaviour to reproduce). WP4 waits on D-a.
+Parallel now: WP1, WP2, WP3, WP6, WP9, WP10. WP5 waits for WP2 and WP3. WP4 waits for D-a. WP7 waits for D-c.
 
-Estimated effort: about 30 engineer-hours total for WP1-WP10 (about 1.5 days of wall time with 3 parallel workers). WP11 is extra and data-bound.
+Estimated effort: about 17-20 engineer-hours for WP1-WP10, about one day of wall time with three workers. Earlier estimate (30 h) included items now moved out of scope.
 
 ## 4. Acceptance criteria (paper-trading go, all required)
 
 1. Mode is `b5_only` and no RL path is reachable from daily ops (test).
-2. Overlay decision recorded; parity test on 18 dates passes at 1e-6 for the chosen design.
-3. Staleness gate: stale snapshot or price date mismatch exits non-zero with no orders (tests).
+2. Overlay decision recorded; if D-a (i), the 18-date parity test passes at 1e-6.
+3. Stale snapshot or price-date mismatch exits non-zero with no orders (tests).
 4. Sizing on current NAV: notional error < 1% on the 2x synthetic case.
 5. Two runs on the same date give identical files and no duplicate rows.
 6. Refresh failure: non-zero exit, no orders.
-7. Gate re-issued on HEAD (PASS, or owner-accepted FAIL with reason).
-8. Turnover limit enforced or waived per date with a record.
+7. Gate re-issued from the current code (PASS, or owner-accepted FAIL with reason).
+8. Turnover limit enforced, or waived per date with a record.
 9. Daily ops scheduled; a failure alerts.
-10. CI runs the new tests; artifact-gated tests are listed as not run if skipped.
+10. CI runs the new tests; artifact-gated tests are listed as not run when skipped.
+11. Survivorship disclosed in the gate report (one line, quantification deferred).
 
-Live go additionally needs B7, M1 addressed or quantified, 20 paper days with zero reconciliation breaks, a tested kill switch, and the owner's sealed-test result.
+Live go additionally needs B7, M1 quantified or addressed, 20 paper days with zero reconciliation breaks, a tested kill switch, and the owner's sealed-test result.
 
 ## 5. Risks
 
 - Restoring the overlay (D-a i) lowers the 2008-2026 return and raises gross; the gate may then fail on Sharpe. That is a result to report, not a reason to change thresholds.
-- Current NAV sizing changes historical replay numbers; the journal replay must be re-baselined and not compared to the old journal without a note.
+- Current-NAV sizing changes historical replay numbers; the journal replay must be re-baselined and not compared to the old journal without a note.
 - The sealed window must not be used to choose any fix.
 - Survivorship may be large; the paper gates do not measure it.
+
+## 6. EGM review log
+
+- Design review (egm-design): pending at time of writing; findings to be recorded here.
+- Simplicity review (egm-zoom-out, 2026-11-28): applied the cuts in rev 2 (WP4 shared function removed; WP6 lock dropped; WP8 merged; WP9 trimmed; WP10 dashboards dropped; WP11 moved out). Verified in code: `finalize_b4_weights` does not exist; `compute_mtm_nav` already exists on the fills path.
+- Readiness review (egm-implementation-readiness, 2026-11-28): the first attempt could not read the audit file (it was on another branch). Fixed by copying `prod_readiness_audit.md` onto this branch. Re-review pending.
