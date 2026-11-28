@@ -567,3 +567,15 @@ Section 11 holds the per-variant tables up to the round-2 PPO runs. Experiments 
 | BD | 27 | Contextual bandit, equity floor 0.25, 14-fold walk-forward | Gate A not met; L2 14d Sharpe 0.97 vs matched static 0.99, shuffled context equal; controls resolve only Sharpe gains >= ~0.09 (14d) / ~0.18 (8w) |
 
 Overall conclusion (owner direction 2026-11-27 to continue RL was followed through PPO fixes, reward redesign, reduced observations and a bandit): no RL variant beats matched static; RL as the live allocator is not supported by this evidence. Plan: consolidate verified fixes into one PR and ship B.5+B.4 with RL in shadow mode.
+
+## 30. WP5 run 1: B.5 gate baseline on current code (2026-11-28)
+
+Command: `scripts/run_phase_b5_final_gate.py` with default arguments (config/base.yaml, universes/sp500.yaml, trend-assets default), run in worktree `agent-ad881cba32463b094/runs_wp5` (outputs only, nothing tracked changed; data symlinked read-only).
+
+Result on current HEAD (full period 2008-2026-04-24, equity-only, 10 bps): CAGR 9.24%, Sharpe 0.781, MaxDD -23.20%. Sharpe at 25 bps 0.757, at 50 bps 0.718, all below the 0.90 gate: FAIL on the Sharpe gate. Beats-equal-weight passes (0.781 vs 0.619). Computed max gross 0.399, turnover 31.23, avg beta 0.796, 0 band violations on 120 dates.
+
+The committed `artifacts/reports/phase_b5_final_gate.md` shows 16.04% CAGR / Sharpe 1.078 / MaxDD -32.98%, PASS, dated 2026-05-01. That report predates commit 860fa26 (the `NON_TRADABLE_ASSETS` strip at `scripts/run_phase_b5_final_gate.py:168`). The committed PASS does not reproduce on the current code.
+
+Second finding: the committed report's "Max gross 1.500" and "turnover 84.12" rows are hardcoded constants (`B4_MAX_GROSS`, `B4_TURNOVER`, `scripts/run_phase_b5_final_gate.py:26-33`, written at `:333-354`), not computed. The computed values are 0.399 and 31.23, so the PASS rows are not evidence.
+
+Consequence: the B.5 gate as committed says PASS, and on current code it FAILS. Do not cite the committed report as evidence until WP5 run 2 regenerates it with computed values.

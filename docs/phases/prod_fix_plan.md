@@ -83,7 +83,8 @@ Files depend on the option.
 
 ### WP5 Gate reproduction (B3) — 1 h twice
 Files: `scripts/run_phase_b5_final_gate.py`, `artifacts/reports/phase_b5_final_gate.md`, `artifacts/reports/phase_b5_final_gate.json` (new, read by WP1).
-- Run 1 (now, pre-fix baseline): run the gate on current HEAD to record the reproduction status (the 9.24% / 0.78 finding).
+- Run 1 (done 2026-11-28, tracker section 30): gate on current HEAD gives 9.24% / Sharpe 0.781 / -23.20%, FAIL on Sharpe. The committed report (16.04%, PASS) is stale and predates 860fa26.
+- Hardcoded rows: the committed report's "Max gross 1.500" and "turnover 84.12" come from constants `B4_MAX_GROSS` / `B4_TURNOVER` (`scripts/run_phase_b5_final_gate.py:26-33`, written at `:333-354`), not computed. Computed on HEAD: gross 0.399, turnover 31.23. Run 2 must compute both.
 - Root cause to record: commit 860fa26 added the `NON_TRADABLE_ASSETS` strip at `scripts/run_phase_b5_final_gate.py:168`, turning the sleeves into cash (9.24% CAGR full period, Sharpe 0.78).
 - Cost: 20 bps is not in the gate's cost table (`artifacts/reports/phase_b5_final_gate.md:37-41` shows 10 / 25 / 50). Add a 20 bps row in run 2.
 - Run 2 (acceptance artifact): after WP0 and WP4. The gate imports neither the paper-order nor the staleness code (imports at `run_phase_b5_final_gate.py:16-49`), but it does depend on the clip (WP0) and the overlay (WP4), so it must follow them.
