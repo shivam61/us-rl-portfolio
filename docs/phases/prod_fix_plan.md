@@ -37,10 +37,10 @@ WP0, WP1, WP2, WP5 (baseline), WP6, WP9 and WP10 do not depend on D-a to D-i and
 ### WP0 Clip and mask refresh (B4) — 4-6 h, first
 Why first: `recommended_end_for_universe` returns 2026-04-24 for `sp500_dynamic` (`artifacts/reports/phase_b0_data_window_guard.csv`), so `run_prod_signal.py:409-426` builds B.5 weights only to that date and `_b5_weights_at` (`run_prod_signal.py:192-196`) returns April weights for a November `as_of`. A fail-closed rule (WP2) would trip every day until this is fixed.
 - Split the live path from the research clip: the research clip `clipped_evaluation_dates` (`scripts/run_phase_b1_simulator_reproduction.py:90`, called at `scripts/run_phase_b3_exposure_control.py:216`) stays for the gate. Live reads the mask built by `scripts/build_pit_universe.py` refreshed through the last available date.
-- Interface: add `live_end: Timestamp | None` to `build_promoted_weights` (`scripts/run_phase_b5_final_gate.py:137`) and `build_b2_candidate` (`scripts/run_phase_b3_exposure_control.py:216`). `scripts/run_prod_signal.py:424` passes `as_of`; the gate passes `validation_end` unchanged.
+- Interface: add `live_end: Timestamp | None` to `build_promoted_weights` (`scripts/run_phase_b5_final_gate.py:137`) and `build_b2_candidate` (`scripts/run_phase_b3_exposure_control.py:215`, which calls `clipped_evaluation_dates` at :216). `scripts/run_prod_signal.py:424` passes `as_of`; the gate passes `validation_end` unchanged.
 - Re-run the gate only if `clipped_evaluation_dates` (`scripts/run_phase_b1_simulator_reproduction.py:90`) itself changes. The `live_end` path alone does not change gate numbers.
 - Tests: `test_live_snapshot_reaches_as_of`, `test_research_clip_unchanged_for_gate` (golden on the gate's clip dates).
-- Mask regeneration command: to be named by the owner or the implementer before WP0 starts (`scripts/build_pit_universe.py` arguments not yet checked).
+- Mask regeneration command: `python scripts/build_pit_universe.py --config config/universes/sp500.yaml --output data/artifacts/universe_mask_sp500.parquet --cache-dir data` (arguments checked against `scripts/build_pit_universe.py:83-87`). Whether it extends past 2026-04-24 depends on the cache, to be confirmed on the first run.
 
 ### WP1 Mode lock (B1, M8, M9) — 3 h
 Files: `scripts/run_prod_signal.py`, `scripts/run_daily_paper_ops.py`, `src/rl/switching_rule.py`, `config/paper_trading_j2.yaml`, `tests/test_mode_lock.py`.
@@ -68,14 +68,14 @@ Files: `src/paper/preflight.py` (new), `scripts/run_daily_paper_ops.py`, `script
 ### WP3 Sizing on current NAV (B5) — 2 h
 Files: `scripts/compute_paper_orders.py` (lines 133, 172), `tests/test_sizing_nav.py`.
 - NAV at `as_of` (D-g default): shares held x `adj_close` at `as_of` plus the ledger cash. Do not reuse `compute_mtm_nav` (`scripts/log_paper_fills.py:263`) without checking: its comments say the cash term is untrusted. The formula and the ledger cash source are written into the test fixture.
-- Formula: NAV(as_of) = sum over non-cash rows of `positions_latest.parquet` of shares_held x `adj_close` at `as_of`, plus the `__CASH__` row's market_value.
-- The cash term is the one `compute_mtm_nav` flags as untrusted (`scripts/log_paper_fills.py:284-299`). Before use, add a test that reconciles the `__CASH__` row against the fill ledger; do not reuse `compute_mtm_nav` as-is.
+- Formula: NAV(as_of) = sum over non-cash rows of `positions_latest.parquet` of shares_held x `adj_close` at `as_of`, plus cash.
+- Cash must NOT come from the `__CASH__` row's market_value. That value is initial_nav minus invested at signal prices (`scripts/log_paper_fills.py:284-310`), which the file itself calls untrusted. Cash is derived from the fill ledger: initial cash minus cumulative net buy notionals plus sell proceeds, as the comment at `scripts/log_paper_fills.py:288-289` describes. Test: cash from the ledger equals the sum of fills to the cent on a fixture. Do not reuse `compute_mtm_nav` as-is.
 - Fallback to `initial_nav` only on the explicit `--initial` cold start (`scripts/compute_paper_orders.py:150`).
 - Tests: 2x-NAV synthetic case has notional error < 1%; 0.5x case; T=0 fallback; cash term matches the ledger.
 
 ### WP4 Overlay (B2) — blocked on D-a
 Files depend on the option.
-- D-a (ii): amend the B.4 spec (the audit does not name the spec file; identify it before D-a (ii) is decided); add daily beta and a flag for dates below 0.50 to the allocation JSON. No change to book weights.
+- D-a (ii): amend the B.4 spec (the audit does not name it; the B.4 spec is `docs/phases/phase_b.md`, section "Phase B.4 — Risk Engine Formalization", line 241; owner to confirm); add daily beta and a flag for dates below 0.50 to the allocation JSON. No change to book weights.
 - Tests in both options: `test_beta_band_flags_below_0_50` and `test_project_weights_in_band` (`scripts/run_phase_b3_exposure_control.py:109-145`). The audit lists no beta-band test (M6).
 - D-a (i): the overlay drop is in `scripts/run_phase_b5_final_gate.py:166-168`, after the beta constraint at `:158-165`. Edit `build_promoted_weights` there, so the gate and prod share the path (`run_prod_signal.py:423` already imports it). Add an explicit SPY weight to the beta floor. Golden test: copy the fixed dates and the seeded control draw from `runs_pa/q2_parity.py:27-32` (worktree `agent-a8bc72d751b8f1e00`, not on any branch) into `tests/fixtures/b5_parity_dates.json`, record the seed in the fixture, tolerance 1e-6. The audit gives only counts (12 fixed, 6 control), not the dates.
 - Delete the dead `rl_e7` branch in `run_prod_signal.py:313-334` in either option. Do not claim RL parity from this.
@@ -172,4 +172,4 @@ Live go additionally needs B7, D-h constituent data, 20 paper days with zero rec
 - Design review (egm-design, 2026-11-28, first run): ran before the audit file was on the branch and could not verify audit IDs. Its code-level findings (items 2-13) were checked and applied in rev 3.
 - Rev 3 review (2026-11-28): all audit IDs confirmed. Applied in rev 4: explicit NAV formula; `live_end` interface for WP0; WP5 run 1 and WP1 ordering; WP0 re-run condition; 18 dates sourced from `q2_parity.py:27-32` (the audit gives counts only); 860fa26 root cause restored in WP5; `choices=["b5_only"]` and `rl_mode_required` decision in WP1; beta-band tests in WP4; refresh fetch failure in WP2; cost wording in WP7; `--initial` kept, no `--init-journey`; docstring locations in WP9; D-e alert by email or push.
 - Deviations from the audit, recorded: WP6 drops the file lock (audit M2 wording); the B.4 spec file is not named by the audit and must be identified before D-a (ii).
-- Not verified: the `build_pit_universe.py` mask-regeneration arguments; `consolidate/rl-fixes` file contents (read through the git branch, not checked for the rev 4 paths).
+- Rev 4 spot check (2026-11-28, by main agent): line references for WP0-WP6 and WP9 confirmed against code. Corrected: the WP3 cash source (the `__CASH__` row is the untrusted value, not a fallback); the `build_b2_candidate` line (215, not 216); the B.4 spec file (`phase_b.md`, line 241); the mask regeneration command. Still not verified: whether the mask extends past 2026-04-24 on a fresh run; `consolidate/rl-fixes` file contents for the rev 4 paths.
